@@ -11,6 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const navItems = [
   { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
@@ -48,10 +49,13 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-border">
-        <button className="flex items-center gap-3 w-full px-3 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:opacity-90 transition-opacity">
+        <Link 
+          href="/invoices/new"
+          className="flex items-center gap-3 w-full px-3 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:opacity-90 transition-opacity"
+        >
           <PlusCircle className="w-4 h-4" />
           Nouveau Devis
-        </button>
+        </Link>
       </div>
     </aside>
   );
