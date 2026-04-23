@@ -1,4 +1,3 @@
-import React from 'react';
 import { 
   LayoutDashboard, 
   Users, 
@@ -6,9 +5,12 @@ import {
   Settings, 
   CreditCard,
   PlusCircle,
-  Menu
+  Menu,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { createClient } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
 const navItems = [
   { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
@@ -56,6 +58,15 @@ export function Sidebar() {
 }
 
 export function Header() {
+  const router = useRouter();
+  const supabase = createClient();
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  }
+
   return (
     <header className="h-16 border-b border-border bg-background/50 backdrop-blur-xl sticky top-0 z-10 px-6 flex items-center justify-between">
       <div className="flex items-center gap-4 md:hidden">
@@ -64,11 +75,20 @@ export function Header() {
       </div>
       
       <div className="flex-1 flex justify-end items-center gap-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600" />
-          <div className="hidden sm:block text-right">
-            <p className="text-sm font-medium leading-none">Florian</p>
-            <p className="text-xs text-muted-foreground mt-1">Électricien</p>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={handleSignOut}
+            className="p-2 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+            title="Déconnexion"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600" />
+            <div className="hidden sm:block text-right">
+              <p className="text-sm font-medium leading-none">Mon Compte</p>
+              <p className="text-xs text-muted-foreground mt-1">Artisan</p>
+            </div>
           </div>
         </div>
       </div>

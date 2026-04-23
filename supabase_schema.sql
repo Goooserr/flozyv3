@@ -3,6 +3,7 @@
 -- 1. Table des profils (artisans)
 CREATE TABLE profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+  full_name TEXT,
   company_name TEXT NOT NULL,
   siret TEXT,
   phone TEXT,
