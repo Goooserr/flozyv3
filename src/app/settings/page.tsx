@@ -14,7 +14,9 @@ import {
   Image as ImageIcon,
   Tag,
   LayoutGrid,
-  FileText
+  FileText,
+  ShieldAlert,
+  Trash2
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { CustomFieldsSettings } from '@/components/CustomFieldsSettings';
@@ -32,8 +34,10 @@ export default function SettingsPage() {
     phone: '',
     address: '',
     logo_url: '',
-    primary_color: '#000000'
+    primary_color: '#000000',
+    subscription_plan: 'starter'
   });
+  const [userEmail, setUserEmail] = useState('');
   const [success, setSuccess] = useState(false);
 
   const [magicColor, setMagicColor] = useState(false);
@@ -42,6 +46,7 @@ export default function SettingsPage() {
     async function loadProfile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        setUserEmail(user.email || '');
         const { data } = await supabase
           .from('profiles')
           .select('*')
@@ -315,13 +320,63 @@ export default function SettingsPage() {
         <ModuleSettings />
       </section>
 
-      {/* Custom Fields Section */}
+      {/* Account & Security Section */}
       <section className="space-y-6">
         <div className="flex items-center gap-2 border-b border-border pb-2">
-          <Tag className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-bold">Champs Personnalisés</h3>
+          <Mail className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-bold">Compte & Sécurité</h3>
         </div>
-        <CustomFieldsSettings />
+        <div className="bg-card border border-border rounded-3xl p-8 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-8">
+           <div className="space-y-1">
+              <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Adresse Email</p>
+              <p className="text-sm font-bold text-foreground">{userEmail || 'Chargement...'}</p>
+              <p className="text-xs text-muted-foreground">Utilisée pour vos factures et votre connexion.</p>
+           </div>
+           <div className="space-y-1">
+              <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Plan Actuel</p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-foreground uppercase tracking-tighter">
+                  {profile.subscription_plan || 'Starter'}
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest">
+                  Actif
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">Votre abonnement actuel chez Flozy.</p>
+           </div>
+        </div>
+      </section>
+
+      {/* Danger Zone */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-2 border-b border-red-500/20 pb-2">
+          <ShieldAlert className="w-5 h-5 text-red-500" />
+          <h3 className="text-lg font-bold text-red-500">Zone de Danger</h3>
+        </div>
+        <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-8 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+           <div className="space-y-1 text-center md:text-left">
+              <h4 className="text-sm font-bold text-red-500">Supprimer mon compte</h4>
+              <p className="text-xs text-muted-foreground max-w-md">
+                Cette action est irréversible. Toutes vos factures, vos clients et vos données de chantier seront définitivement supprimés.
+              </p>
+           </div>
+           <button 
+             onClick={async () => {
+               if (confirm("ÊTES-VOUS SÛR ? Cette action supprimera définitivement toutes vos données Flozy. Vous ne pourrez pas revenir en arrière.")) {
+                 const { error } = await supabase.rpc('delete_own_user');
+                 if (error) {
+                   alert("Erreur lors de la suppression : " + error.message);
+                 } else {
+                   await supabase.auth.signOut();
+                   window.location.href = '/';
+                 }
+               }
+             }}
+             className="flex items-center gap-2 px-6 py-2.5 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-all shadow-sm"
+           >
+             <Trash2 className="w-4 h-4" /> Supprimer définitivement
+           </button>
+        </div>
       </section>
     </div>
   );
