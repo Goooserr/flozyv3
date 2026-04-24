@@ -63,6 +63,7 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
                       request.nextUrl.pathname.startsWith('/register') ||
                       request.nextUrl.pathname.startsWith('/admin-login') ||
                       request.nextUrl.pathname.startsWith('/admin') ||
+                      request.nextUrl.pathname.startsWith('/api/webhooks') ||
                       request.nextUrl.pathname.startsWith('/p/')
   
   if (!session && !isPublicPage) {
