@@ -18,6 +18,7 @@ import {
 import { cn } from '@/lib/utils';
 import { getDocuments, getClients, getInterventions } from '@/lib/actions';
 import Link from 'next/link';
+import { useTheme } from '@/components/DynamicThemeProvider';
 
 const statusStyles: any = {
   paid: 'bg-emerald-500/10 text-emerald-500',
@@ -26,6 +27,7 @@ const statusStyles: any = {
 };
 
 export default function Dashboard() {
+  const { subscriptionPlan } = useTheme()
   const [stats, setStats] = useState<any[]>([])
   const [recentInvoices, setRecentInvoices] = useState<any[]>([])
   const [interventions, setInterventions] = useState<any[]>([])
@@ -108,6 +110,23 @@ export default function Dashboard() {
         <h2 className="text-2xl font-bold tracking-tight">Tableau de bord</h2>
         <p className="text-muted-foreground text-sm">Simplifiez votre gestion quotidienne. Voici l'état de votre activité.</p>
       </div>
+
+      {subscriptionPlan === 'starter' && (
+        <div className="bg-primary/10 border border-primary/20 p-6 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6 animate-in slide-in-from-top duration-500">
+          <div className="flex items-center gap-4 text-center md:text-left">
+            <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center text-primary shrink-0">
+              <PlusCircle className="w-6 h-6" />
+            </div>
+            <div>
+              <h4 className="font-bold text-lg">Passez au niveau supérieur !</h4>
+              <p className="text-sm text-muted-foreground">Débloquez le <b>Planning</b>, la <b>Gestion de Stock</b> et le calcul de <b>Rendement</b>.</p>
+            </div>
+          </div>
+          <Link href="/billing" className="px-8 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 transition-opacity shrink-0">
+            Passer Pro
+          </Link>
+        </div>
+      )}
 
       {/* Stats Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

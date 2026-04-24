@@ -12,7 +12,8 @@ import {
   LogOut,
   Box,
   Calendar,
-  Shield
+  Shield,
+  Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase';
@@ -56,10 +57,6 @@ export function Sidebar() {
     checkAdmin();
   }, []);
 
-  const filteredItems = navItems.filter(item => 
-    !item.module || enabledModules.includes(item.module)
-  );
-
   const isDocumentsEnabled = enabledModules.includes('documents');
 
   return (
@@ -82,21 +79,29 @@ export function Sidebar() {
       </div>
       
       <nav className="flex-1 px-4 space-y-2 mt-4">
-        {filteredItems.map((item) => (
-          <Link
-            key={item.name}
-            href={item.href}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors",
-              pathname.startsWith(item.href) && item.href !== '/' || pathname === item.href
-                ? "bg-secondary text-foreground" 
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-            )}
-          >
-            <item.icon className="w-4 h-4" />
-            {item.name}
-          </Link>
-        ))}
+        {navItems.map((item) => {
+          const isEnabled = !item.module || enabledModules.includes(item.module);
+          
+          return (
+            <Link
+              key={item.name}
+              href={isEnabled ? item.href : '/billing'}
+              className={cn(
+                "flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors group",
+                pathname.startsWith(item.href) && item.href !== '/' || pathname === item.href
+                  ? "bg-secondary text-foreground" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                !isEnabled && "opacity-60 cursor-not-allowed"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <item.icon className="w-4 h-4" />
+                {item.name}
+              </div>
+              {!isEnabled && <Lock className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />}
+            </Link>
+          );
+        })}
 
         {isAdmin && (
           <Link
@@ -128,7 +133,7 @@ export function Header() {
   const router = useRouter();
   const supabase = createClient();
   const [profile, setProfile] = useState<any>(null);
-  const { primaryColor, companyName, logoUrl } = useTheme();
+  const { primaryColor, companyName, logoUrl, subscriptionPlan } = useTheme();
 
   useEffect(() => {
     async function load() {
@@ -176,7 +181,15 @@ export function Header() {
               )}
             </div>
             <div className="hidden sm:block text-right">
-              <p className="text-sm font-medium leading-none">{profile?.company_name || 'Mon Compte'}</p>
+              <div className="flex items-center justify-end gap-2">
+                <p className="text-sm font-medium leading-none">{profile?.company_name || 'Mon Compte'}</p>
+                <span className={cn(
+                  "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border",
+                  subscriptionPlan === 'starter' ? "text-zinc-500 border-zinc-500/20" : "text-primary border-primary/20 bg-primary/10"
+                )}>
+                  {subscriptionPlan}
+                </span>
+              </div>
               <p className="text-xs text-muted-foreground mt-1">{profile?.full_name || 'Artisan'}</p>
             </div>
           </div>

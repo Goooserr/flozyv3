@@ -11,7 +11,9 @@ const ThemeContext = createContext({
   logoUrl: '',
   setLogoUrl: (url: string) => {},
   enabledModules: ['clients', 'documents'] as string[],
-  setEnabledModules: (modules: string[]) => {}
+  setEnabledModules: (modules: string[]) => {},
+  subscriptionPlan: 'starter',
+  setSubscriptionPlan: (plan: string) => {}
 })
 
 export function DynamicThemeProvider({ children }: { children: React.ReactNode }) {
@@ -19,6 +21,7 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
   const [companyName, setCompanyName] = useState('')
   const [logoUrl, setLogoUrl] = useState('')
   const [enabledModules, setEnabledModules] = useState<string[]>(['clients', 'documents'])
+  const [subscriptionPlan, setSubscriptionPlan] = useState('starter')
   const supabase = createClient()
 
   useEffect(() => {
@@ -27,7 +30,7 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
       if (user) {
         const { data, error } = await supabase
           .from('profiles')
-          .select('primary_color, enabled_modules, company_name, logo_url')
+          .select('primary_color, enabled_modules, company_name, logo_url, subscription_plan')
           .eq('id', user.id)
           .single()
         
@@ -36,6 +39,7 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
           if (data.enabled_modules) setEnabledModules(data.enabled_modules)
           if (data.company_name) setCompanyName(data.company_name)
           if (data.logo_url) setLogoUrl(data.logo_url)
+          if (data.subscription_plan) setSubscriptionPlan(data.subscription_plan.toLowerCase())
         } else if (error) {
           console.warn("Note: Les colonnes personnalisées ne sont peut-être pas encore créées dans Supabase. Exécutez le script SQL.")
         }
@@ -66,7 +70,8 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
       primaryColor, setPrimaryColor, 
       companyName, setCompanyName,
       logoUrl, setLogoUrl,
-      enabledModules, setEnabledModules 
+      enabledModules, setEnabledModules,
+      subscriptionPlan, setSubscriptionPlan
     }}>
       {children}
     </ThemeContext.Provider>

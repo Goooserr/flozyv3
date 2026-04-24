@@ -137,11 +137,11 @@ DECLARE
   selected_plan TEXT;
   modules TEXT[];
 BEGIN
-  selected_plan := COALESCE(new.raw_user_meta_data->>'plan', 'Starter');
+  selected_plan := LOWER(COALESCE(new.raw_user_meta_data->>'plan', 'starter'));
   
-  IF selected_plan = 'Expert' THEN
+  IF selected_plan = 'expert' THEN
     modules := ARRAY['clients', 'documents', 'planning', 'stock'];
-  ELSIF selected_plan = 'Pro' THEN
+  ELSIF selected_plan = 'pro' THEN
     modules := ARRAY['clients', 'documents', 'planning'];
   ELSE
     modules := ARRAY['clients', 'documents'];
