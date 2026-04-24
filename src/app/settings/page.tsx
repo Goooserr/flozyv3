@@ -23,7 +23,7 @@ import { useTheme } from '@/components/DynamicThemeProvider';
 
 export default function SettingsPage() {
   const supabase = createClient();
-  const { setPrimaryColor } = useTheme();
+  const { setPrimaryColor, setCompanyName, setLogoUrl } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState({
@@ -69,6 +69,8 @@ export default function SettingsPage() {
       if (!error) {
         setSuccess(true);
         setPrimaryColor(profile.primary_color || '#000000');
+        setCompanyName(profile.company_name || '');
+        setLogoUrl(profile.logo_url || '');
         setTimeout(() => setSuccess(false), 3000);
       }
     }
@@ -83,6 +85,7 @@ export default function SettingsPage() {
     reader.onload = (event) => {
       const base64 = event.target?.result as string;
       setProfile(prev => ({ ...prev, logo_url: base64 }));
+      // On met à jour le preview mais l'enregistrement définitif se fait au Save
       extractDominantColor(base64);
     };
     reader.readAsDataURL(file);

@@ -6,12 +6,18 @@ import { createClient } from '@/lib/supabase'
 const ThemeContext = createContext({
   primaryColor: '#000000',
   setPrimaryColor: (color: string) => {},
+  companyName: '',
+  setCompanyName: (name: string) => {},
+  logoUrl: '',
+  setLogoUrl: (url: string) => {},
   enabledModules: ['clients', 'documents'] as string[],
   setEnabledModules: (modules: string[]) => {}
 })
 
 export function DynamicThemeProvider({ children }: { children: React.ReactNode }) {
   const [primaryColor, setPrimaryColor] = useState('#000000')
+  const [companyName, setCompanyName] = useState('')
+  const [logoUrl, setLogoUrl] = useState('')
   const [enabledModules, setEnabledModules] = useState<string[]>(['clients', 'documents'])
   const supabase = createClient()
 
@@ -21,13 +27,15 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
       if (user) {
         const { data, error } = await supabase
           .from('profiles')
-          .select('primary_color, enabled_modules')
+          .select('primary_color, enabled_modules, company_name, logo_url')
           .eq('id', user.id)
           .single()
         
         if (!error && data) {
           if (data.primary_color) setPrimaryColor(data.primary_color)
           if (data.enabled_modules) setEnabledModules(data.enabled_modules)
+          if (data.company_name) setCompanyName(data.company_name)
+          if (data.logo_url) setLogoUrl(data.logo_url)
         } else if (error) {
           console.warn("Note: Les colonnes personnalisées ne sont peut-être pas encore créées dans Supabase. Exécutez le script SQL.")
         }
@@ -54,7 +62,12 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
   }, [primaryColor])
 
   return (
-    <ThemeContext.Provider value={{ primaryColor, setPrimaryColor, enabledModules, setEnabledModules }}>
+    <ThemeContext.Provider value={{ 
+      primaryColor, setPrimaryColor, 
+      companyName, setCompanyName,
+      logoUrl, setLogoUrl,
+      enabledModules, setEnabledModules 
+    }}>
       {children}
     </ThemeContext.Provider>
   )

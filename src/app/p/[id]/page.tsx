@@ -143,10 +143,16 @@ export default async function ClientPortalPage({ params }: { params: { id: strin
             )}
          </div>
 
+<<<<<<< HEAD
         <div className="mt-20 text-center flex items-center justify-center gap-2 text-zinc-400">
            <span className="text-xs font-medium">Propulsé de manière sécurisée par</span>
            <span className="font-bold text-sm text-zinc-900 tracking-tight italic">Flozy</span>
         </div>
+=======
+        <footer className="mt-12 text-center text-zinc-500 text-xs pb-12">
+           Propulsé par <span className="font-bold text-sm text-zinc-900 tracking-tight italic">{artisan.company_name || 'Flozy'}</span>
+        </footer>
+>>>>>>> a5c02c1 (feat: complete premium white-label dashboard, functional planning, and CRM-connected invoice flow)
       </div>
     </div>
   );

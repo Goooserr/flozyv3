@@ -33,7 +33,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { enabledModules } = useTheme();
+  const { enabledModules, companyName, logoUrl, primaryColor } = useTheme();
   const [isAdmin, setIsAdmin] = useState(false);
   const supabase = createClient();
 
@@ -65,9 +65,20 @@ export function Sidebar() {
   return (
     <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border h-screen sticky top-0">
       <div className="p-6">
-        <h1 className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-          Flozy Artisan
-        </h1>
+        <div className="flex items-center gap-3">
+          {logoUrl ? (
+            <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-lg object-contain" />
+          ) : (
+            <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+              <span className="text-xs font-bold" style={{ color: primaryColor }}>
+                {companyName ? companyName.substring(0, 2).toUpperCase() : 'FL'}
+              </span>
+            </div>
+          )}
+          <h1 className="text-lg font-bold truncate">
+            {companyName || 'Flozy Artisan'}
+          </h1>
+        </div>
       </div>
       
       <nav className="flex-1 px-4 space-y-2 mt-4">
@@ -117,7 +128,7 @@ export function Header() {
   const router = useRouter();
   const supabase = createClient();
   const [profile, setProfile] = useState<any>(null);
-  const { primaryColor } = useTheme();
+  const { primaryColor, companyName, logoUrl } = useTheme();
 
   useEffect(() => {
     async function load() {
@@ -144,7 +155,7 @@ export function Header() {
     <header className="h-16 border-b border-border bg-background/50 backdrop-blur-xl sticky top-0 z-10 px-6 flex items-center justify-between">
       <div className="flex items-center gap-4 md:hidden">
         <Menu className="w-5 h-5 text-muted-foreground" />
-        <span className="font-bold">Flozy</span>
+        <span className="font-bold truncate max-w-[120px]">{companyName || 'Flozy'}</span>
       </div>
       
       <div className="flex-1 flex justify-end items-center gap-4">
