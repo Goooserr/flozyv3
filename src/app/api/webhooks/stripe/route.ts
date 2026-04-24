@@ -29,16 +29,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
 
-  // Gérer l'événement checkout.session.completed
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const userId = session.metadata?.userId;
-    const planId = session.metadata?.planId;
+  // Gérer l'événement checkout.session.completed OU invoice.paid
+  if (event.type === 'checkout.session.completed' || event.type === 'invoice.paid') {
+    const session = event.data.object as any;
+    
+    // Pour invoice.paid, les metadata sont souvent dans la subscription ou le customer
+    const userId = session.metadata?.userId || session.subscription_details?.metadata?.userId;
+    const planId = session.metadata?.planId || session.subscription_details?.metadata?.planId;
 
-    console.log(`🔔 Webhook reçu pour l'utilisateur ${userId} - Plan: ${planId}`);
+    console.log(`🔔 Webhook [${event.type}] reçu pour l'utilisateur ${userId} - Plan: ${planId}`);
 
     if (userId && planId) {
-      // Définir les modules en fonction du plan
       let modules = ['clients', 'documents'];
       if (planId === 'expert') {
         modules = ['clients', 'documents', 'planning', 'stock'];
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
         modules = ['clients', 'documents', 'planning'];
       }
 
-      console.log(`🔄 Mise à jour du profil Supabase...`);
+      console.log(`🔄 Tentative de mise à jour du profil ${userId}...`);
 
       const { data, error } = await supabaseAdmin
         .from('profiles')
@@ -59,14 +60,14 @@ export async function POST(req: Request) {
         .select();
 
       if (error) {
-        console.error('❌ Erreur Supabase lors de la mise à jour:', error);
+        console.error('❌ Erreur Supabase:', error);
       } else if (data && data.length > 0) {
-        console.log(`✅ Profil mis à jour avec succès pour ${userId}`);
+        console.log(`✅ SUCCÈS : Profil mis à jour pour ${userId}`);
       } else {
-        console.warn(`⚠️ Aucun profil trouvé pour l'ID ${userId}`);
+        console.warn(`⚠️ Aucun profil trouvé pour l'ID ${userId}. Vérifiez la table 'profiles'.`);
       }
     } else {
-      console.error('❌ Metadata manquantes dans la session Stripe (userId ou planId)');
+      console.warn('ℹ️ Événement ignoré : Pas de userId dans les metadata');
     }
   }
 
