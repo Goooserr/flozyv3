@@ -62,10 +62,20 @@ export default function StockPage() {
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
-      await supabase.from('stock').insert([{ ...newItem, artisan_id: user.id }])
-      setSidebarOpen(false)
-      setNewItem({ name: '', quantity: 0, unit: 'm', min_stock: 5 })
-      load()
+      const { error } = await supabase.from('stock').insert([{ 
+        ...newItem, 
+        artisan_id: user.id,
+        unit: newItem.unit || 'unité',
+        min_stock: newItem.min_stock || 5
+      }])
+      
+      if (error) {
+        alert("Erreur lors de l'ajout : " + error.message)
+      } else {
+        setSidebarOpen(false)
+        setNewItem({ name: '', quantity: 0, unit: 'unité', min_stock: 5 })
+        load()
+      }
     }
     setSaving(false)
   }

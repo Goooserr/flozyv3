@@ -30,6 +30,18 @@ export async function addClient(client: { full_name: string, email: string, phon
   return data
 }
 
+export async function updateClient(id: string, client: any) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('clients')
+    .update(client)
+    .eq('id', id)
+    .select()
+
+  if (error) throw error
+  return data
+}
+
 export async function getFieldDefinitions(entityType: string) {
   const supabase = createClient()
   const { data, error } = await supabase
@@ -96,10 +108,21 @@ export async function createIntervention(intervention: any) {
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) return null
 
-  const { data, error } = await supabase.from('interventions').insert([{
+  // Mapping date string to start_time if provided
+  const startTime = intervention.date || intervention.start_time
+  const endTime = intervention.end_time || (startTime ? new Date(new Date(startTime).getTime() + 60 * 60 * 1000).toISOString() : null)
+
+  const payload = {
     ...intervention,
-    artisan_id: userData.user.id
-  }]).select()
+    artisan_id: userData.user.id,
+    start_time: startTime,
+    end_time: endTime
+  }
+
+  // Remove 'date' if it exists to avoid DB error
+  delete (payload as any).date
+
+  const { data, error } = await supabase.from('interventions').insert([payload]).select()
 
   if (error) throw error
   return data

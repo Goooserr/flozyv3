@@ -76,7 +76,7 @@ export function Sidebar() {
             </div>
           )}
           <h1 className="text-lg font-bold truncate">
-            {companyName || 'Flozy Artisan'}
+            {companyName || 'Mon Entreprise'}
           </h1>
         </div>
       </div>
@@ -155,7 +155,7 @@ export function Header() {
     <header className="h-16 border-b border-border bg-background/50 backdrop-blur-xl sticky top-0 z-10 px-6 flex items-center justify-between">
       <div className="flex items-center gap-4 md:hidden">
         <Menu className="w-5 h-5 text-muted-foreground" />
-        <span className="font-bold truncate max-w-[120px]">{companyName || 'Flozy'}</span>
+        <span className="font-bold truncate max-w-[120px]">{companyName || 'Mon Espace'}</span>
       </div>
       
       <div className="flex-1 flex justify-end items-center gap-4">

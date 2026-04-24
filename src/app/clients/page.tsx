@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { getClients, addClient } from '@/lib/actions'
+import { getClients, addClient, updateClient } from '@/lib/actions'
 import { 
   Users, 
   Search, 
@@ -23,8 +23,10 @@ export default function ClientsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedClient, setSelectedClient] = useState<any>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [newClient, setNewClient] = useState({ full_name: '', email: '', phone: '', address: '' })
+  const [editClient, setEditClient] = useState({ id: '', full_name: '', email: '', phone: '', address: '' })
 
   async function load() {
     const data = await getClients()
@@ -137,7 +139,13 @@ export default function ClientsPage() {
                     {selectedClient.phone && <span className="flex items-center gap-1.5"><Phone className="w-4 h-4" /> {selectedClient.phone}</span>}
                   </div>
                 </div>
-                <button className="px-4 py-2 bg-secondary text-foreground rounded-xl text-xs font-bold hover:bg-secondary/80 transition-colors">
+                <button 
+                  onClick={() => {
+                    setEditClient(selectedClient)
+                    setIsEditModalOpen(true)
+                  }}
+                  className="px-4 py-2 bg-secondary text-foreground rounded-xl text-xs font-bold hover:bg-secondary/80 transition-colors"
+                >
                   Modifier la fiche
                 </button>
               </div>
@@ -268,6 +276,79 @@ export default function ClientsPage() {
                   className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 disabled:opacity-50 transition-all shadow-lg shadow-primary/20"
                 >
                   {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Créer le client"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Modal Modifier Client */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-card border border-border rounded-[2rem] p-8 shadow-xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold">Modifier le Client</h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="p-2 hover:bg-secondary rounded-full text-muted-foreground transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              setSaving(true)
+              try {
+                await updateClient(editClient.id, editClient)
+                setIsEditModalOpen(false)
+                await load()
+                setSelectedClient({...selectedClient, ...editClient})
+              } catch (err) {
+                alert("Erreur lors de la modification")
+              } finally {
+                setSaving(false)
+              }
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-bold ml-1">Nom Complet / Entreprise</label>
+                <input 
+                  required
+                  value={editClient.full_name}
+                  onChange={e => setEditClient({...editClient, full_name: e.target.value})}
+                  className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold ml-1">Email</label>
+                <input 
+                  type="email"
+                  value={editClient.email || ''}
+                  onChange={e => setEditClient({...editClient, email: e.target.value})}
+                  className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold ml-1">Téléphone</label>
+                <input 
+                  type="tel"
+                  value={editClient.phone || ''}
+                  onChange={e => setEditClient({...editClient, phone: e.target.value})}
+                  className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold ml-1">Adresse</label>
+                <input 
+                  value={editClient.address || ''}
+                  onChange={e => setEditClient({...editClient, address: e.target.value})}
+                  className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                />
+              </div>
+              <div className="pt-4">
+                <button 
+                  type="submit"
+                  disabled={saving}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 disabled:opacity-50 transition-all shadow-lg shadow-primary/20"
+                >
+                  {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sauvegarder les modifications"}
                 </button>
               </div>
             </form>
