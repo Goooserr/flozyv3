@@ -11,7 +11,8 @@ import {
   ChevronLeft,
   Sparkles,
   Box,
-  Loader2
+  Loader2,
+  ShieldAlert
 } from 'lucide-react'
 import { useTheme } from '@/components/DynamicThemeProvider'
 import Link from 'next/link'
