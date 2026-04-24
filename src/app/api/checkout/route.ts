@@ -6,15 +6,18 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-01-27' as any,
 });
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
   try {
     const { planId, planName, price } = await req.json();
     
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    if (authError || !user) {
+      console.error('Auth Error:', authError);
+      return NextResponse.json({ error: 'Non autorisé - Veuillez vous reconnecter' }, { status: 401 });
     }
 
     // Création de la session Stripe
