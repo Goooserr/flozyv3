@@ -246,8 +246,49 @@ export async function convertQuoteToInvoice(id: string, currentNumber: string) {
   const { data, error } = await supabase.from('documents').update({ 
     type: 'invoice',
     document_number: newNumber,
-    status: 'pending' // Invoice is now pending payment
+    status: 'pending'
   }).eq('id', id).select()
+  if (error) throw error
+  return data
+}
+
+export async function uploadInterventionPhoto(interventionId: string, file: File) {
+  const supabase = createClient()
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) throw new Error("Non autorisé")
+
+  // 1. Upload vers le bucket 'interventions' (à créer sur Supabase)
+  const fileExt = file.name.split('.').pop()
+  const fileName = `${userData.user.id}/${interventionId}/${Math.random()}.${fileExt}`
+  const filePath = `${fileName}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('interventions')
+    .upload(filePath, file)
+
+  if (uploadError) throw uploadError
+
+  // 2. Récupérer l'URL publique
+  const { data: { publicUrl } } = supabase.storage
+    .from('interventions')
+    .getPublicUrl(filePath)
+
+  // 3. Mettre à jour la table interventions
+  const { data: intervention } = await supabase
+    .from('interventions')
+    .select('photos')
+    .eq('id', interventionId)
+    .single()
+
+  const currentPhotos = intervention?.photos || []
+  const { data, error } = await supabase
+    .from('interventions')
+    .update({ 
+      photos: [...currentPhotos, publicUrl] 
+    })
+    .eq('id', interventionId)
+    .select()
+
   if (error) throw error
   return data
 }

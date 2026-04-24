@@ -237,7 +237,11 @@ function KanbanColumn({ title, icon, count, color, bgColor, borderColor, childre
 }
 
 function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
-  const photosCount = data.photos?.length || data.photos || 0
+  const [uploading, setUploading] = useState(false)
+  const [showGallery, setShowGallery] = useState(false)
+  const photos = data.photos || []
+  const photosCount = photos.length
+  
   const formattedDate = new Date(data.date || data.start_time).toLocaleDateString('fr-FR', {
     day: 'numeric',
     month: 'short',
@@ -249,6 +253,22 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
      const { updateIntervention } = await import('@/lib/actions')
      await updateIntervention(data.id, { status: newStatus })
      reload()
+  }
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    setUploading(true)
+    try {
+      const { uploadInterventionPhoto } = await import('@/lib/actions')
+      await uploadInterventionPhoto(data.id, file)
+      reload()
+    } catch (err) {
+      alert("Erreur lors de l'envoi de la photo")
+    } finally {
+      setUploading(false)
+    }
   }
 
   return (
@@ -283,15 +303,25 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
 
       <div className="flex items-center justify-between pt-3 border-t border-border/50">
         <div className="flex items-center gap-2">
-          {photosCount > 0 ? (
-            <div className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded-md text-[10px] font-bold">
-              <ImageIcon className="w-3 h-3" /> {photosCount} Photos
-            </div>
-          ) : (
-            <button onClick={() => alert("Photo : Bientôt disponible")} className="flex items-center gap-1 px-2 py-1 bg-secondary text-muted-foreground rounded-md text-[10px] font-medium hover:bg-secondary/80 hover:text-foreground transition-colors">
-              <Camera className="w-3 h-3" /> Photo
+          {photosCount > 0 && (
+            <button 
+              onClick={() => setShowGallery(true)}
+              className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded-md text-[10px] font-bold hover:bg-blue-500/20 transition-colors"
+            >
+              <ImageIcon className="w-3 h-3" /> {photosCount}
             </button>
           )}
+          
+          <label className="cursor-pointer">
+            <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
+            <div className={cn(
+              "flex items-center gap-1 px-2 py-1 bg-secondary text-muted-foreground rounded-md text-[10px] font-medium hover:bg-secondary/80 hover:text-foreground transition-colors",
+              uploading && "opacity-50"
+            )}>
+              {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3" />}
+              <span>Photo</span>
+            </div>
+          </label>
         </div>
         
         {data.status === 'completed' && (
@@ -300,6 +330,28 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
           </Link>
         )}
       </div>
+
+      {/* Galerie Lightbox Simplifiée */}
+      {showGallery && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex flex-col p-6 animate-in fade-in duration-300">
+           <div className="flex justify-between items-center mb-6">
+              <h3 className="text-white font-bold">{data.title} - Photos</h3>
+              <button onClick={() => setShowGallery(false)} className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors">
+                <XIcon className="w-6 h-6" />
+              </button>
+           </div>
+           <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 overflow-y-auto">
+              {photos.map((url: string, idx: number) => (
+                <div key={idx} className="aspect-square rounded-2xl overflow-hidden bg-white/5 border border-white/10 group relative">
+                   <img src={url} alt={`Chantier ${idx}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                   <a href={url} target="_blank" className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-[10px] text-white font-bold uppercase tracking-widest bg-black/60 px-3 py-1 rounded-full">Voir HD</span>
+                   </a>
+                </div>
+              ))}
+           </div>
+        </div>
+      )}
     </div>
   )
 }
