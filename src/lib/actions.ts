@@ -257,23 +257,33 @@ export async function uploadInterventionPhoto(interventionId: string, file: File
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) throw new Error("Non autorisé")
 
-  // 1. Upload vers le bucket 'interventions' (à créer sur Supabase)
   const fileExt = file.name.split('.').pop()
-  const fileName = `${userData.user.id}/${interventionId}/${Math.random()}.${fileExt}`
-  const filePath = `${fileName}`
+  const fileName = `${userData.user.id}/${interventionId}/${Date.now()}.${fileExt}`
 
-  const { error: uploadError } = await supabase.storage
-    .from('interventions')
-    .upload(filePath, file)
+  // Essai avec le bucket 'photos' (public) en priorité, puis 'interventions'
+  const buckets = ['photos', 'interventions']
+  let publicUrl = ''
+  let uploadSuccess = false
 
-  if (uploadError) throw uploadError
+  for (const bucket of buckets) {
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(fileName, file, { upsert: true })
 
-  // 2. Récupérer l'URL publique
-  const { data: { publicUrl } } = supabase.storage
-    .from('interventions')
-    .getPublicUrl(filePath)
+    if (!uploadError) {
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(fileName)
+      publicUrl = urlData.publicUrl
+      uploadSuccess = true
+      break
+    }
+    console.warn(`Bucket '${bucket}' failed:`, uploadError.message)
+  }
 
-  // 3. Mettre à jour la table interventions
+  if (!uploadSuccess) {
+    throw new Error("Aucun bucket de stockage disponible. Créez un bucket 'photos' public dans Supabase Storage.")
+  }
+
+  // Mettre à jour la table interventions avec la nouvelle photo
   const { data: intervention } = await supabase
     .from('interventions')
     .select('photos')
@@ -283,9 +293,7 @@ export async function uploadInterventionPhoto(interventionId: string, file: File
   const currentPhotos = intervention?.photos || []
   const { data, error } = await supabase
     .from('interventions')
-    .update({ 
-      photos: [...currentPhotos, publicUrl] 
-    })
+    .update({ photos: [...currentPhotos, publicUrl] })
     .eq('id', interventionId)
     .select()
 

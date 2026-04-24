@@ -264,8 +264,9 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
       const { uploadInterventionPhoto } = await import('@/lib/actions')
       await uploadInterventionPhoto(data.id, file)
       reload()
-    } catch (err) {
-      alert("Erreur lors de l'envoi de la photo")
+    } catch (err: any) {
+      alert("Erreur lors de l'envoi de la photo : " + (err?.message || err))
+      console.error(err)
     } finally {
       setUploading(false)
     }
