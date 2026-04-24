@@ -38,7 +38,7 @@ export async function POST(req: Request) {
         },
       ],
       mode: 'subscription',
-      success_url: `${process.env.NEXT_PUBLIC_URL}/dashboard?success=true`,
+      success_url: `${process.env.NEXT_PUBLIC_URL}/checkout/success`,
       cancel_url: `${process.env.NEXT_PUBLIC_URL}/billing?canceled=true`,
       metadata: {
         userId: user.id,
