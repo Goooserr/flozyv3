@@ -72,6 +72,8 @@ export default function SettingsPage() {
         setCompanyName(profile.company_name || '');
         setLogoUrl(profile.logo_url || '');
         setTimeout(() => setSuccess(false), 3000);
+      } else {
+        alert("Erreur lors de l'enregistrement : " + error.message);
       }
     }
     setSaving(false);
