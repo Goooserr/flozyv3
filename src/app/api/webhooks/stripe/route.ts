@@ -16,11 +16,16 @@ export async function POST(req: Request) {
   const body = await req.text();
   const sig = req.headers.get('stripe-signature')!;
 
+  console.log(`📦 Webhook reçu - Taille du corps: ${body.length} octets`);
+  console.log(`🔑 Signature Stripe présente: ${!!sig}`);
+
   let event: Stripe.Event;
 
   try {
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
+    console.log(`✅ Signature Webhook validée - Type d'événement: ${event.type}`);
   } catch (err: any) {
+    console.error(`❌ Erreur de validation Webhook: ${err.message}`);
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
 
