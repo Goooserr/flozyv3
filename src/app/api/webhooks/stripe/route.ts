@@ -33,50 +33,64 @@ export async function POST(req: Request) {
   if (event.type === 'checkout.session.completed' || event.type === 'invoice.paid') {
     const session = event.data.object as any;
     
-    // Extraction ultra-robuste des données
-    const userId = session.metadata?.userId || session.subscription_details?.metadata?.userId || session.client_reference_id;
-    const planId = session.metadata?.planId || session.subscription_details?.metadata?.planId || 'pro';
+    // Extraction des données essentielles
+    const userId = session.metadata?.userId || session.client_reference_id;
+    const planId = session.metadata?.planId || 'pro';
     const customerEmail = session.customer_email || session.customer_details?.email;
 
-    console.log(`🔔 Webhook [${event.type}] reçu.`);
-    console.log(`🆔 ID Utilisateur: ${userId}`);
-    console.log(`📧 Email Client: ${customerEmail}`);
-    console.log(`📦 Plan: ${planId}`);
+    console.log(`🔔 STRIPE WEBHOOK : [${event.type}]`);
+    console.log(`   - UserID metadata: ${userId}`);
+    console.log(`   - Email: ${customerEmail}`);
+    console.log(`   - Plan: ${planId}`);
 
     if (userId || customerEmail) {
-      let modules = ['clients', 'documents'];
-      if (planId === 'expert') {
-        modules = ['clients', 'documents', 'planning', 'stock'];
-      } else if (planId === 'pro') {
-        modules = ['clients', 'documents', 'planning'];
-      }
+      const modules = planId === 'expert' 
+        ? ['clients', 'documents', 'planning', 'stock']
+        : planId === 'pro' 
+          ? ['clients', 'documents', 'planning']
+          : ['clients', 'documents'];
 
-      console.log(`🔄 Recherche et mise à jour du profil...`);
-
-      // Tentative de mise à jour par ID
-      let query = supabaseAdmin.from('profiles').update({ 
-        subscription_plan: planId,
-        subscription_status: 'active',
-        enabled_modules: modules
-      });
-
+      // 1. Tentative par ID (Recommandé)
       if (userId) {
-        query = query.eq('id', userId);
-      } else {
-        query = query.eq('email', customerEmail);
+        console.log(`🔄 Mise à jour par ID: ${userId}...`);
+        const { data, error } = await supabaseAdmin
+          .from('profiles')
+          .update({ 
+            subscription_plan: planId,
+            subscription_status: 'active',
+            enabled_modules: modules
+          })
+          .eq('id', userId)
+          .select();
+
+        if (error) console.error('❌ Erreur Supabase (ID):', error);
+        if (data && data.length > 0) {
+          console.log('✅ SUCCÈS : Plan activé via ID !');
+          return NextResponse.json({ received: true });
+        }
       }
 
-      const { data, error } = await query.select();
+      // 2. Tentative par Email (Fallback)
+      if (customerEmail) {
+        console.log(`🔄 Fallback : Mise à jour par Email: ${customerEmail}...`);
+        const { data, error } = await supabaseAdmin
+          .from('profiles')
+          .update({ 
+            subscription_plan: planId,
+            subscription_status: 'active',
+            enabled_modules: modules
+          })
+          .eq('email', customerEmail)
+          .select();
 
-      if (error) {
-        console.error('❌ Erreur Supabase:', error);
-      } else if (data && data.length > 0) {
-        console.log(`✅ SUCCÈS : Profil mis à jour pour ${customerEmail || userId}`);
-      } else {
-        console.warn(`⚠️ ÉCHEC : Aucun profil trouvé pour ${customerEmail || userId}.`);
+        if (error) console.error('❌ Erreur Supabase (Email):', error);
+        if (data && data.length > 0) {
+          console.log('✅ SUCCÈS : Plan activé via Email !');
+          return NextResponse.json({ received: true });
+        }
       }
-    } else {
-      console.warn('ℹ️ Événement ignoré : Ni ID ni Email trouvés dans Stripe');
+
+      console.warn('⚠️ ATTENTION : Aucun compte trouvé correspondant à cet ID ou cet Email.');
     }
   }
 
