@@ -33,22 +33,29 @@ export async function POST(req: Request) {
   if (event.type === 'checkout.session.completed' || event.type === 'invoice.paid' || event.type === 'customer.subscription.updated') {
     const session = event.data.object as any;
     
-    // Extraction des données essentielles (avec recherche profonde)
+    // 1. Extraction profonde des données
     const userId = session.metadata?.userId || 
                    session.subscription_details?.metadata?.userId || 
-                   session.metadata?.userId || // Pour subscription.updated
                    session.client_reference_id;
 
-    const planId = session.metadata?.planId || 
-                   session.subscription_details?.metadata?.planId || 
-                   session.metadata?.planId || 
-                   'pro';
+    let planId = session.metadata?.planId || 
+                 session.subscription_details?.metadata?.planId;
+
+    // 2. FALLBACK DE SÉCURITÉ : Détection par le montant (si metadata absentes)
+    if (!planId || planId === 'pro') {
+      const amount = session.amount_paid || session.total || 0;
+      if (amount >= 4900) planId = 'expert';
+      else if (amount >= 2900) planId = 'pro';
+      else planId = 'starter';
+      console.log(`ℹ️ Plan identifié par montant (${amount/100}€) : ${planId}`);
+    }
+
     const customerEmail = session.customer_email || session.customer_details?.email;
 
     console.log(`🔔 STRIPE WEBHOOK : [${event.type}]`);
-    console.log(`   - UserID metadata: ${userId}`);
+    console.log(`   - UserID: ${userId}`);
     console.log(`   - Email: ${customerEmail}`);
-    console.log(`   - Plan: ${planId}`);
+    console.log(`   - Plan final: ${planId}`);
 
     if (userId || customerEmail) {
       const modules = planId === 'expert' 
