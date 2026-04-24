@@ -276,16 +276,21 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
     setUploading(true)
     try {
       const { uploadInterventionPhoto } = await import('@/lib/actions')
-      await uploadInterventionPhoto(data.id, file)
-      // Recharger les photos depuis la table
-      const { createClient } = await import('@/lib/supabase')
-      const supabase = createClient()
-      const { data: photoRows } = await supabase
-        .from('intervention_photos')
-        .select('url')
-        .eq('intervention_id', data.id)
-        .order('created_at', { ascending: true })
-      setPhotos((photoRows || []).map((r: any) => r.url))
+      const result = await uploadInterventionPhoto(data.id, file)
+      // Ajouter immédiatement l'URL en local (affichage instantané)
+      if (result?.url) {
+        setPhotos(prev => [...prev, result.url])
+      } else {
+        // Recharger depuis la table en fallback
+        const { createClient } = await import('@/lib/supabase')
+        const supabase = createClient()
+        const { data: photoRows } = await supabase
+          .from('intervention_photos')
+          .select('url')
+          .eq('intervention_id', data.id)
+          .order('created_at', { ascending: true })
+        setPhotos((photoRows || []).map((r: any) => r.url))
+      }
     } catch (err: any) {
       alert("Erreur lors de l'envoi de la photo : " + (err?.message || err))
       console.error(err)
@@ -324,17 +329,28 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
         )}
       </div>
 
+      {/* Miniatures photos inline */}
+      {photos.length > 0 && (
+        <div className="flex gap-2 mb-3 flex-wrap">
+          {photos.slice(0, 4).map((url, idx) => (
+            <button
+              key={idx}
+              onClick={() => setShowGallery(true)}
+              className="w-14 h-14 rounded-xl overflow-hidden border-2 border-border hover:border-primary transition-all group relative shrink-0"
+            >
+              <img src={url} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+              {idx === 3 && photos.length > 4 && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <span className="text-white text-[10px] font-black">+{photos.length - 4}</span>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="flex items-center justify-between pt-3 border-t border-border/50">
         <div className="flex items-center gap-2">
-          {photosCount > 0 && (
-            <button 
-              onClick={() => setShowGallery(true)}
-              className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded-md text-[10px] font-bold hover:bg-blue-500/20 transition-colors"
-            >
-              <ImageIcon className="w-3 h-3" /> {photosCount}
-            </button>
-          )}
-          
           <label className="cursor-pointer">
             <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
             <div className={cn(
@@ -342,7 +358,7 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
               uploading && "opacity-50"
             )}>
               {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3" />}
-              <span>Photo</span>
+              <span>{uploading ? 'Envoi...' : photos.length > 0 ? `Photo (${photos.length})` : 'Photo'}</span>
             </div>
           </label>
         </div>
