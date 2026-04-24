@@ -1,217 +1,121 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { 
-  LayoutDashboard, 
-  FileText, 
-  Calendar, 
-  CheckCircle2,
-  ArrowRight,
-  Sparkles,
-  MousePointerClick,
-  ChevronRight,
-  Clock,
-  Euro,
-  TrendingUp,
-  ShieldCheck
-} from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { CheckCircle2, ArrowRight, Sparkles, MousePointerClick, Clock, Euro, TrendingUp, ShieldCheck, FileText, Calendar, Box, Users, Zap, Star, Timer } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+const STEPS = [
+  { id: 1, label: 'Devis', color: 'from-violet-600 to-primary' },
+  { id: 2, label: 'Planning', color: 'from-blue-600 to-cyan-500' },
+  { id: 3, label: 'Stock', color: 'from-emerald-600 to-green-400' },
+  { id: 4, label: 'Offre', color: 'from-amber-500 to-orange-500' },
+]
 
 export default function DemoClient() {
   const [step, setStep] = useState(1)
-  const [isAnimating, setIsAnimating] = useState(false)
+  const [timeSaved, setTimeSaved] = useState(0)
+  const [signCount, setSignCount] = useState(347)
 
-  // Simulation state for interactive elements
-  const [invoiceGenerated, setInvoiceGenerated] = useState(false)
-  const [jobAssigned, setJobAssigned] = useState(false)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSignCount(n => n + Math.floor(Math.random() * 2))
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [])
 
-  const steps = [
-    { id: 1, title: 'Facturation Éclair', subtitle: 'Créez des devis pros en 30s' },
-    { id: 2, title: 'Planning Intelligent', subtitle: 'Ne ratez plus aucun chantier' },
-    { id: 3, title: 'Vision Globale', subtitle: 'Pilotez votre entreprise' },
-  ]
+  function nextStep() {
+    if (step < 4) setStep(s => s + 1)
+  }
 
-  const handleNext = () => {
-    if (step < 3) {
-      setIsAnimating(true)
-      setTimeout(() => {
-        setStep(step + 1)
-        setIsAnimating(false)
-      }, 300)
-    }
+  function addTime(mins: number) {
+    setTimeSaved(t => t + mins)
   }
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans overflow-hidden flex flex-col relative selection:bg-primary/30">
-      
-      {/* Dynamic Backgrounds based on step */}
-      <div className={cn("absolute top-0 left-1/4 w-[800px] h-[500px] blur-[120px] rounded-full pointer-events-none opacity-30 mix-blend-screen transition-colors duration-1000", 
-        step === 1 ? "bg-primary" : step === 2 ? "bg-blue-600" : "bg-emerald-600")} />
-      
+    <div className="min-h-screen bg-black text-white flex flex-col selection:bg-primary/30">
       {/* Header */}
-      <header className="relative z-20 flex items-center justify-between px-6 py-4 md:px-12 md:py-6 border-b border-white/5 bg-black/50 backdrop-blur-xl">
-        <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/60 backdrop-blur-xl sticky top-0 z-50">
+        <Link href="/" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
             <div className="w-4 h-4 bg-black rounded-sm" />
           </div>
-          <span className="font-bold text-xl italic tracking-tight hidden sm:block">Flozy</span>
-          <span className="text-[10px] bg-primary/20 border border-primary/30 text-primary px-2 py-0.5 rounded-full uppercase font-bold tracking-widest">
-            Visite Guidée
-          </span>
+          <span className="font-bold text-xl italic tracking-tight">Flozy</span>
+          <span className="text-[9px] bg-primary/20 border border-primary/30 text-primary px-2 py-0.5 rounded-full uppercase font-black tracking-widest">Démo Live</span>
         </Link>
         <div className="flex items-center gap-4">
-          <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">
-            Déjà client ?
-          </Link>
+          {/* Time saved counter */}
+          {timeSaved > 0 && (
+            <div className="hidden sm:flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full animate-in fade-in">
+              <Timer className="w-3 h-3 text-emerald-500" />
+              <span className="text-emerald-400 text-xs font-black">+{timeSaved} min économisées</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1 text-zinc-500 text-xs">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-mono">{signCount} artisans actifs</span>
+          </div>
           <Link href="/register" className="bg-white text-black px-5 py-2 rounded-full text-sm font-bold hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.2)]">
-            Créer mon compte
+            Démarrer gratuit
           </Link>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col lg:flex-row relative z-10 max-w-[1600px] mx-auto w-full">
-        
-        {/* Left Column: Narrative (Marketing Copy) */}
-        <div className="w-full lg:w-[400px] xl:w-[500px] p-6 md:p-12 flex flex-col justify-center border-r border-white/5 bg-zinc-950/30">
-          <div className="space-y-12">
-            
-            {/* Step Indicators */}
-            <div className="flex gap-2">
-              {steps.map((s) => (
-                <div key={s.id} className="flex-1">
-                  <div className={cn("h-1.5 rounded-full w-full transition-all duration-500", 
-                    step >= s.id ? "bg-primary" : "bg-zinc-800")} />
-                </div>
-              ))}
-            </div>
+      {/* Progress */}
+      <div className="flex border-b border-white/5 bg-zinc-950/50">
+        {STEPS.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => setStep(s.id)}
+            className={cn(
+              "flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all relative",
+              step === s.id ? "text-white" : step > s.id ? "text-zinc-400" : "text-zinc-600"
+            )}
+          >
+            {step > s.id && <CheckCircle2 className="w-3 h-3 inline mr-1 text-emerald-500" />}
+            {s.label}
+            {step === s.id && (
+              <div className={cn("absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r", s.color)} />
+            )}
+          </button>
+        ))}
+      </div>
 
-            {/* Step Content */}
-            <div className={cn("transition-all duration-500 transform", isAnimating ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0")}>
-              {step === 1 && (
-                <div className="space-y-6">
-                  <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center border border-primary/30">
-                    <FileText className="w-6 h-6 text-primary" />
-                  </div>
-                  <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
-                    Des devis qui font <span className="text-primary italic">signer</span> vos clients.
-                  </h1>
-                  <p className="text-lg text-zinc-400 leading-relaxed">
-                    Fini les tableaux Excel interminables. Générez des devis professionnels et élégants en quelques clics. Vos clients peuvent même les signer en ligne.
-                  </p>
-                  <ul className="space-y-3">
-                    {['Modèles personnalisables', 'Calcul automatique de la TVA', 'Signature électronique incluse'].map((feature, i) => (
-                      <li key={i} className="flex items-center gap-3 text-sm text-zinc-300">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500" /> {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+      {/* Main */}
+      <main className="flex-1 grid lg:grid-cols-2 max-w-7xl mx-auto w-full">
+        {/* Left: Story */}
+        <div className="p-8 md:p-16 flex flex-col justify-center border-r border-white/5">
+          {step === 1 && <StepQuote onAction={() => { addTime(18); nextStep() }} />}
+          {step === 2 && <StepPlanning onAction={() => { addTime(25); nextStep() }} />}
+          {step === 3 && <StepStock onAction={() => { addTime(12); nextStep() }} />}
+          {step === 4 && <StepConvert timeSaved={timeSaved} />}
+        </div>
 
-              {step === 2 && (
-                <div className="space-y-6">
-                  <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center border border-blue-500/30">
-                    <Calendar className="w-6 h-6 text-blue-500" />
-                  </div>
-                  <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
-                    Un planning <span className="text-blue-500 italic">sous contrôle</span>.
-                  </h1>
-                  <p className="text-lg text-zinc-400 leading-relaxed">
-                    Gérez vos équipes et vos chantiers depuis votre poche. Finis les oublis et les retards, tout est synchronisé en temps réel.
-                  </p>
-                  <ul className="space-y-3">
-                    {['Vue semaine/mois claire', 'Assignation des équipes', 'Rappels automatiques'].map((feature, i) => (
-                      <li key={i} className="flex items-center gap-3 text-sm text-zinc-300">
-                        <CheckCircle2 className="w-5 h-5 text-blue-500" /> {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {step === 3 && (
-                <div className="space-y-6">
-                  <div className="w-12 h-12 bg-emerald-500/20 rounded-2xl flex items-center justify-center border border-emerald-500/30">
-                    <LayoutDashboard className="w-6 h-6 text-emerald-500" />
-                  </div>
-                  <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
-                    Pilotez comme un <span className="text-emerald-500 italic">expert</span>.
-                  </h1>
-                  <p className="text-lg text-zinc-400 leading-relaxed">
-                    Suivez votre chiffre d'affaires, vos factures impayées et l'état de vos stocks d'un seul coup d'œil. Prenez les meilleures décisions pour votre entreprise.
-                  </p>
-                  <ul className="space-y-3">
-                    {['Tableau de bord financier', 'Suivi de trésorerie', 'Statistiques détaillées'].map((feature, i) => (
-                      <li key={i} className="flex items-center gap-3 text-sm text-zinc-300">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500" /> {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            {/* Navigation Buttons */}
-            <div className="pt-8 flex items-center gap-4">
-              {step < 3 ? (
-                <button 
-                  onClick={handleNext}
-                  className="group flex items-center justify-center gap-2 w-full bg-white text-black py-4 rounded-xl font-bold hover:bg-zinc-200 transition-colors"
-                >
-                  Découvrir la suite 
-                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </button>
-              ) : (
-                <Link 
-                  href="/register"
-                  className="group flex items-center justify-center gap-2 w-full bg-primary text-white py-4 rounded-xl font-bold hover:opacity-90 transition-opacity shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)]"
-                >
-                  <Sparkles className="w-5 h-5" />
-                  Démarrer mon essai gratuit
-                </Link>
-              )}
-            </div>
-
-            {/* Trust Badges */}
-            <div className="flex items-center gap-4 pt-8 border-t border-white/10 opacity-60">
-              <ShieldCheck className="w-5 h-5 text-zinc-400" />
-              <p className="text-xs text-zinc-400">Essai gratuit de 14 jours • Sans engagement • Données sécurisées</p>
-            </div>
-
+        {/* Right: Interactive UI */}
+        <div className="p-8 md:p-16 flex items-center justify-center bg-zinc-950/30 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:40px_40px]" />
+          <div className="w-full max-w-lg relative z-10">
+            {step === 1 && <UIQuote />}
+            {step === 2 && <UIPlanning />}
+            {step === 3 && <UIStock />}
+            {step === 4 && <UIOffer />}
           </div>
         </div>
-
-        {/* Right Column: Interactive UI Demo */}
-        <div className="flex-1 flex items-center justify-center p-6 md:p-12 relative overflow-hidden bg-zinc-900/10">
-           {/* Abstract grid background */}
-           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
-           
-           <div className={cn("w-full max-w-2xl transition-all duration-700 transform", 
-              isAnimating ? "scale-95 opacity-0" : "scale-100 opacity-100"
-            )}>
-              {step === 1 && <InteractiveInvoice invoiceGenerated={invoiceGenerated} setInvoiceGenerated={setInvoiceGenerated} />}
-              {step === 2 && <InteractivePlanning jobAssigned={jobAssigned} setJobAssigned={setJobAssigned} />}
-              {step === 3 && <InteractiveDashboard />}
-           </div>
-        </div>
-
       </main>
 
-      {/* Sticky Conversion Bar (Mobile & Desktop) */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-black/80 backdrop-blur-xl z-50 transform transition-transform duration-500 translate-y-0">
-        <div className="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* Bottom CTA */}
+      <div className="sticky bottom-0 border-t border-white/5 bg-black/80 backdrop-blur-xl p-4 z-50">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-             <div className="flex -space-x-2">
-                <div className="w-8 h-8 rounded-full bg-zinc-800 border-2 border-black flex items-center justify-center text-[10px] font-bold">AL</div>
-                <div className="w-8 h-8 rounded-full bg-zinc-700 border-2 border-black flex items-center justify-center text-[10px] font-bold">JB</div>
-                <div className="w-8 h-8 rounded-full bg-zinc-600 border-2 border-black flex items-center justify-center text-[10px] font-bold">MR</div>
-             </div>
-             <p className="text-sm text-zinc-300 font-medium hidden sm:block">Rejoignez plus de <strong className="text-white">500 artisans</strong> qui utilisent Flozy tous les jours.</p>
+            <div className="flex -space-x-2">
+              {['JD','ML','PB','AR'].map(i => (
+                <div key={i} className="w-8 h-8 rounded-full bg-zinc-800 border-2 border-black flex items-center justify-center text-[9px] font-black">{i}</div>
+              ))}
+            </div>
+            <p className="text-sm text-zinc-400 hidden sm:block"><strong className="text-white">500+ artisans</strong> gagnent du temps avec Flozy.</p>
           </div>
-          <Link href="/register" className="w-full sm:w-auto bg-white text-black px-8 py-3 rounded-xl font-bold text-sm text-center hover:bg-zinc-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.2)]">
-            Créer mon compte gratuitement
+          <Link href="/register" className="bg-white text-black px-8 py-3 rounded-xl font-black text-sm hover:bg-zinc-200 transition shadow-[0_0_30px_rgba(255,255,255,0.15)] whitespace-nowrap">
+            Créer mon compte — Gratuit
           </Link>
         </div>
       </div>
@@ -219,141 +123,189 @@ export default function DemoClient() {
   )
 }
 
-// --- INTERACTIVE COMPONENTS ---
-
-function InteractiveInvoice({ invoiceGenerated, setInvoiceGenerated }: any) {
+// ---- STEP 1: DEVIS ----
+function StepQuote({ onAction }: { onAction: () => void }) {
+  const [done, setDone] = useState(false)
+  function handle() { setDone(true); setTimeout(onAction, 1200) }
   return (
-    <div className="relative group">
-      {/* Decorative background glow */}
-      <div className={cn("absolute -inset-1 rounded-3xl blur transition-all duration-1000 opacity-50", 
-        invoiceGenerated ? "bg-primary" : "bg-white/10 group-hover:bg-primary/30")} />
-      
-      <div className="relative bg-zinc-900 border border-white/10 rounded-2xl p-8 shadow-2xl overflow-hidden">
-        
-        {/* Fake Browser Toolbar */}
-        <div className="flex items-center gap-2 mb-8 border-b border-white/5 pb-4">
-          <div className="w-3 h-3 rounded-full bg-rose-500" />
-          <div className="w-3 h-3 rounded-full bg-amber-500" />
-          <div className="w-3 h-3 rounded-full bg-emerald-500" />
-          <div className="ml-4 text-xs font-mono text-zinc-600">flozy.app/nouveau-devis</div>
-        </div>
-
-        <div className="flex justify-between items-start mb-12">
-          <div>
-            <div className="w-12 h-12 bg-zinc-800 rounded-lg mb-4 flex items-center justify-center">
-              <span className="font-bold text-white">Logo</span>
-            </div>
-            <h2 className="text-xl font-bold">Votre Entreprise BTP</h2>
-          </div>
-          <div className="text-right">
-            <h3 className="text-primary font-bold tracking-widest uppercase">Devis</h3>
-            <p className="text-zinc-500 text-sm">#DEV-2024-184</p>
-          </div>
-        </div>
-
-        <div className="space-y-4 mb-8">
-          <div className="flex justify-between p-4 bg-black/50 rounded-xl border border-white/5">
-            <div>
-              <p className="font-bold text-sm">Rénovation Électrique Salon</p>
-              <p className="text-xs text-zinc-500">Matériel fourni</p>
-            </div>
-            <p className="font-bold">2 450,00 €</p>
-          </div>
-          <div className="flex justify-between p-4 bg-black/50 rounded-xl border border-white/5">
-            <div>
-              <p className="font-bold text-sm">Main d'œuvre</p>
-              <p className="text-xs text-zinc-500">3 jours</p>
-            </div>
-            <p className="font-bold">1 200,00 €</p>
-          </div>
-        </div>
-
-        <div className="flex justify-between items-end border-t border-white/10 pt-6">
-          {!invoiceGenerated ? (
-            <button 
-              onClick={() => setInvoiceGenerated(true)}
-              className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-bold text-sm hover:scale-105 transition-all animate-pulse"
-            >
-              <MousePointerClick className="w-4 h-4" />
-              Générer et envoyer au client
-            </button>
-          ) : (
-            <div className="flex items-center gap-2 text-emerald-500 bg-emerald-500/10 px-6 py-3 rounded-xl font-bold text-sm">
-              <CheckCircle2 className="w-5 h-5" />
-              Devis envoyé avec succès !
-            </div>
-          )}
-          <div className="text-right">
-            <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Total TTC</p>
-            <p className="text-3xl font-black">3 650,00 €</p>
-          </div>
-        </div>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-[10px] font-black uppercase tracking-widest">
+        <FileText className="w-3 h-3" /> Étape 1 sur 3 — Facturation
       </div>
-
-      {/* Floating Tooltip */}
-      {!invoiceGenerated && (
-        <div className="absolute -bottom-6 right-10 bg-white text-black px-4 py-2 rounded-lg shadow-xl text-xs font-bold animate-bounce z-20 flex items-center gap-2">
-          Essayez de cliquer <ArrowRight className="w-3 h-3" />
+      <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
+        Un devis pro en <span className="text-primary italic">30 secondes</span>.
+      </h1>
+      <p className="text-zinc-400 text-lg leading-relaxed">
+        Sélectionnez vos prestations, ajoutez votre client, cliquez "Générer". Flozy calcule la TVA, met votre logo et l'envoie par email.
+      </p>
+      <ul className="space-y-3">
+        {['Calcul TVA automatique', 'Signature électronique incluse', 'PDF professionnel en 1 clic'].map((f, i) => (
+          <li key={i} className="flex items-center gap-3 text-sm">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span className="text-zinc-300">{f}</span>
+          </li>
+        ))}
+      </ul>
+      {!done ? (
+        <button onClick={handle} className="group flex items-center gap-2 bg-white text-black px-6 py-4 rounded-2xl font-black hover:scale-105 transition-all w-full justify-center shadow-[0_0_30px_rgba(255,255,255,0.15)]">
+          <MousePointerClick className="w-5 h-5" /> Générer le devis maintenant
+        </button>
+      ) : (
+        <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl px-6 py-4 animate-in zoom-in duration-300">
+          <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+          <div>
+            <p className="font-black text-emerald-400">Devis envoyé ! +18 min économisées</p>
+            <p className="text-xs text-zinc-400">Passage au planning...</p>
+          </div>
         </div>
       )}
     </div>
   )
 }
 
-function InteractivePlanning({ jobAssigned, setJobAssigned }: any) {
+// ---- STEP 2: PLANNING ----
+function StepPlanning({ onAction }: { onAction: () => void }) {
+  const [assigned, setAssigned] = useState(false)
+  function handle() { setAssigned(true); setTimeout(onAction, 1200) }
   return (
-    <div className="relative group">
-       <div className={cn("absolute -inset-1 rounded-3xl blur transition-all duration-1000 opacity-50", 
-        jobAssigned ? "bg-blue-600" : "bg-white/10 group-hover:bg-blue-600/30")} />
-      
-      <div className="relative bg-zinc-900 border border-white/10 rounded-2xl p-6 shadow-2xl overflow-hidden flex flex-col h-[500px]">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="font-bold text-lg flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-500" /> Planning Semaine</h3>
-          <div className="flex gap-2">
-            <div className="w-8 h-8 rounded-full bg-zinc-800 border-2 border-zinc-900 z-10 flex items-center justify-center text-xs font-bold">M</div>
-            <div className="w-8 h-8 rounded-full bg-zinc-700 border-2 border-zinc-900 -ml-4 z-0 flex items-center justify-center text-xs font-bold">L</div>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest">
+        <Calendar className="w-3 h-3" /> Étape 2 sur 3 — Planning
+      </div>
+      <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
+        Zéro oubli, <span className="text-blue-400 italic">zéro retard</span>.
+      </h1>
+      <p className="text-zinc-400 text-lg leading-relaxed">
+        Planifiez vos chantiers, assignez vos équipes. Vos clients reçoivent une confirmation automatique. Vous pilotez tout depuis votre téléphone.
+      </p>
+      <ul className="space-y-3">
+        {['Vue semaine & mois', 'Notifications automatiques client', 'Photos de chantier intégrées'].map((f, i) => (
+          <li key={i} className="flex items-center gap-3 text-sm">
+            <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0" />
+            <span className="text-zinc-300">{f}</span>
+          </li>
+        ))}
+      </ul>
+      {!assigned ? (
+        <button onClick={handle} className="group flex items-center gap-2 bg-blue-600 text-white px-6 py-4 rounded-2xl font-black hover:scale-105 transition-all w-full justify-center shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+          <MousePointerClick className="w-5 h-5" /> Planifier une intervention
+        </button>
+      ) : (
+        <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl px-6 py-4 animate-in zoom-in duration-300">
+          <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+          <div>
+            <p className="font-black text-emerald-400">Chantier planifié ! +25 min économisées</p>
+            <p className="text-xs text-zinc-400">Voyons votre stock...</p>
           </div>
         </div>
+      )}
+    </div>
+  )
+}
 
-        <div className="flex-1 flex gap-4">
-          {/* Days column */}
-          <div className="w-16 flex flex-col gap-4 text-zinc-500 text-xs font-bold uppercase pt-4">
-            <div className="h-24 flex items-center justify-center bg-black/40 rounded-xl">LUN</div>
-            <div className="h-24 flex items-center justify-center bg-black/40 rounded-xl text-white border border-white/10">MAR</div>
-            <div className="h-24 flex items-center justify-center bg-black/40 rounded-xl">MER</div>
+// ---- STEP 3: STOCK ----
+function StepStock({ onAction }: { onAction: () => void }) {
+  const [added, setAdded] = useState(false)
+  function handle() { setAdded(true); setTimeout(onAction, 1200) }
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest">
+        <Box className="w-3 h-3" /> Étape 3 sur 3 — Catalogue
+      </div>
+      <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
+        Votre catalogue, <span className="text-emerald-400 italic">toujours à jour</span>.
+      </h1>
+      <p className="text-zinc-400 text-lg leading-relaxed">
+        Saisissez vos matériaux une seule fois avec leur prix de vente. Ils apparaissent automatiquement lors de la création de vos devis.
+      </p>
+      <ul className="space-y-3">
+        {['Prix achat & vente par article', 'Alertes rupture de stock', 'Intégration directe dans les devis'].map((f, i) => (
+          <li key={i} className="flex items-center gap-3 text-sm">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span className="text-zinc-300">{f}</span>
+          </li>
+        ))}
+      </ul>
+      {!added ? (
+        <button onClick={handle} className="group flex items-center gap-2 bg-emerald-600 text-white px-6 py-4 rounded-2xl font-black hover:scale-105 transition-all w-full justify-center shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+          <MousePointerClick className="w-5 h-5" /> Ajouter un article au catalogue
+        </button>
+      ) : (
+        <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl px-6 py-4 animate-in zoom-in duration-300">
+          <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+          <div>
+            <p className="font-black text-emerald-400">Article ajouté ! +12 min économisées</p>
+            <p className="text-xs text-zinc-400">Découvrez votre offre...</p>
           </div>
-          
-          {/* Timeline */}
-          <div className="flex-1 flex flex-col gap-4 relative pt-4">
-             {/* Existing Job */}
-             <div className="h-24 bg-blue-500/20 border border-blue-500/30 rounded-xl p-3 flex flex-col justify-center w-3/4">
-                <p className="font-bold text-sm text-blue-100">Installation Pompe à Chaleur</p>
-                <p className="text-xs text-blue-300 mt-1 flex items-center gap-1"><Clock className="w-3 h-3" /> 08:00 - 17:00</p>
-             </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
-             {/* Interactive Job Slot */}
-             <div className={cn("h-24 rounded-xl p-3 flex flex-col justify-center transition-all duration-500", 
-                jobAssigned ? "bg-emerald-500/20 border border-emerald-500/30 w-full" : "bg-zinc-800/50 border border-dashed border-zinc-600 hover:border-zinc-400 cursor-pointer w-full flex items-center justify-center group/slot"
-             )}
-              onClick={() => !jobAssigned && setJobAssigned(true)}
-             >
-                {!jobAssigned ? (
-                  <div className="text-zinc-500 text-sm font-bold flex items-center gap-2 group-hover/slot:text-white transition-colors">
-                    <MousePointerClick className="w-4 h-4" /> Assigner une urgence
-                  </div>
-                ) : (
-                  <>
-                    <p className="font-bold text-sm text-emerald-100 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> Dépannage Électrique</p>
-                    <p className="text-xs text-emerald-300 mt-1 flex items-center gap-1"><Clock className="w-3 h-3" /> Client notifié par SMS</p>
-                  </>
-                )}
-             </div>
+// ---- STEP 4: CONVERT ----
+function StepConvert({ timeSaved }: { timeSaved: number }) {
+  const monthlyGain = Math.round((timeSaved / 60) * 4.3 * 65)
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-widest">
+        <Sparkles className="w-3 h-3 animate-pulse" /> Votre bilan
+      </div>
+      <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
+        Vous venez d'économiser <span className="text-amber-400 italic">{timeSaved} minutes</span>.
+      </h1>
+      <p className="text-zinc-400 text-lg leading-relaxed">
+        En une semaine d'utilisation, Flozy vous fait gagner en moyenne <strong className="text-white">3h par semaine</strong>. C'est du temps facturable que vous ne gagniez pas avant.
+      </p>
+      <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20 rounded-2xl p-6 space-y-3">
+        <p className="text-xs font-black uppercase tracking-widest text-amber-400 mb-4">Votre gain mensuel estimé</p>
+        <div className="flex items-end gap-2">
+          <span className="text-5xl font-black text-white">+{monthlyGain > 0 ? monthlyGain.toLocaleString() : '1 200'} €</span>
+          <span className="text-zinc-400 text-sm mb-2">/ mois</span>
+        </div>
+        <p className="text-xs text-zinc-500">Basé sur 65€/h · 4,3 semaines · {timeSaved}min économisées aujourd'hui</p>
+      </div>
+      <div className="space-y-3">
+        <Link href="/register" className="flex items-center justify-center gap-2 w-full bg-white text-black py-4 rounded-2xl font-black text-lg hover:scale-[1.02] transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)]">
+          <Sparkles className="w-5 h-5" /> Démarrer mon essai gratuit — 14 jours
+        </Link>
+        <p className="text-center text-xs text-zinc-600">Sans CB · Sans engagement · Données sécurisées en France</p>
+      </div>
+    </div>
+  )
+}
 
-             {/* Existing Job */}
-             <div className="h-24 bg-purple-500/20 border border-purple-500/30 rounded-xl p-3 flex flex-col justify-center w-1/2 ml-auto">
-                <p className="font-bold text-sm text-purple-100">Visite de chantier</p>
-                <p className="text-xs text-purple-300 mt-1 flex items-center gap-1"><Clock className="w-3 h-3" /> 14:00 - 16:00</p>
-             </div>
+// ---- UI PANELS ----
+function UIQuote() {
+  const [items, setItems] = useState([
+    { label: 'Tableau électrique', qty: 1, price: 850 },
+    { label: 'Main d\'œuvre (8h)', qty: 8, price: 65 },
+  ])
+  const total = items.reduce((a, i) => a + i.qty * i.price, 0)
+  return (
+    <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-black/40">
+        <div className="w-3 h-3 rounded-full bg-rose-500/70" /><div className="w-3 h-3 rounded-full bg-amber-500/70" /><div className="w-3 h-3 rounded-full bg-emerald-500/70" />
+        <span className="text-[9px] font-mono text-zinc-500 ml-2">flozy.app/devis/nouveau</span>
+      </div>
+      <div className="p-6 space-y-4">
+        <div className="flex justify-between items-start">
+          <div><p className="font-black text-lg">Électricité Pro</p><p className="text-xs text-zinc-500">DEV-2025-047</p></div>
+          <span className="text-[9px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-1 rounded-lg">En attente</span>
+        </div>
+        <div className="space-y-2">
+          {items.map((item, i) => (
+            <div key={i} className="flex items-center justify-between p-3 bg-black/40 rounded-xl border border-white/5">
+              <div><p className="text-sm font-bold">{item.label}</p><p className="text-[10px] text-zinc-500">x{item.qty}</p></div>
+              <p className="font-black text-primary">{(item.qty * item.price).toLocaleString()} €</p>
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-between items-center pt-3 border-t border-white/10">
+          <div className="text-xs text-zinc-500">TVA 20% : {(total * 0.2).toFixed(0)} €</div>
+          <div className="text-right">
+            <p className="text-[9px] text-zinc-500 uppercase font-bold">Total TTC</p>
+            <p className="text-2xl font-black">{(total * 1.2).toLocaleString()} €</p>
           </div>
         </div>
       </div>
@@ -361,51 +313,83 @@ function InteractivePlanning({ jobAssigned, setJobAssigned }: any) {
   )
 }
 
-function InteractiveDashboard() {
+function UIPlanning() {
+  const jobs = [
+    { title: 'Tableau électrique Durand', time: '08:00 - 12:00', color: 'bg-blue-500/20 border-blue-500/30 text-blue-100', width: 'w-3/4' },
+    { title: '🔴 URGENT — Dépannage Leroy', time: '14:00 - 17:00', color: 'bg-rose-500/20 border-rose-500/30 text-rose-100', width: 'w-full' },
+    { title: 'Visite chantier Martin', time: '09:00 - 10:30', color: 'bg-purple-500/20 border-purple-500/30 text-purple-100', width: 'w-1/2 ml-auto' },
+  ]
   return (
-    <div className="relative group">
-       <div className="absolute -inset-1 bg-emerald-600/30 rounded-3xl blur transition-all duration-1000 opacity-50" />
-      
-      <div className="relative bg-zinc-900 border border-white/10 rounded-2xl p-8 shadow-2xl space-y-6">
-        <h3 className="font-bold text-lg mb-6">Vue d'ensemble ce mois</h3>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-black/50 p-5 rounded-xl border border-white/5">
-            <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center mb-3">
-              <Euro className="w-4 h-4 text-emerald-500" />
-            </div>
-            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">C.A. Généré</p>
-            <p className="text-2xl font-black">28 450 €</p>
-            <p className="text-xs text-emerald-500 mt-2 font-bold flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" /> +14%
-            </p>
-          </div>
-          
-          <div className="bg-black/50 p-5 rounded-xl border border-white/5">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center mb-3">
-              <FileText className="w-4 h-4 text-primary" />
-            </div>
-            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">Devis signés</p>
-            <p className="text-2xl font-black">12</p>
-            <p className="text-xs text-zinc-400 mt-2">Sur 15 envoyés (80%)</p>
-          </div>
-        </div>
-
-        <div className="bg-black/50 p-5 rounded-xl border border-white/5 mt-6">
-          <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4">Objectif Mensuel</p>
-          <div className="flex justify-between text-sm mb-2">
-            <span className="font-bold">28k €</span>
-            <span className="text-zinc-400">30k €</span>
-          </div>
-          <div className="w-full h-3 bg-zinc-800 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 w-[95%] relative">
-               <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
-            </div>
-          </div>
-          <p className="text-xs text-emerald-500 font-bold mt-3 text-center animate-pulse">Presque atteint ! 🎉</p>
-        </div>
-
+    <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+        <p className="font-black flex items-center gap-2"><Calendar className="w-4 h-4 text-blue-500" /> Semaine du 24 Avr.</p>
+        <span className="text-[9px] font-black bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-1 rounded-lg uppercase">3 chantiers</span>
       </div>
+      <div className="p-4 space-y-3">
+        {jobs.map((j, i) => (
+          <div key={i} className={cn("p-3 rounded-xl border", j.color, j.width)}>
+            <p className="text-sm font-bold">{j.title}</p>
+            <p className="text-[10px] mt-1 flex items-center gap-1 opacity-70"><Clock className="w-3 h-3" />{j.time}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function UIStock() {
+  const items = [
+    { name: 'Câble RO2V 3G2.5', qty: 145, unit: 'm', sell: 2.5, alert: false },
+    { name: 'Disjoncteur 16A Legrand', qty: 4, unit: 'u', sell: 18, alert: true },
+    { name: 'Gaine ICTA Ø20', qty: 80, unit: 'm', sell: 1.2, alert: false },
+  ]
+  return (
+    <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+        <p className="font-black flex items-center gap-2"><Box className="w-4 h-4 text-emerald-500" /> Catalogue Stock</p>
+      </div>
+      <div className="divide-y divide-white/5">
+        {items.map((item, i) => (
+          <div key={i} className="flex items-center justify-between px-6 py-3">
+            <div>
+              <p className="text-sm font-bold">{item.name}</p>
+              <p className="text-[10px] text-zinc-500">{item.qty} {item.unit} en stock</p>
+            </div>
+            <div className="text-right flex items-center gap-3">
+              {item.alert && <span className="text-[8px] font-black bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2 py-0.5 rounded-full">⚠ Stock bas</span>}
+              <p className="font-black text-emerald-400">{item.sell} €</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function UIOffer() {
+  return (
+    <div className="space-y-4">
+      {[
+        { name: 'Starter', price: 'Gratuit', features: ['5 devis/mois', 'Facturation basique'], cta: 'Continuer gratuitement', highlight: false },
+        { name: 'Pro', price: '29€/mois', features: ['Devis illimités', 'Planning + Photos', 'Catalogue stock', 'Marque blanche'], cta: 'Démarrer — 14j gratuits', highlight: true },
+        { name: 'Expert', price: '59€/mois', features: ['Tout Pro +', 'Multi-utilisateurs', 'Statistiques avancées', 'Support prioritaire'], cta: 'Contacter', highlight: false },
+      ].map((plan) => (
+        <div key={plan.name} className={cn("rounded-2xl border p-5 relative", plan.highlight ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-white/5 bg-zinc-900/50")}>
+          {plan.highlight && <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary rounded-full text-[9px] font-black uppercase tracking-widest text-white whitespace-nowrap">⭐ Le plus populaire</div>}
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-black">{plan.name}</p>
+            <p className={cn("font-black", plan.highlight ? "text-primary" : "text-white")}>{plan.price}</p>
+          </div>
+          <div className="space-y-1.5 mb-4">
+            {plan.features.map((f, i) => (
+              <p key={i} className="text-xs text-zinc-400 flex items-center gap-2"><CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />{f}</p>
+            ))}
+          </div>
+          <Link href="/register" className={cn("block w-full py-2.5 rounded-xl font-black text-xs text-center transition-all", plan.highlight ? "bg-primary text-white hover:opacity-90" : "bg-white/5 text-zinc-300 hover:bg-white/10")}>
+            {plan.cta}
+          </Link>
+        </div>
+      ))}
     </div>
   )
 }
