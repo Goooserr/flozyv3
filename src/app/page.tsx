@@ -107,9 +107,9 @@ export default function LandingPage() {
               </div>
 
               {/* App Layout */}
-              <div className="flex" style={{minHeight: '340px'}}>
+              <div className="flex flex-col md:flex-row" style={{minHeight: '340px'}}>
                 {/* Sidebar */}
-                <div className="w-44 border-r border-white/5 bg-black/40 p-3 flex flex-col gap-1 shrink-0">
+                <div className="hidden md:flex w-44 border-r border-white/5 bg-black/40 p-3 flex flex-col gap-1 shrink-0">
                   <div className="flex items-center gap-2 px-2 py-2 mb-2">
                     <div className="w-6 h-6 rounded-md bg-white flex items-center justify-center"><div className="w-3 h-3 bg-black rounded-[2px]" /></div>
                     <span className="text-xs font-bold text-white">Flozy</span>
@@ -131,7 +131,7 @@ export default function LandingPage() {
                 {/* Main Content */}
                 <div className="flex-1 p-4 bg-zinc-950/50 overflow-hidden">
                   {/* KPI Row */}
-                  <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                     {[
                       { label: 'CA ce mois', value: '12 480 €', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
                       { label: 'Devis en attente', value: '4', color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
@@ -145,9 +145,9 @@ export default function LandingPage() {
                   </div>
 
                   {/* Content Grid */}
-                  <div className="grid grid-cols-5 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                     {/* Derniers clients */}
-                    <div className="col-span-2 bg-zinc-900/60 rounded-xl border border-white/5 p-3">
+                    <div className="md:col-span-2 bg-zinc-900/60 rounded-xl border border-white/5 p-3">
                       <p className="text-[8px] text-zinc-400 font-black uppercase tracking-widest mb-2">Clients récents</p>
                       {[
                         { name: 'M. Ruffier', tag: 'VIP' },
@@ -165,7 +165,7 @@ export default function LandingPage() {
                     </div>
 
                     {/* Dernières factures */}
-                    <div className="col-span-3 bg-zinc-900/60 rounded-xl border border-white/5 p-3">
+                    <div className="md:col-span-3 bg-zinc-900/60 rounded-xl border border-white/5 p-3">
                       <p className="text-[8px] text-zinc-400 font-black uppercase tracking-widest mb-2">Factures & Devis</p>
                       {[
                         { num: 'FAC-2024-042', amount: '1 850 €', status: 'Payée', statusColor: 'text-emerald-400 bg-emerald-500/10' },
