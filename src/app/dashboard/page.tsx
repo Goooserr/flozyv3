@@ -13,7 +13,9 @@ import {
   Send,
   Loader2,
   ChevronRight,
-  PlusCircle
+  PlusCircle,
+  Lock,
+  XIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getDocuments, getClients, getInterventions } from '@/lib/actions';
@@ -251,9 +253,15 @@ export default function Dashboard() {
                </div>
              )}
              {!nextIntervention && (
-               <Link href="/planning" className="font-black text-xs bg-primary text-primary-foreground px-6 py-4 rounded-xl hover:opacity-90 transition-all shadow-xl">
-                  Planifier un chantier
-               </Link>
+               subscriptionPlan === 'starter' ? (
+                 <Link href="/billing" className="font-black text-xs bg-zinc-800 text-zinc-500 px-6 py-4 rounded-xl flex items-center gap-2 border border-white/5 hover:border-primary/50 transition-all shadow-xl group">
+                    <Lock className="w-4 h-4" /> Planifier un chantier
+                 </Link>
+               ) : (
+                 <Link href="/planning" className="font-black text-xs bg-primary text-primary-foreground px-6 py-4 rounded-xl hover:opacity-90 transition-all shadow-xl">
+                    Planifier un chantier
+                 </Link>
+               )
              )}
           </div>
         </div>
@@ -286,15 +294,27 @@ export default function Dashboard() {
               </div>
             </button>
 
-            <Link href="/planning" className="group flex items-center gap-4 p-4 rounded-2xl bg-purple-500/5 border border-purple-500/10 hover:border-purple-500/40 hover:bg-purple-500/10 transition-all">
-              <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-purple-500/20 group-hover:scale-110 transition-transform">
-                <CalendarDays className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="font-bold text-sm">Intervention</p>
-                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Planifier un chantier</p>
-              </div>
-            </Link>
+            {subscriptionPlan === 'starter' ? (
+              <Link href="/billing" className="group flex items-center gap-4 p-4 rounded-2xl bg-zinc-800/20 border border-white/5 hover:border-primary/30 transition-all opacity-60">
+                <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center text-zinc-500 shadow-lg">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-zinc-400">Intervention</p>
+                  <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">Plan PRO nécessaire</p>
+                </div>
+              </Link>
+            ) : (
+              <Link href="/planning" className="group flex items-center gap-4 p-4 rounded-2xl bg-purple-500/5 border border-purple-500/10 hover:border-purple-500/40 hover:bg-purple-500/10 transition-all">
+                <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-purple-500/20 group-hover:scale-110 transition-transform">
+                  <CalendarDays className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm">Intervention</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Planifier un chantier</p>
+                </div>
+              </Link>
+            )}
           </div>
 
           {/* Activity Widget */}
