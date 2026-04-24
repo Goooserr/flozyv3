@@ -179,8 +179,6 @@ export default function AdminPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Real Artisans List */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Real Artisans List */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-card border border-border rounded-3xl p-8 shadow-sm">
             <div className="flex items-center justify-between mb-8">
@@ -345,9 +343,8 @@ export default function AdminPage() {
              </div>
            )}
         </div>
-        </div>
       </div>
-      )}
+    )}
 
       {activeTab === 'subscriptions' && (
          <div className="space-y-8 animate-in fade-in duration-500">
