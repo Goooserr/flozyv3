@@ -29,13 +29,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
 
-  // Gérer l'événement checkout.session.completed OU invoice.paid
-  if (event.type === 'checkout.session.completed' || event.type === 'invoice.paid') {
+  // Gérer l'événement checkout.session.completed OU invoice.paid OU customer.subscription.updated
+  if (event.type === 'checkout.session.completed' || event.type === 'invoice.paid' || event.type === 'customer.subscription.updated') {
     const session = event.data.object as any;
     
-    // Extraction des données essentielles (avec recherche profonde dans les détails de l'abonnement)
-    const userId = session.metadata?.userId || session.subscription_details?.metadata?.userId || session.client_reference_id;
-    const planId = session.metadata?.planId || session.subscription_details?.metadata?.planId || 'pro';
+    // Extraction des données essentielles (avec recherche profonde)
+    const userId = session.metadata?.userId || 
+                   session.subscription_details?.metadata?.userId || 
+                   session.metadata?.userId || // Pour subscription.updated
+                   session.client_reference_id;
+
+    const planId = session.metadata?.planId || 
+                   session.subscription_details?.metadata?.planId || 
+                   session.metadata?.planId || 
+                   'pro';
     const customerEmail = session.customer_email || session.customer_details?.email;
 
     console.log(`🔔 STRIPE WEBHOOK : [${event.type}]`);
