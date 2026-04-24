@@ -33,9 +33,9 @@ export async function POST(req: Request) {
   if (event.type === 'checkout.session.completed' || event.type === 'invoice.paid') {
     const session = event.data.object as any;
     
-    // Extraction des données essentielles
-    const userId = session.metadata?.userId || session.client_reference_id;
-    const planId = session.metadata?.planId || 'pro';
+    // Extraction des données essentielles (avec recherche profonde dans les détails de l'abonnement)
+    const userId = session.metadata?.userId || session.subscription_details?.metadata?.userId || session.client_reference_id;
+    const planId = session.metadata?.planId || session.subscription_details?.metadata?.planId || 'pro';
     const customerEmail = session.customer_email || session.customer_details?.email;
 
     console.log(`🔔 STRIPE WEBHOOK : [${event.type}]`);

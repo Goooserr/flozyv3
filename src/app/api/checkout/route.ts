@@ -38,6 +38,12 @@ export async function POST(req: Request) {
         },
       ],
       mode: 'subscription',
+      subscription_data: {
+        metadata: {
+          userId: user.id,
+          planId: planId,
+        },
+      },
       success_url: `${process.env.NEXT_PUBLIC_URL}/checkout/success`,
       cancel_url: `${process.env.NEXT_PUBLIC_URL}/billing?canceled=true`,
       metadata: {
