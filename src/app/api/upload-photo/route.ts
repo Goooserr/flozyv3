@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase'
 
-// Route API côté serveur pour l'upload de photos
-// Utilise la service_role key pour créer le bucket si besoin
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
@@ -13,8 +12,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Fichier ou ID manquant' }, { status: 400 })
     }
 
-    // Client admin avec service_role pour gérer le storage
-    const supabaseAdmin = createClient(
+    // Vérifier l'utilisateur connecté
+    const supabaseUser = createClient()
+    const { data: { user } } = await supabaseUser.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    // Client admin avec service_role pour le storage
+    const supabaseAdmin = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { persistSession: false } }
@@ -25,14 +31,13 @@ export async function POST(req: NextRequest) {
     // Créer le bucket s'il n'existe pas
     const { data: buckets } = await supabaseAdmin.storage.listBuckets()
     const bucketExists = buckets?.some(b => b.name === BUCKET)
-    
     if (!bucketExists) {
       await supabaseAdmin.storage.createBucket(BUCKET, { public: true })
     }
 
     // Upload du fichier
     const fileExt = file.name.split('.').pop()
-    const fileName = `interventions/${interventionId}/${Date.now()}.${fileExt}`
+    const fileName = `${user.id}/${interventionId}/${Date.now()}.${fileExt}`
     const buffer = Buffer.from(await file.arrayBuffer())
 
     const { error: uploadError } = await supabaseAdmin.storage
@@ -50,22 +55,18 @@ export async function POST(req: NextRequest) {
     const { data: urlData } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(fileName)
     const publicUrl = urlData.publicUrl
 
-    // Mettre à jour les photos de l'intervention
-    const { data: intervention } = await supabaseAdmin
-      .from('interventions')
-      .select('photos')
-      .eq('id', interventionId)
-      .single()
+    // Enregistrer dans la table intervention_photos
+    const { error: insertError } = await supabaseAdmin
+      .from('intervention_photos')
+      .insert({
+        intervention_id: interventionId,
+        artisan_id: user.id,
+        url: publicUrl,
+        file_name: file.name,
+      })
 
-    const currentPhotos = (intervention?.photos as string[]) || []
-
-    const { error: updateError } = await supabaseAdmin
-      .from('interventions')
-      .update({ photos: [...currentPhotos, publicUrl] })
-      .eq('id', interventionId)
-
-    if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
+    if (insertError) {
+      return NextResponse.json({ error: insertError.message }, { status: 500 })
     }
 
     return NextResponse.json({ url: publicUrl, success: true })

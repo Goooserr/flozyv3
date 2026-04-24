@@ -239,9 +239,24 @@ function KanbanColumn({ title, icon, count, color, bgColor, borderColor, childre
 function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
   const [uploading, setUploading] = useState(false)
   const [showGallery, setShowGallery] = useState(false)
-  const photos = data.photos || []
+  const [photos, setPhotos] = useState<string[]>([])
+
+  // Charger les photos depuis la table dédiée
+  useEffect(() => {
+    async function loadPhotos() {
+      const { createClient } = await import('@/lib/supabase')
+      const supabase = createClient()
+      const { data: photoRows } = await supabase
+        .from('intervention_photos')
+        .select('url')
+        .eq('intervention_id', data.id)
+        .order('created_at', { ascending: true })
+      setPhotos((photoRows || []).map((r: any) => r.url))
+    }
+    loadPhotos()
+  }, [data.id])
+
   const photosCount = photos.length
-  
   const formattedDate = new Date(data.date || data.start_time).toLocaleDateString('fr-FR', {
     day: 'numeric',
     month: 'short',
@@ -258,12 +273,19 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    
     setUploading(true)
     try {
       const { uploadInterventionPhoto } = await import('@/lib/actions')
       await uploadInterventionPhoto(data.id, file)
-      reload()
+      // Recharger les photos depuis la table
+      const { createClient } = await import('@/lib/supabase')
+      const supabase = createClient()
+      const { data: photoRows } = await supabase
+        .from('intervention_photos')
+        .select('url')
+        .eq('intervention_id', data.id)
+        .order('created_at', { ascending: true })
+      setPhotos((photoRows || []).map((r: any) => r.url))
     } catch (err: any) {
       alert("Erreur lors de l'envoi de la photo : " + (err?.message || err))
       console.error(err)
