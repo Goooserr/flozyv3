@@ -90,33 +90,110 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          {/* Dashboard Preview */}
+          {/* Dashboard Preview - Vraie vitrine des outils */}
           <div className="mt-24 relative w-full max-w-5xl mx-auto animate-in fade-in zoom-in-95 duration-1000 delay-700">
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent z-10 h-40 bottom-0" />
-            
-            {/* Soft glow behind the dashboard */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10 h-40 bottom-0 top-auto" style={{background: 'linear-gradient(to top, black 0%, transparent 100%)'}} />
             <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 via-purple-500/30 to-blue-500/30 blur-2xl opacity-50 rounded-3xl" />
             
-            <div className="rounded-2xl border border-white/10 bg-zinc-900/80 backdrop-blur-xl p-2 md:p-4 shadow-2xl relative z-10">
-              <div className="w-full aspect-[16/9] md:aspect-[21/9] rounded-xl bg-black border border-white/5 flex flex-col relative overflow-hidden">
-                {/* Mock UI Header */}
-                <div className="h-10 border-b border-white/5 flex items-center px-4 gap-2">
-                  <div className="w-3 h-3 rounded-full bg-rose-500/50" />
-                  <div className="w-3 h-3 rounded-full bg-amber-500/50" />
-                  <div className="w-3 h-3 rounded-full bg-emerald-500/50" />
+            <div className="rounded-2xl border border-white/10 bg-zinc-900/90 backdrop-blur-xl shadow-2xl relative z-10 overflow-hidden">
+              {/* Window Chrome */}
+              <div className="h-10 border-b border-white/5 flex items-center px-4 gap-2 bg-zinc-900/50">
+                <div className="w-3 h-3 rounded-full bg-rose-500/70" />
+                <div className="w-3 h-3 rounded-full bg-amber-500/70" />
+                <div className="w-3 h-3 rounded-full bg-emerald-500/70" />
+                <div className="flex-1 mx-8 h-5 rounded-md bg-white/5 border border-white/5 flex items-center px-3">
+                  <span className="text-[9px] text-zinc-500 font-mono">app.flozy.fr/dashboard</span>
                 </div>
-                {/* Mock UI Body */}
-                <div className="grid grid-cols-4 gap-4 p-4 md:p-8 flex-1">
-                   <div className="bg-zinc-900/50 rounded-xl border border-white/5 col-span-1 shadow-inner relative overflow-hidden">
-                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-transparent opacity-50" />
-                   </div>
-                   <div className="col-span-3 grid grid-cols-3 gap-4 grid-rows-2">
-                      <div className="bg-zinc-900/50 rounded-xl border border-white/5" />
-                      <div className="bg-zinc-900/50 rounded-xl border border-white/5" />
-                      <div className="bg-zinc-900/50 rounded-xl border border-white/5" />
-                      <div className="bg-zinc-900/50 rounded-xl border border-white/5 col-span-2" />
-                      <div className="bg-zinc-900/50 rounded-xl border border-white/5" />
-                   </div>
+              </div>
+
+              {/* App Layout */}
+              <div className="flex" style={{minHeight: '340px'}}>
+                {/* Sidebar */}
+                <div className="w-44 border-r border-white/5 bg-black/40 p-3 flex flex-col gap-1 shrink-0">
+                  <div className="flex items-center gap-2 px-2 py-2 mb-2">
+                    <div className="w-6 h-6 rounded-md bg-white flex items-center justify-center"><div className="w-3 h-3 bg-black rounded-[2px]" /></div>
+                    <span className="text-xs font-bold text-white">Flozy</span>
+                  </div>
+                  {[
+                    { label: 'Dashboard', active: true, color: 'bg-white/10' },
+                    { label: 'Planning', active: false, color: '' },
+                    { label: 'Factures', active: false, color: '' },
+                    { label: 'Clients', active: false, color: '' },
+                    { label: 'Stock', active: false, color: '' },
+                  ].map((item) => (
+                    <div key={item.label} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg ${item.active ? 'bg-white/10 text-white' : 'text-zinc-500'}`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${item.active ? 'bg-primary' : 'bg-zinc-700'}`} />
+                      <span className="text-[10px] font-bold">{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Main Content */}
+                <div className="flex-1 p-4 bg-zinc-950/50 overflow-hidden">
+                  {/* KPI Row */}
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    {[
+                      { label: 'CA ce mois', value: '12 480 €', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+                      { label: 'Devis en attente', value: '4', color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
+                      { label: 'Clients actifs', value: '23', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
+                    ].map((kpi) => (
+                      <div key={kpi.label} className={`rounded-xl border p-3 ${kpi.bg}`}>
+                        <p className="text-[8px] text-zinc-500 uppercase font-bold tracking-widest mb-1">{kpi.label}</p>
+                        <p className={`text-lg font-black ${kpi.color}`}>{kpi.value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Content Grid */}
+                  <div className="grid grid-cols-5 gap-3">
+                    {/* Derniers clients */}
+                    <div className="col-span-2 bg-zinc-900/60 rounded-xl border border-white/5 p-3">
+                      <p className="text-[8px] text-zinc-400 font-black uppercase tracking-widest mb-2">Clients récents</p>
+                      {[
+                        { name: 'M. Ruffier', tag: 'VIP' },
+                        { name: 'Batiment SAS', tag: 'Pro' },
+                        { name: 'Mme Laurent', tag: '' },
+                      ].map((c) => (
+                        <div key={c.name} className="flex items-center justify-between py-1.5 border-b border-white/3 last:border-0">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-5 h-5 rounded-md bg-primary/20 text-primary text-[7px] font-black flex items-center justify-center uppercase">{c.name[2]}</div>
+                            <span className="text-[9px] font-medium text-zinc-300">{c.name}</span>
+                          </div>
+                          {c.tag && <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-primary/10 text-primary">{c.tag}</span>}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Dernières factures */}
+                    <div className="col-span-3 bg-zinc-900/60 rounded-xl border border-white/5 p-3">
+                      <p className="text-[8px] text-zinc-400 font-black uppercase tracking-widest mb-2">Factures & Devis</p>
+                      {[
+                        { num: 'FAC-2024-042', amount: '1 850 €', status: 'Payée', statusColor: 'text-emerald-400 bg-emerald-500/10' },
+                        { num: 'DEV-2024-031', amount: '3 200 €', status: 'En attente', statusColor: 'text-amber-400 bg-amber-500/10' },
+                        { num: 'FAC-2024-039', amount: '650 €', status: 'Payée', statusColor: 'text-emerald-400 bg-emerald-500/10' },
+                      ].map((inv) => (
+                        <div key={inv.num} className="flex items-center justify-between py-1.5 border-b border-white/3 last:border-0">
+                          <span className="text-[9px] font-mono text-zinc-400">{inv.num}</span>
+                          <span className="text-[9px] font-black text-white">{inv.amount}</span>
+                          <span className={`text-[7px] font-black px-1.5 py-0.5 rounded ${inv.statusColor}`}>{inv.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Planning strip */}
+                  <div className="mt-3 bg-zinc-900/60 rounded-xl border border-purple-500/20 p-3 flex items-center gap-4">
+                    <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
+                      <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[8px] text-purple-400 font-black uppercase tracking-widest">Prochain Chantier</p>
+                      <p className="text-[10px] font-bold text-white">Installation tableau élec. — M. Ruffier · Demain 09h00</p>
+                    </div>
+                    <div className="px-2 py-1 bg-purple-500 rounded-lg">
+                      <span className="text-[7px] font-black text-white uppercase">Planifié</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
