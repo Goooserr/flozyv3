@@ -253,10 +253,14 @@ export async function convertQuoteToInvoice(id: string, currentNumber: string) {
 }
 
 export async function uploadInterventionPhoto(interventionId: string, file: File) {
-  // Utilise l'API serveur qui a les droits pour créer le bucket si besoin
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non connecté')
+
   const formData = new FormData()
   formData.append('file', file)
   formData.append('interventionId', interventionId)
+  formData.append('artisanId', user.id)
 
   const res = await fetch('/api/upload-photo', {
     method: 'POST',
@@ -264,10 +268,9 @@ export async function uploadInterventionPhoto(interventionId: string, file: File
   })
 
   const result = await res.json()
-
   if (!res.ok || !result.success) {
     throw new Error(result.error || "Erreur lors de l'upload")
   }
-
   return result
 }
+
