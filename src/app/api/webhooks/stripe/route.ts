@@ -33,13 +33,17 @@ export async function POST(req: Request) {
   if (event.type === 'checkout.session.completed' || event.type === 'invoice.paid') {
     const session = event.data.object as any;
     
-    // Pour invoice.paid, les metadata sont souvent dans la subscription ou le customer
-    const userId = session.metadata?.userId || session.subscription_details?.metadata?.userId;
-    const planId = session.metadata?.planId || session.subscription_details?.metadata?.planId;
+    // Extraction ultra-robuste des données
+    const userId = session.metadata?.userId || session.subscription_details?.metadata?.userId || session.client_reference_id;
+    const planId = session.metadata?.planId || session.subscription_details?.metadata?.planId || 'pro';
+    const customerEmail = session.customer_email || session.customer_details?.email;
 
-    console.log(`🔔 Webhook [${event.type}] reçu pour l'utilisateur ${userId} - Plan: ${planId}`);
+    console.log(`🔔 Webhook [${event.type}] reçu.`);
+    console.log(`🆔 ID Utilisateur: ${userId}`);
+    console.log(`📧 Email Client: ${customerEmail}`);
+    console.log(`📦 Plan: ${planId}`);
 
-    if (userId && planId) {
+    if (userId || customerEmail) {
       let modules = ['clients', 'documents'];
       if (planId === 'expert') {
         modules = ['clients', 'documents', 'planning', 'stock'];
@@ -47,27 +51,32 @@ export async function POST(req: Request) {
         modules = ['clients', 'documents', 'planning'];
       }
 
-      console.log(`🔄 Tentative de mise à jour du profil ${userId}...`);
+      console.log(`🔄 Recherche et mise à jour du profil...`);
 
-      const { data, error } = await supabaseAdmin
-        .from('profiles')
-        .update({ 
-          subscription_plan: planId,
-          subscription_status: 'active',
-          enabled_modules: modules
-        })
-        .eq('id', userId)
-        .select();
+      // Tentative de mise à jour par ID
+      let query = supabaseAdmin.from('profiles').update({ 
+        subscription_plan: planId,
+        subscription_status: 'active',
+        enabled_modules: modules
+      });
+
+      if (userId) {
+        query = query.eq('id', userId);
+      } else {
+        query = query.eq('email', customerEmail);
+      }
+
+      const { data, error } = await query.select();
 
       if (error) {
         console.error('❌ Erreur Supabase:', error);
       } else if (data && data.length > 0) {
-        console.log(`✅ SUCCÈS : Profil mis à jour pour ${userId}`);
+        console.log(`✅ SUCCÈS : Profil mis à jour pour ${customerEmail || userId}`);
       } else {
-        console.warn(`⚠️ Aucun profil trouvé pour l'ID ${userId}. Vérifiez la table 'profiles'.`);
+        console.warn(`⚠️ ÉCHEC : Aucun profil trouvé pour ${customerEmail || userId}.`);
       }
     } else {
-      console.warn('ℹ️ Événement ignoré : Pas de userId dans les metadata');
+      console.warn('ℹ️ Événement ignoré : Ni ID ni Email trouvés dans Stripe');
     }
   }
 
