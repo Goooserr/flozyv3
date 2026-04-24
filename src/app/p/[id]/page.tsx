@@ -2,7 +2,7 @@ import React from 'react';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { CheckCircle2, FileText, Download, Building2, User, Clock, Check, Signature } from 'lucide-react';
+import { Building2, Clock, Check } from 'lucide-react';
 import { Metadata } from 'next';
 import { PublicActions } from '@/components/PublicActions';
 import { PrintButton } from '@/components/PrintButton';
@@ -43,13 +43,6 @@ export default async function ClientPortalPage({ params }: { params: { id: strin
   const { document, artisan, client } = data;
   const items = document.metadata?.items || [];
   
-  const statusLabels = {
-    draft: 'Brouillon',
-    pending: 'En attente',
-    paid: 'Payé',
-    overdue: 'En retard'
-  };
-
   const isQuote = document.type === 'quote';
 
   return (
@@ -143,16 +136,9 @@ export default async function ClientPortalPage({ params }: { params: { id: strin
             )}
          </div>
 
-<<<<<<< HEAD
-        <div className="mt-20 text-center flex items-center justify-center gap-2 text-zinc-400">
-           <span className="text-xs font-medium">Propulsé de manière sécurisée par</span>
-           <span className="font-bold text-sm text-zinc-900 tracking-tight italic">Flozy</span>
-        </div>
-=======
         <footer className="mt-12 text-center text-zinc-500 text-xs pb-12">
            Propulsé par <span className="font-bold text-sm text-zinc-900 tracking-tight italic">{artisan.company_name || 'Flozy'}</span>
         </footer>
->>>>>>> a5c02c1 (feat: complete premium white-label dashboard, functional planning, and CRM-connected invoice flow)
       </div>
     </div>
   );
