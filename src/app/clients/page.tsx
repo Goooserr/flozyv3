@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { getClients, addClient, updateClient, createIntervention } from '@/lib/actions'
 import { 
   Users, Search, Plus, MapPin, Phone, Mail, ChevronRight,
-  FileText, Clock, Loader2, X, CalendarDays, Send, Activity
+  FileText, Clock, Loader2, X, CalendarDays, Send, Activity, Check
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase'
@@ -27,6 +27,9 @@ export default function ClientsPage() {
   const [newClient, setNewClient] = useState({ full_name: '', email: '', phone: '', address: '' })
   const [editClient, setEditClient] = useState({ id: '', full_name: '', email: '', phone: '', address: '' })
   const [newIntervention, setNewIntervention] = useState({ title: '', description: '', start_time: '', status: 'scheduled' })
+  const [editingNotes, setEditingNotes] = useState(false)
+  const [notesValue, setNotesValue] = useState('')
+  const [notesSaved, setNotesSaved] = useState(false)
 
   async function load() {
     const data = await getClients()
@@ -53,7 +56,19 @@ export default function ClientsPage() {
 
   function selectClient(client: any) {
     setSelectedClient(client)
+    setNotesValue(client.notes || '')
+    setNotesSaved(false)
+    setEditingNotes(false)
     loadClientDetails(client)
+  }
+
+  async function saveNotes() {
+    if (!selectedClient) return
+    await updateClient(selectedClient.id, { ...selectedClient, notes: notesValue })
+    setSelectedClient({ ...selectedClient, notes: notesValue })
+    setEditingNotes(false)
+    setNotesSaved(true)
+    setTimeout(() => setNotesSaved(false), 2000)
   }
 
   const handleAddClient = async (e: React.FormEvent) => {
@@ -197,12 +212,35 @@ export default function ClientsPage() {
                 </div>
               </div>
 
-              {/* Notes */}
+              {/* Notes éditables */}
               <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-6 relative z-10">
-                <h4 className="text-amber-500 font-bold uppercase tracking-widest text-[10px] mb-3">Notes Privées Artisan</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {selectedClient.notes || "Aucune note particulière. Cliquez sur modifier pour ajouter des informations importantes."}
-                </p>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-amber-500 font-bold uppercase tracking-widest text-[10px]">Notes Privées Artisan</h4>
+                  {notesSaved && <span className="flex items-center gap-1 text-emerald-500 text-[10px] font-bold"><Check className="w-3 h-3" /> Sauvegardé</span>}
+                </div>
+                {editingNotes ? (
+                  <div className="space-y-3">
+                    <textarea
+                      autoFocus
+                      value={notesValue}
+                      onChange={e => setNotesValue(e.target.value)}
+                      rows={4}
+                      placeholder="Code d'accès, préférences, allergies, notes importantes..."
+                      className="w-full bg-amber-500/5 border border-amber-500/20 rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-amber-500/30 resize-none transition-all"
+                    />
+                    <div className="flex gap-2">
+                      <button onClick={saveNotes} className="px-4 py-1.5 bg-amber-500 text-black rounded-lg text-xs font-bold hover:opacity-90 transition-all">Sauvegarder</button>
+                      <button onClick={() => setEditingNotes(false)} className="px-4 py-1.5 bg-secondary rounded-lg text-xs font-bold hover:bg-secondary/80 transition-all">Annuler</button>
+                    </div>
+                  </div>
+                ) : (
+                  <p
+                    onClick={() => setEditingNotes(true)}
+                    className="text-sm text-muted-foreground leading-relaxed cursor-text hover:text-foreground transition-colors min-h-[40px]"
+                  >
+                    {notesValue || "Cliquez pour ajouter une note privée (code d'accès, préférences, etc.)"}
+                  </p>
+                )}
               </div>
 
               {loadingDetails ? (

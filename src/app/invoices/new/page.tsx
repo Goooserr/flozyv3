@@ -23,10 +23,12 @@ import { SignaturePad } from '@/components/SignaturePad'
 export default function NewInvoicePage() {
   const router = useRouter()
   const { primaryColor, companyName, logoUrl } = useTheme()
-  const [items, setItems] = useState([{ description: 'Installation tableau électrique', quantity: 1, price: 1200, purchasePrice: 0, syncStock: false }])
+  const [items, setItems] = useState([{ description: '', quantity: 1, price: 0, purchasePrice: 0, syncStock: false }])
   const [client, setClient] = useState({ id: '', name: '', address: '' })
   const [clients, setClients] = useState<any[]>([])
+  const [catalogItems, setCatalogItems] = useState<any[]>([])
   const [showCatalog, setShowCatalog] = useState(false)
+  const [loadingCatalog, setLoadingCatalog] = useState(false)
   const [showSignature, setShowSignature] = useState(false)
   const [signature, setSignature] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -40,6 +42,17 @@ export default function NewInvoicePage() {
     }
     loadClients()
   }, [])
+
+  async function openCatalog() {
+    setShowCatalog(true)
+    if (catalogItems.length > 0) return
+    setLoadingCatalog(true)
+    const { getStock } = await import('@/lib/actions')
+    const stock = await getStock()
+    // Garder uniquement les articles qui ont un prix de vente
+    setCatalogItems(stock || [])
+    setLoadingCatalog(false)
+  }
 
   const handleSave = async () => {
     if (!client.name) {
@@ -116,7 +129,13 @@ export default function NewInvoicePage() {
   ]
 
   const selectFromCatalog = (catalogItem: any) => {
-    setItems([...items, { description: catalogItem.name, quantity: 1, price: catalogItem.price, purchasePrice: catalogItem.purchasePrice || 0, syncStock: true }])
+    setItems([...items, { 
+      description: catalogItem.name, 
+      quantity: 1, 
+      price: Number(catalogItem.selling_price || catalogItem.price || 0), 
+      purchasePrice: Number(catalogItem.purchase_price || catalogItem.purchasePrice || 0), 
+      syncStock: true 
+    }])
     setShowCatalog(false)
   }
 
@@ -276,7 +295,7 @@ export default function NewInvoicePage() {
               </div>
               <div className="flex items-center gap-4">
                 <button 
-                  onClick={() => setShowCatalog(true)}
+                  onClick={() => openCatalog()}
                   className="text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-all flex items-center gap-1.5"
                 >
                   <Sparkles className="w-3 h-3" /> Catalogue
@@ -290,35 +309,46 @@ export default function NewInvoicePage() {
               </div>
             </div>
 
-            {/* Catalog Modal */}
+            {/* Catalog Modal - Vrais articles du stock */}
             {showCatalog && (
-              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
                 <div className="bg-card border border-border w-full max-w-lg rounded-3xl p-8 shadow-2xl animate-in zoom-in-95 duration-300">
-                  <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center justify-between mb-6">
                     <div>
                       <h3 className="text-xl font-bold">Votre Catalogue</h3>
-                      <p className="text-xs text-muted-foreground">Prestations récurrentes configurées</p>
+                      <p className="text-xs text-muted-foreground">Articles ajoutés dans votre espace Stock</p>
                     </div>
                     <button onClick={() => setShowCatalog(false)} className="p-2 hover:bg-secondary rounded-lg"><XIcon className="w-4 h-4 text-muted-foreground" /></button>
                   </div>
-                  <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                    {catalog.map((cat, i) => (
-                      <button 
-                        key={i}
-                        onClick={() => selectFromCatalog(cat)}
-                        className="flex items-center justify-between p-4 bg-secondary/30 rounded-2xl border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group"
-                      >
-                        <div className="text-left">
-                          <p className="font-bold">{cat.name}</p>
-                          <p className="text-xs text-muted-foreground">{cat.description}</p>
-                        </div>
-                        <span className="font-bold text-primary">{cat.price} €</span>
-                      </button>
-                    ))}
-                  </div>
-                  <p className="mt-8 text-center text-[10px] text-muted-foreground italic font-medium">
-                    Astuce : Configurez vos prestations dans les réglages pour gagner du temps.
-                  </p>
+                  {loadingCatalog ? (
+                    <div className="flex items-center justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                  ) : catalogItems.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Box className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                      <p className="font-bold">Aucun article dans le catalogue</p>
+                      <p className="text-xs mt-1">Ajoutez des articles dans votre espace Stock pour les retrouver ici.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3 max-h-[420px] overflow-y-auto pr-2">
+                      {catalogItems.map((item: any, i: number) => (
+                        <button
+                          key={i}
+                          onClick={() => selectFromCatalog(item)}
+                          className="flex items-center justify-between p-4 bg-secondary/30 rounded-2xl border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group text-left"
+                        >
+                          <div>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-primary">{item.category || 'Général'}</span>
+                            <p className="font-bold">{item.name}</p>
+                            <p className="text-xs text-muted-foreground">Stock : {item.quantity} {item.unit}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-black text-primary text-lg">{Number(item.selling_price || 0)} €</p>
+                            <p className="text-[9px] text-muted-foreground">Prix de vente</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
