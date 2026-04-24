@@ -13,7 +13,8 @@ import {
   Box,
   Calendar,
   Shield,
-  Lock
+  Lock,
+  Camera
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase';
@@ -25,6 +26,7 @@ import { QuickActionFAB } from './QuickActionFAB';
 const navItems = [
   { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard', module: null },
   { name: 'Planning', icon: Calendar, href: '/planning', module: 'planning' },
+  { name: 'Photos', icon: Camera, href: '/photos', module: 'planning' },
   { name: 'Stock', icon: Box, href: '/stock', module: 'stock' },
   { name: 'Factures', icon: FileText, href: '/invoices', module: 'documents' },
   { name: 'Clients', icon: Users, href: '/clients', module: 'clients' },
