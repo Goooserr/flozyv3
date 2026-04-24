@@ -179,96 +179,168 @@ export default function AdminPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Real Artisans List */}
-        <div className="lg:col-span-2 bg-card border border-border rounded-3xl p-8 shadow-sm">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-bold">Artisans inscrits ({artisans.length})</h3>
-            <button className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground">
-              Voir tout le répertoire <ArrowUpRight className="w-3 h-3" />
-            </button>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Real Artisans List */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-card border border-border rounded-3xl p-8 shadow-sm">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="text-xl font-bold">Comptes Artisans</h3>
+                <p className="text-xs text-muted-foreground mt-1">Gérez les accès et surveillez l'activité.</p>
+              </div>
+              <div className="flex gap-2">
+                 <div className="px-3 py-1.5 bg-secondary rounded-lg text-[10px] font-bold border border-border">TOTAL: {artisans.length}</div>
+              </div>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-[10px] text-muted-foreground uppercase tracking-widest border-b border-border/50">
+                    <th className="pb-4 font-bold">Artisan / Entreprise</th>
+                    <th className="pb-4 font-bold">Forfait</th>
+                    <th className="pb-4 font-bold text-center">Status</th>
+                    <th className="pb-4 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/30">
+                  {artisans.map((artisan) => (
+                    <tr 
+                      key={artisan.id} 
+                      onClick={() => setSelectedArtisan(artisan)}
+                      className={cn(
+                        "group cursor-pointer transition-colors hover:bg-secondary/20",
+                        selectedArtisan?.id === artisan.id && "bg-primary/5"
+                      )}
+                    >
+                      <td className="py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center font-black text-primary text-xs border border-primary/10">
+                            {artisan.company_name?.substring(0, 2) || 'A'}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold leading-none">{artisan.company_name || 'Sans Nom'}</p>
+                            <p className="text-[10px] text-muted-foreground mt-1">{artisan.full_name}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4">
+                        <span className={cn(
+                          "px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-tighter border",
+                          artisan.subscription_plan === 'Expert' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : 
+                          artisan.subscription_plan === 'Pro' ? "bg-blue-500/10 text-blue-500 border-blue-500/20" : 
+                          "bg-zinc-500/10 text-zinc-500 border-zinc-500/20"
+                        )}>
+                          {artisan.subscription_plan || 'Starter'}
+                        </span>
+                      </td>
+                      <td className="py-4">
+                        <div className="flex justify-center">
+                           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[9px] font-black border border-emerald-500/20 uppercase tracking-tighter">
+                             <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" /> Actif
+                           </div>
+                        </div>
+                      </td>
+                      <td className="py-4 text-right">
+                         <button className="p-2 hover:bg-secondary rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                           <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                         </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div className="space-y-4">
-             {artisans.map((artisan) => (
-               <div 
-                key={artisan.id} 
-                onClick={() => setSelectedArtisan(artisan)}
-                className={cn(
-                  "flex items-center justify-between p-4 rounded-2xl border border-border/50 cursor-pointer transition-all hover:border-primary/50",
-                  selectedArtisan?.id === artisan.id ? "bg-primary/5 border-primary/30" : "bg-secondary/30"
-                )}
-               >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center font-bold text-primary uppercase">
-                      {artisan.company_name?.substring(0, 2) || 'A'}
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold">{artisan.company_name || 'Sans Nom'}</p>
-                      <p className="text-[10px] text-muted-foreground">{artisan.full_name} • Inscrit le {new Date(artisan.created_at).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-bold rounded-full uppercase">Actif</div>
-                    <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                  </div>
-               </div>
-             ))}
-             {artisans.length === 0 && (
-                 <div className="text-center p-8 text-muted-foreground text-sm">
-                     Aucun artisan inscrit pour le moment.
-                 </div>
-             )}
+
+          {/* System Performance Mock */}
+          <div className="bg-secondary/20 border border-border rounded-3xl p-6 flex items-center justify-between">
+             <div className="flex items-center gap-4">
+                <div className="p-3 bg-card border border-border rounded-2xl shadow-sm"><Zap className="w-5 h-5 text-amber-500" /></div>
+                <div>
+                   <p className="text-sm font-bold">Performance du serveur</p>
+                   <p className="text-xs text-muted-foreground">Temps de réponse moyen : 42ms</p>
+                </div>
+             </div>
+             <div className="flex gap-2">
+                {[1,2,3,4,5,6,7,8,9,10].map(i => (
+                  <div key={i} className="w-1.5 h-6 bg-emerald-500/40 rounded-full animate-pulse" style={{ animationDelay: `${i * 100}ms` }} />
+                ))}
+             </div>
           </div>
         </div>
 
         {/* Live Chat Panel */}
-        <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm flex flex-col h-[500px]">
+        <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[600px] sticky top-24 border-primary/20">
            {selectedArtisan ? (
              <>
-               <div className="p-4 bg-secondary/50 border-b border-border flex items-center justify-between">
+               <div className="p-5 bg-zinc-900 text-white flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-xs font-bold uppercase">
-                      {selectedArtisan.company_name?.substring(0, 2) || 'A'}
+                    <div className="relative">
+                      <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center text-xs font-black uppercase shadow-lg shadow-primary/20">
+                        {selectedArtisan.company_name?.substring(0, 2) || 'A'}
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-zinc-900 rounded-full" />
                     </div>
-                    <p className="text-sm font-bold truncate max-w-[150px]">{selectedArtisan.company_name || 'Sans Nom'}</p>
+                    <div>
+                      <p className="text-sm font-black truncate max-w-[150px]">{selectedArtisan.company_name || 'Sans Nom'}</p>
+                      <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">Support en direct</p>
+                    </div>
                   </div>
-                  <button onClick={() => setSelectedArtisan(null)}><CloseIcon className="w-4 h-4 text-muted-foreground hover:text-foreground" /></button>
+                  <button onClick={() => setSelectedArtisan(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><CloseIcon className="w-4 h-4 text-zinc-400" /></button>
                </div>
-               <div className="flex-1 overflow-y-auto p-4 space-y-4">
+               <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-secondary/10 custom-scrollbar">
                   {chatMessages.length === 0 ? (
-                      <div className="h-full flex items-center justify-center text-xs text-muted-foreground italic">
-                          Démarrez la conversation
+                      <div className="h-full flex flex-col items-center justify-center text-center p-8 gap-4 opacity-40">
+                          <MessageSquare className="w-12 h-12 text-primary" />
+                          <p className="text-xs font-bold uppercase tracking-widest">Aucun message</p>
                       </div>
                   ) : (
                       chatMessages.map((msg, i) => (
-                        <div key={i} className={cn("flex flex-col mb-4", msg.sender_id === selectedArtisan.id ? "items-start" : "items-end")}>
+                        <div key={i} className={cn("flex flex-col", msg.sender_id === selectedArtisan.id ? "items-start" : "items-end")}>
                           <div className={cn(
-                            "max-w-[80%] px-4 py-2 rounded-2xl text-xs shadow-sm",
-                            msg.sender_id === selectedArtisan.id ? "bg-secondary text-foreground rounded-tl-none border border-border" : "bg-primary text-white rounded-tr-none"
+                            "max-w-[85%] px-4 py-3 rounded-2xl text-sm shadow-sm transition-all hover:scale-[1.02]",
+                            msg.sender_id === selectedArtisan.id 
+                              ? "bg-white border border-border text-zinc-800 rounded-tl-none" 
+                              : "bg-zinc-900 text-white rounded-tr-none"
                           )}>
                             {msg.content}
                           </div>
-                          <span className="text-[8px] text-muted-foreground mt-1">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className="text-[9px] text-muted-foreground mt-2 font-bold px-1">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
                       ))
                   )}
                </div>
-               <form onSubmit={handleSendMessage} className="p-4 border-t border-border flex gap-2 bg-secondary/20">
+               <form onSubmit={handleSendMessage} className="p-4 border-t border-border flex gap-3 bg-white">
                   <input 
                     value={newMessage}
                     onChange={e => setNewMessage(e.target.value)}
-                    placeholder="Tapez votre message..."
-                    className="flex-1 bg-card border border-border rounded-xl px-4 py-2 text-xs outline-none focus:ring-1 focus:ring-primary shadow-sm"
+                    placeholder="Conseillez votre artisan..."
+                    className="flex-1 bg-secondary/50 border border-border rounded-2xl px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                   />
-                  <button type="submit" disabled={!newMessage.trim()} className="p-2 bg-primary text-white rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity">
-                    <Send className="w-4 h-4" />
+                  <button 
+                    type="submit" 
+                    disabled={!newMessage.trim()} 
+                    className="w-12 h-12 bg-primary text-white rounded-2xl flex items-center justify-center hover:opacity-90 disabled:opacity-50 transition-all shadow-lg shadow-primary/20"
+                  >
+                    <Send className="w-5 h-5" />
                   </button>
                </form>
              </>
            ) : (
-             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-4 opacity-40">
-                <div className="p-4 bg-secondary rounded-full"><MessageSquare className="w-8 h-8" /></div>
+             <div className="flex-1 flex flex-col items-center justify-center text-center p-12 gap-6">
+                <div className="relative">
+                  <div className="p-6 bg-primary/10 rounded-[2rem] animate-pulse">
+                    <MessageSquare className="w-12 h-12 text-primary" />
+                  </div>
+                  <div className="absolute -top-2 -right-2 bg-amber-500 text-white text-[10px] font-black px-2 py-1 rounded-full border-4 border-card">LIVE</div>
+                </div>
                 <div>
-                  <p className="font-bold text-sm">Messagerie Directe</p>
-                  <p className="text-xs">Sélectionnez un artisan pour démarrer une conversation.</p>
+                  <h4 className="font-black text-xl mb-2">Flozy Care Hub</h4>
+                  <p className="text-sm text-muted-foreground max-w-[200px] mx-auto leading-relaxed">Cliquez sur un artisan dans la liste pour résoudre ses problèmes en temps réel.</p>
+                </div>
+                <div className="flex gap-2">
+                   {[1,2,3].map(i => <div key={i} className="w-2 h-2 rounded-full bg-primary/20" />)}
                 </div>
              </div>
            )}

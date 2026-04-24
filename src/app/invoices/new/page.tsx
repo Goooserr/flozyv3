@@ -22,7 +22,7 @@ import { SignaturePad } from '@/components/SignaturePad'
 export default function NewInvoicePage() {
   const router = useRouter()
   const { primaryColor, companyName, logoUrl } = useTheme()
-  const [items, setItems] = useState([{ description: 'Installation tableau électrique', quantity: 1, price: 1200, syncStock: false }])
+  const [items, setItems] = useState([{ description: 'Installation tableau électrique', quantity: 1, price: 1200, purchasePrice: 0, syncStock: false }])
   const [client, setClient] = useState({ id: '', name: '', address: '' })
   const [clients, setClients] = useState<any[]>([])
   const [showCatalog, setShowCatalog] = useState(false)
@@ -65,7 +65,8 @@ export default function NewInvoicePage() {
           items: items,
           signature: signature,
           subtotal: totalHT,
-          tax: totalHT * 0.2
+          tax: totalHT * 0.2,
+          total_cost: items.reduce((acc, item) => acc + (item.quantity * (item.purchasePrice || 0)), 0)
         }
       })
 
@@ -107,26 +108,65 @@ export default function NewInvoicePage() {
   
   // Catalogue factice pour la démo
   const catalog = [
-    { name: 'Main d\'œuvre Standard', description: 'Une heure de travail qualifié', price: 65 },
-    { name: 'Forfait Diagnostic', description: 'Déplacement + 1h de recherche de panne', price: 120 },
-    { name: 'Prise Legrand Dooxie', description: 'Prise de courant complète blanche', price: 15 },
-    { name: 'Câble RO2V 3G2.5', description: 'Prix au mètre linéaire', price: 2.50 },
+    { name: 'Main d\'œuvre Standard', description: 'Une heure de travail qualifié', price: 65, purchasePrice: 20 },
+    { name: 'Forfait Diagnostic', description: 'Déplacement + 1h de recherche de panne', price: 120, purchasePrice: 30 },
+    { name: 'Prise Legrand Dooxie', description: 'Prise de courant complète blanche', price: 15, purchasePrice: 8.5 },
+    { name: 'Câble RO2V 3G2.5', description: 'Prix au mètre linéaire', price: 2.50, purchasePrice: 1.10 },
   ]
 
   const selectFromCatalog = (catalogItem: any) => {
-    setItems([...items, { description: catalogItem.name, quantity: 1, price: catalogItem.price, syncStock: true }])
+    setItems([...items, { description: catalogItem.name, quantity: 1, price: catalogItem.price, purchasePrice: catalogItem.purchasePrice || 0, syncStock: true }])
     setShowCatalog(false)
   }
 
   const totalHT = items.reduce((acc, item) => acc + (item.quantity * item.price), 0)
+  const totalCost = items.reduce((acc, item) => acc + (item.quantity * (item.purchasePrice || 0)), 0)
+  const margin = totalHT - totalCost
+  const marginPercent = totalHT > 0 ? (margin / totalHT) * 100 : 0
   const tva = totalHT * 0.2
   const totalTTC = totalHT + tva
 
-  const addItem = () => setItems([...items, { description: '', quantity: 1, price: 0, syncStock: false }])
+  const addItem = () => setItems([...items, { description: '', quantity: 1, price: 0, purchasePrice: 0, syncStock: false }])
   const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index))
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
+        {/* Rendement Widget (Artisan Only) */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-2xl flex items-center justify-between overflow-hidden relative group">
+           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+              <Sparkles className="w-32 h-32 rotate-12" />
+           </div>
+           <div className="flex gap-12 items-center relative z-10">
+              <div>
+                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Coût Matériel Estimé</p>
+                 <p className="text-2xl font-black text-white">{totalCost.toLocaleString()} €</p>
+              </div>
+              <div className="h-10 w-px bg-zinc-800" />
+              <div>
+                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Marge Brute HT</p>
+                 <p className="text-2xl font-black text-emerald-400">+{margin.toLocaleString()} €</p>
+              </div>
+              <div className="h-10 w-px bg-zinc-800" />
+              <div>
+                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Rendement</p>
+                 <div className="flex items-center gap-2">
+                    <p className="text-2xl font-black text-white">{marginPercent.toFixed(1)} %</p>
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter",
+                      marginPercent > 40 ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+                    )}>
+                      {marginPercent > 40 ? 'Excellent' : 'À surveiller'}
+                    </span>
+                 </div>
+              </div>
+           </div>
+           <div className="hidden md:block text-right">
+              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Visible uniquement par vous</p>
+              <div className="flex items-center gap-2 text-zinc-400 font-bold text-xs justify-end">
+                 <ShieldAlert className="w-3 h-3 text-amber-500" /> Analyse de rentabilité active
+              </div>
+           </div>
+        </div>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
@@ -284,62 +324,82 @@ export default function NewInvoicePage() {
 
             <div className="space-y-4">
               {items.map((item, index) => (
-                <div key={index} className="flex gap-4 animate-in slide-in-from-left-4 duration-300">
-                  <input 
-                    placeholder="Description"
-                    className="flex-1 bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                    value={item.description}
-                    onChange={e => {
-                      const newItems = [...items]
-                      newItems[index].description = e.target.value
-                      setItems(newItems)
-                    }}
-                  />
-                  <input 
-                    type="number"
-                    placeholder="Qté"
-                    className="w-20 bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                    value={item.quantity}
-                    onChange={e => {
-                      const newItems = [...items]
-                      newItems[index].quantity = Number(e.target.value)
-                      setItems(newItems)
-                    }}
-                  />
-                  <input 
-                    type="number"
-                    placeholder="Prix"
-                    className="w-28 bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                    value={item.price}
-                    onChange={e => {
-                      const newItems = [...items]
-                      newItems[index].price = Number(e.target.value)
-                      setItems(newItems)
-                    }}
-                  />
-                  <div className="flex flex-col items-center justify-center px-2">
-                    <button 
-                      title="Lier au stock"
-                      onClick={() => {
+                <div key={index} className="space-y-3 p-4 bg-secondary/20 rounded-2xl border border-border/50 animate-in slide-in-from-left-4 duration-300">
+                  <div className="flex gap-4">
+                    <input 
+                      placeholder="Description"
+                      className="flex-1 bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                      value={item.description}
+                      onChange={e => {
                         const newItems = [...items]
-                        newItems[index].syncStock = !newItems[index].syncStock
+                        newItems[index].description = e.target.value
                         setItems(newItems)
                       }}
-                      className={cn(
-                        "p-2 rounded-lg transition-all", 
-                        item.syncStock ? "text-primary bg-primary/10" : "text-muted-foreground bg-secondary/50"
-                      )}
+                    />
+                    <button 
+                      onClick={() => removeItem(index)}
+                      className="p-3 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors"
                     >
-                      <Box className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
-                    <span className="text-[8px] font-black uppercase mt-1">Stock</span>
                   </div>
-                  <button 
-                    onClick={() => removeItem(index)}
-                    className="p-3 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground ml-1">Qté</label>
+                      <input 
+                        type="number"
+                        className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                        value={item.quantity}
+                        onChange={e => {
+                          const newItems = [...items]
+                          newItems[index].quantity = Number(e.target.value)
+                          setItems(newItems)
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground ml-1">Prix Vente HT</label>
+                      <input 
+                        type="number"
+                        className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                        value={item.price}
+                        onChange={e => {
+                          const newItems = [...items]
+                          newItems[index].price = Number(e.target.value)
+                          setItems(newItems)
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-black uppercase tracking-widest text-primary ml-1">Prix Achat HT</label>
+                      <input 
+                        type="number"
+                        className="w-full bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                        value={item.purchasePrice}
+                        onChange={e => {
+                          const newItems = [...items]
+                          newItems[index].purchasePrice = Number(e.target.value)
+                          setItems(newItems)
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-center pt-5 gap-2">
+                       <button 
+                        title="Lier au stock"
+                        onClick={() => {
+                          const newItems = [...items]
+                          newItems[index].syncStock = !newItems[index].syncStock
+                          setItems(newItems)
+                        }}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all text-[10px] font-bold uppercase", 
+                          item.syncStock ? "text-primary bg-primary/10 border border-primary/20" : "text-muted-foreground bg-secondary/50 border border-border"
+                        )}
+                      >
+                        <Box className="w-3 h-3" /> {item.syncStock ? 'Lié' : 'Stock'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

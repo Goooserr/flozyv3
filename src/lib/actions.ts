@@ -174,7 +174,7 @@ export async function getAllArtisans() {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select('*, clients:clients(count)')
     .order('created_at', { ascending: false })
   if (error) return []
   return data
