@@ -40,14 +40,7 @@ export function Sidebar() {
 
   useEffect(() => {
     async function checkAdmin() {
-      // Vérification locale prioritaire (pour le développement/démo)
-      const localAdmin = localStorage.getItem('flozy_admin_access');
-      if (localAdmin === 'true') {
-        setIsAdmin(true);
-        return;
-      }
-
-      // Vérification en base de données classique
+      // Vérification en base de données uniquement (Sécurisé)
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();

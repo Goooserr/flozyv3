@@ -78,3 +78,27 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Styles pour l'impression PDF */
+@media print {
+  aside, header, nav, button, .no-print {
+    display: none !important;
+  }
+  
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+  
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+
+  .bg-card {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
