@@ -30,6 +30,8 @@ export async function POST(req: Request) {
     const userId = session.metadata?.userId;
     const planId = session.metadata?.planId;
 
+    console.log(`🔔 Webhook reçu pour l'utilisateur ${userId} - Plan: ${planId}`);
+
     if (userId && planId) {
       // Définir les modules en fonction du plan
       let modules = ['clients', 'documents'];
@@ -39,20 +41,27 @@ export async function POST(req: Request) {
         modules = ['clients', 'documents', 'planning'];
       }
 
-      const { error } = await supabaseAdmin
+      console.log(`🔄 Mise à jour du profil Supabase...`);
+
+      const { data, error } = await supabaseAdmin
         .from('profiles')
         .update({ 
           subscription_plan: planId,
           subscription_status: 'active',
           enabled_modules: modules
         })
-        .eq('id', userId);
+        .eq('id', userId)
+        .select();
 
       if (error) {
-        console.error('Error updating profile via webhook:', error);
+        console.error('❌ Erreur Supabase lors de la mise à jour:', error);
+      } else if (data && data.length > 0) {
+        console.log(`✅ Profil mis à jour avec succès pour ${userId}`);
       } else {
-        console.log(`Plan updated for user ${userId}: ${planId}`);
+        console.warn(`⚠️ Aucun profil trouvé pour l'ID ${userId}`);
       }
+    } else {
+      console.error('❌ Metadata manquantes dans la session Stripe (userId ou planId)');
     }
   }
 
