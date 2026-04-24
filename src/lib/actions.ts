@@ -253,50 +253,21 @@ export async function convertQuoteToInvoice(id: string, currentNumber: string) {
 }
 
 export async function uploadInterventionPhoto(interventionId: string, file: File) {
-  const supabase = createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) throw new Error("Non autorisé")
+  // Utilise l'API serveur qui a les droits pour créer le bucket si besoin
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('interventionId', interventionId)
 
-  const fileExt = file.name.split('.').pop()
-  const fileName = `${userData.user.id}/${interventionId}/${Date.now()}.${fileExt}`
+  const res = await fetch('/api/upload-photo', {
+    method: 'POST',
+    body: formData,
+  })
 
-  // Essai avec le bucket 'photos' (public) en priorité, puis 'interventions'
-  const buckets = ['photos', 'interventions']
-  let publicUrl = ''
-  let uploadSuccess = false
+  const result = await res.json()
 
-  for (const bucket of buckets) {
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(fileName, file, { upsert: true })
-
-    if (!uploadError) {
-      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(fileName)
-      publicUrl = urlData.publicUrl
-      uploadSuccess = true
-      break
-    }
-    console.warn(`Bucket '${bucket}' failed:`, uploadError.message)
+  if (!res.ok || !result.success) {
+    throw new Error(result.error || "Erreur lors de l'upload")
   }
 
-  if (!uploadSuccess) {
-    throw new Error("Aucun bucket de stockage disponible. Créez un bucket 'photos' public dans Supabase Storage.")
-  }
-
-  // Mettre à jour la table interventions avec la nouvelle photo
-  const { data: intervention } = await supabase
-    .from('interventions')
-    .select('photos')
-    .eq('id', interventionId)
-    .single()
-
-  const currentPhotos = intervention?.photos || []
-  const { data, error } = await supabase
-    .from('interventions')
-    .update({ photos: [...currentPhotos, publicUrl] })
-    .eq('id', interventionId)
-    .select()
-
-  if (error) throw error
-  return data
+  return result
 }
