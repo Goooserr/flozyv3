@@ -6,10 +6,10 @@ import { CheckCircle2, ArrowRight, Sparkles, MousePointerClick, Clock, Euro, Tre
 import { cn } from '@/lib/utils'
 
 const STEPS = [
-  { id: 1, label: 'Devis', color: 'from-violet-600 to-primary' },
-  { id: 2, label: 'Planning', color: 'from-blue-600 to-cyan-500' },
-  { id: 3, label: 'Stock', color: 'from-emerald-600 to-green-400' },
-  { id: 4, label: 'Offre', color: 'from-amber-500 to-orange-500' },
+  { id: 1, label: 'Devis', color: 'from-indigo-500 to-purple-500' },
+  { id: 2, label: 'Planning', color: 'from-blue-500 to-cyan-400' },
+  { id: 3, label: 'Stock', color: 'from-emerald-500 to-teal-400' },
+  { id: 4, label: 'Offre', color: 'from-violet-500 to-fuchsia-500' },
 ]
 
 export default function DemoClient() {
@@ -374,18 +374,38 @@ function UIOffer() {
         { name: 'Pro', price: '29€/mois', features: ['Devis illimités', 'Planning + Photos', 'Catalogue stock', 'Marque blanche'], cta: 'Démarrer — 14j gratuits', highlight: true },
         { name: 'Expert', price: '59€/mois', features: ['Tout Pro +', 'Multi-utilisateurs', 'Statistiques avancées', 'Support prioritaire'], cta: 'Contacter', highlight: false },
       ].map((plan) => (
-        <div key={plan.name} className={cn("rounded-2xl border p-5 relative", plan.highlight ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-white/5 bg-zinc-900/50")}>
-          {plan.highlight && <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary rounded-full text-[9px] font-black uppercase tracking-widest text-white whitespace-nowrap">⭐ Le plus populaire</div>}
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-black">{plan.name}</p>
-            <p className={cn("font-black", plan.highlight ? "text-primary" : "text-white")}>{plan.price}</p>
+        <div key={plan.name} className={cn(
+          "rounded-2xl border p-6 relative transition-all duration-500", 
+          plan.highlight 
+            ? "border-primary/50 bg-zinc-900/80 shadow-[0_0_40px_rgba(var(--primary-rgb,255,255,255),0.1)] ring-1 ring-primary/20 scale-[1.02]" 
+            : "border-white/5 bg-zinc-900/40 opacity-80 hover:opacity-100"
+        )}>
+          {plan.highlight && (
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary rounded-full text-[10px] font-black uppercase tracking-widest text-primary-foreground whitespace-nowrap shadow-lg shadow-primary/20">
+              ⭐ Le plus populaire
+            </div>
+          )}
+          <div className="flex items-center justify-between mb-4">
+            <p className={cn("font-black text-lg", plan.highlight ? "text-white" : "text-zinc-400")}>{plan.name}</p>
+            <p className={cn("font-black text-xl", plan.highlight ? "text-primary" : "text-white")}>{plan.price}</p>
           </div>
-          <div className="space-y-1.5 mb-4">
+          <div className="space-y-3 mb-6">
             {plan.features.map((f, i) => (
-              <p key={i} className="text-xs text-zinc-400 flex items-center gap-2"><CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />{f}</p>
+              <p key={i} className="text-xs text-zinc-400 flex items-center gap-2">
+                <CheckCircle2 className={cn("w-3.5 h-3.5 shrink-0", plan.highlight ? "text-primary" : "text-emerald-500")} />
+                {f}
+              </p>
             ))}
           </div>
-          <Link href="/register" className={cn("block w-full py-2.5 rounded-xl font-black text-xs text-center transition-all", plan.highlight ? "bg-primary text-white hover:opacity-90" : "bg-white/5 text-zinc-300 hover:bg-white/10")}>
+          <Link 
+            href="/register" 
+            className={cn(
+              "block w-full py-3 rounded-xl font-black text-sm text-center transition-all", 
+              plan.highlight 
+                ? "bg-primary text-primary-foreground hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20" 
+                : "bg-white/5 text-zinc-300 hover:bg-white/10"
+            )}
+          >
             {plan.cta}
           </Link>
         </div>
