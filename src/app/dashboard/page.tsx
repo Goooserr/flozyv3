@@ -14,8 +14,7 @@ import {
   Loader2,
   ChevronRight,
   PlusCircle,
-  Lock,
-  XIcon
+  Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getDocuments, getClients, getInterventions } from '@/lib/actions';
