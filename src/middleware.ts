@@ -1,5 +1,5 @@
-import { createServerClient, type NextFetchEvent, type NextRequest } from '@supabase/ssr'
-import { NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest, event: NextFetchEvent) {
   let response = NextResponse.next({
@@ -57,15 +57,22 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
   const { data: { session } } = await supabase.auth.getSession()
 
   // Protection des routes
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || 
-                    request.nextUrl.pathname.startsWith('/register')
+  const isPublicPage = request.nextUrl.pathname === '/' ||
+                      request.nextUrl.pathname === '/demo' ||
+                      request.nextUrl.pathname.startsWith('/login') || 
+                      request.nextUrl.pathname.startsWith('/register') ||
+                      request.nextUrl.pathname.startsWith('/admin-login') ||
+                      request.nextUrl.pathname.startsWith('/admin') ||
+                      request.nextUrl.pathname.startsWith('/p/')
   
-  if (!session && !isAuthPage) {
+  if (!session && !isPublicPage) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/register')
+
   if (session && isAuthPage) {
-    return NextResponse.redirect(new URL('/', request.url))
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   return response

@@ -7,17 +7,12 @@ export async function getClients() {
     .select('*')
     .order('created_at', { ascending: false })
   
-  if (error) {
-    console.error('Error fetching clients:', error)
-    return []
-  }
+  if (error) return []
   return data
 }
 
-export async function addClient(client: { full_name: string, email: string, phone: string, address: string }) {
+export async function addClient(client: { full_name: string, email: string, phone: string, address: string, metadata?: any }) {
   const supabase = createClient()
-  
-  // Note: Dans une version réelle, on récupérerait l'ID de l'artisan via l'auth
   const { data: userData } = await supabase.auth.getUser()
   
   const { data, error } = await supabase
@@ -25,11 +20,211 @@ export async function addClient(client: { full_name: string, email: string, phon
     .insert([
       { 
         ...client, 
-        artisan_id: userData.user?.id 
+        artisan_id: userData.user?.id,
+        metadata: client.metadata || {}
       }
     ])
     .select()
 
+  if (error) throw error
+  return data
+}
+
+export async function getFieldDefinitions(entityType: string) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('field_definitions')
+    .select('*')
+    .eq('entity_type', entityType)
+  
+  if (error) {
+    console.error('Error fetching field definitions:', error)
+    return []
+  }
+  return data
+}
+
+export async function addFieldDefinition(definition: { entity_type: string, label: string, field_type: string, required: boolean }) {
+  const supabase = createClient()
+  const { data: userData } = await supabase.auth.getUser()
+  
+  const { data, error } = await supabase
+    .from('field_definitions')
+    .insert([{ ...definition, artisan_id: userData.user?.id }])
+    .select()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteFieldDefinition(id: string) {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('field_definitions')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+  return true
+}
+
+// --- MODULE STOCK ---
+export async function getStock() {
+  const supabase = createClient()
+  const { data, error } = await supabase.from('stock').select('*').order('name')
+  if (error) return []
+  return data
+}
+
+export async function updateStockQuantity(id: string, newQuantity: number) {
+  const supabase = createClient()
+  const { data, error } = await supabase.from('stock').update({ quantity: newQuantity }).eq('id', id).select()
+  if (error) throw error
+  return data
+}
+
+// --- MODULE PLANNING ---
+export async function getInterventions() {
+  const supabase = createClient()
+  const { data, error } = await supabase.from('interventions').select('*, clients(full_name)').order('start_time')
+  if (error) return []
+  return data
+}
+
+export async function createIntervention(intervention: any) {
+  const supabase = createClient()
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) return null
+
+  const { data, error } = await supabase.from('interventions').insert([{
+    ...intervention,
+    artisan_id: userData.user.id
+  }]).select()
+
+  if (error) throw error
+  return data
+}
+
+export async function updateIntervention(id: string, updates: any) {
+  const supabase = createClient()
+  const { data, error } = await supabase.from('interventions').update(updates).eq('id', id).select()
+  if (error) throw error
+  return data
+}
+
+// --- ESPACE ADMIN ---
+export async function getAdminStats() {
+  const supabase = createClient()
+  
+  // Vérification admin
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user?.id).single()
+  
+  if (!profile?.is_admin) throw new Error("Accès refusé")
+
+  const [users, clients, docs] = await Promise.all([
+    supabase.from('profiles').select('id', { count: 'exact' }),
+    supabase.from('clients').select('id', { count: 'exact' }),
+    supabase.from('documents').select('amount')
+  ])
+
+  const totalRevenue = docs.data?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0
+
+  return {
+    totalUsers: users.count || 0,
+    totalClients: clients.count || 0,
+    totalRevenue,
+    activeArtisans: users.count || 0
+  }
+}
+
+// --- MODULE CATALOGUE ---
+export async function getCatalogItems() {
+  const supabase = createClient()
+  const { data, error } = await supabase.from('catalog_items').select('*').order('name')
+  if (error) return []
+  return data
+}
+
+// --- MODULE ADMIN & CHAT ---
+export async function getAllArtisans() {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) return []
+  return data
+}
+
+export async function getMessages(otherUserId: string) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*')
+    .or(`and(sender_id.eq.${user.id},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${user.id})`)
+    .order('created_at', { ascending: true })
+  
+  if (error) return []
+  return data
+}
+
+export async function sendMessage(recipientId: string, content: string) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  await supabase.from('messages').insert([
+    { sender_id: user.id, recipient_id: recipientId, content }
+  ])
+}
+
+// --- MODULE DOCUMENTS (INVOICES/QUOTES) ---
+export async function getDocuments(type?: 'invoice' | 'quote') {
+  const supabase = createClient()
+  let query = supabase.from('documents').select('*, clients(full_name)').order('created_at', { ascending: false })
+  
+  if (type) {
+    query = query.eq('type', type)
+  }
+  
+  const { data, error } = await query
+  if (error) return []
+  return data
+}
+
+export async function createDocument(document: any) {
+  const supabase = createClient()
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) throw new Error("Non autorisé")
+
+  const { data, error } = await supabase.from('documents').insert([{
+    ...document,
+    artisan_id: userData.user.id
+  }]).select().single()
+
+  if (error) throw error
+  return data
+}
+
+export async function updateDocumentStatus(id: string, status: string) {
+  const supabase = createClient()
+  const { data, error } = await supabase.from('documents').update({ status }).eq('id', id).select()
+  if (error) throw error
+  return data
+}
+
+export async function convertQuoteToInvoice(id: string, currentNumber: string) {
+  const supabase = createClient()
+  const newNumber = currentNumber.replace('DEV-', 'FAC-')
+  const { data, error } = await supabase.from('documents').update({ 
+    type: 'invoice',
+    document_number: newNumber,
+    status: 'pending' // Invoice is now pending payment
+  }).eq('id', id).select()
   if (error) throw error
   return data
 }
