@@ -8,7 +8,7 @@ const plans = [
   {
     id: 'starter',
     name: 'Starter',
-    price: '0',
+    price: 0,
     description: 'Pour les artisans qui se lancent.',
     features: ['5 factures par mois', 'CRM basique', 'Support par email'],
     icon: Shield,
@@ -19,7 +19,7 @@ const plans = [
   {
     id: 'pro',
     name: 'Pro',
-    price: '29',
+    price: 29,
     description: 'Le choix idéal pour accélérer votre activité.',
     features: ['Factures illimitées', 'Gestion de Stock', 'Planning interactif', 'Relances automatiques', 'Support prioritaire'],
     icon: Zap,
@@ -29,9 +29,9 @@ const plans = [
     popular: true,
   },
   {
-    id: 'premium',
-    name: 'Premium',
-    price: '79',
+    id: 'expert',
+    name: 'Expert',
+    price: 49,
     description: 'Une marque blanche totale pour les plus exigeants.',
     features: ['Tout le plan Pro', 'Marque blanche totale', 'Domaine personnalisé', 'Accès API dédié', 'Conseiller personnel'],
     icon: Crown,
@@ -42,21 +42,39 @@ const plans = [
 ]
 
 export default function BillingPage() {
-  const { primaryColor } = useTheme()
+  const { primaryColor, subscriptionPlan } = useTheme()
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
   
   // Mock current user usage
   const invoicesUsed = 3
   const invoicesLimit = 5
   const usagePercentage = (invoicesUsed / invoicesLimit) * 100
-  const currentPlan = 'starter'
+  const currentPlan = subscriptionPlan || 'starter'
 
-  const handleUpgrade = (planId: string) => {
-    setLoadingPlan(planId)
-    setTimeout(() => {
-      alert("Le module de paiement Stripe est en cours d'intégration. Cette fonctionnalité sera bientôt disponible !")
-      setLoadingPlan(null)
-    }, 1000)
+  const handleUpgrade = async (plan: any) => {
+    setLoadingPlan(plan.id)
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId: plan.id,
+          planName: plan.name,
+          price: plan.price
+        }),
+      });
+
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (err: any) {
+      alert("Erreur Stripe : " + err.message);
+    } finally {
+      setLoadingPlan(null);
+    }
   }
 
   return (
@@ -142,7 +160,7 @@ export default function BillingPage() {
 
             <button
                disabled={plan.id === currentPlan || loadingPlan === plan.id}
-               onClick={() => handleUpgrade(plan.id)}
+               onClick={() => handleUpgrade(plan)}
                className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold transition-all ${
                   plan.id === currentPlan 
                   ? 'bg-secondary text-muted-foreground cursor-not-allowed'
