@@ -1,24 +1,22 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { 
   Box, 
   Plus, 
   Search, 
-  Filter, 
   AlertTriangle, 
-  ChevronRight,
-  TrendingDown,
   TrendingUp,
   Package,
-  History,
   X,
   Loader2,
   CheckCircle2,
   Euro,
   Layers,
-  MoreVertical,
-  Trash2
+  Trash2,
+  Upload,
+  FileSpreadsheet,
+  Download
 } from 'lucide-react'
 import { getStock, updateStockQuantity } from '@/lib/actions'
 import { createClient } from '@/lib/supabase'
@@ -31,6 +29,11 @@ export default function StockPage() {
   const [stock, setStock] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isSidebarOpen, setSidebarOpen] = useState(false)
+  const [isImportOpen, setIsImportOpen] = useState(false)
+  const [importData, setImportData] = useState<any[]>([])
+  const [importError, setImportError] = useState('')
+  const [importing, setImporting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [newItem, setNewItem] = useState({ 
     name: '', 
     quantity: 0, 
@@ -127,19 +130,90 @@ export default function StockPage() {
     if (!error) load()
   }
 
+  function handleCSVFile(e: React.ChangeEvent<HTMLInputElement>) {
+    setImportError('')
+    setImportData([])
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        const text = ev.target?.result as string
+        const lines = text.split(/\r?\n/).filter(Boolean)
+        if (lines.length < 2) { setImportError('Le fichier CSV est vide ou invalide.'); return }
+        const headers = lines[0].split(';').map(h => h.trim().toLowerCase().replace(/["']/g, ''))
+        const rows = lines.slice(1).map(line => {
+          const vals = line.split(';').map(v => v.trim().replace(/["']/g, ''))
+          const obj: any = {}
+          headers.forEach((h, i) => { obj[h] = vals[i] || '' })
+          return obj
+        }).filter(r => r.name || r['désignation'] || r['designation'])
+        if (rows.length === 0) { setImportError('Aucun article valide trouvé.'); return }
+        // Normalise les colonnes
+        const normalized = rows.map(r => ({
+          name: r.name || r['désignation'] || r['designation'] || '',
+          category: r.category || r['catégorie'] || r['categorie'] || 'Matériaux',
+          unit: r.unit || r['unité'] || r['unite'] || 'unité',
+          purchase_price: parseFloat(r.purchase_price || r["prix d'achat"] || r['prix_achat'] || '0') || 0,
+          selling_price: parseFloat(r.selling_price || r['prix de vente'] || r['prix_vente'] || '0') || 0,
+          quantity: parseInt(r.quantity || r['quantité'] || r['quantite'] || '0') || 0,
+          min_stock: parseInt(r.min_stock || r['alerte'] || r['min'] || '5') || 5,
+        }))
+        setImportData(normalized)
+      } catch {
+        setImportError('Erreur lors de la lecture du fichier.')
+      }
+    }
+    reader.readAsText(file, 'utf-8')
+  }
+
+  async function handleImportConfirm() {
+    if (importData.length === 0) return
+    setImporting(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setImporting(false); return }
+    const rows = importData.map(item => ({ ...item, artisan_id: user.id }))
+    const { error } = await supabase.from('stock').insert(rows)
+    if (error) {
+      setImportError('Erreur import : ' + error.message)
+    } else {
+      setIsImportOpen(false)
+      setImportData([])
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      load()
+    }
+    setImporting(false)
+  }
+
+  function downloadTemplate() {
+    const csv = 'name;category;unit;purchase_price;selling_price;quantity;min_stock\nCâble RO2V 3G2.5;Électricité;mètre;1.20;2.50;100;10\nDisjoncteur 16A;Électricité;unité;8.00;15.00;20;5'
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a'); a.href = url; a.download = 'modele_catalogue.csv'; a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700 h-[calc(100vh-140px)] flex flex-col">
-      <div className="flex items-center justify-between shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div className="flex flex-col gap-1">
           <h2 className="text-3xl font-black tracking-tight">Catalogue & Stock</h2>
           <p className="text-muted-foreground text-sm">Gérez vos matériaux, vos prix et votre inventaire.</p>
         </div>
-        <button 
-          onClick={() => setSidebarOpen(true)}
-          className="flex items-center gap-3 px-6 py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold hover:opacity-90 transition-all shadow-xl shadow-primary/20"
-        >
-          <Plus className="w-5 h-5" /> Ajouter au catalogue
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsImportOpen(true)}
+            className="flex items-center gap-2 px-5 py-3 bg-secondary border border-border text-foreground rounded-2xl font-bold hover:bg-secondary/80 transition-all"
+          >
+            <Upload className="w-4 h-4" /> Importer CSV
+          </button>
+          <button 
+            onClick={() => setSidebarOpen(true)}
+            className="flex items-center gap-2 px-5 py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold hover:opacity-90 transition-all shadow-xl shadow-primary/20"
+          >
+            <Plus className="w-4 h-4" /> Ajouter
+          </button>
+        </div>
       </div>
 
       {/* Financial Overview Cards */}
@@ -262,6 +336,86 @@ export default function StockPage() {
           </div>
         )}
       </div>
+
+      {/* === MODAL IMPORT CSV === */}
+      {isImportOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl bg-card border border-border rounded-[2rem] p-8 shadow-2xl flex flex-col gap-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+                  <FileSpreadsheet className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black">Importer un catalogue</h3>
+                  <p className="text-sm text-muted-foreground">Fichier CSV avec séparateur point-virgule ( ; )</p>
+                </div>
+              </div>
+              <button onClick={() => { setIsImportOpen(false); setImportData([]); setImportError('') }} className="p-2 hover:bg-secondary rounded-xl text-muted-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Template download */}
+            <button onClick={downloadTemplate} className="flex items-center gap-3 p-4 border border-dashed border-primary/30 rounded-2xl text-primary hover:bg-primary/5 transition-colors text-sm font-bold">
+              <Download className="w-4 h-4" /> Télécharger le modèle CSV
+            </button>
+
+            {/* Colonnes attendues */}
+            <div className="bg-secondary/40 rounded-2xl p-4 text-xs text-muted-foreground space-y-1">
+              <p className="font-black text-foreground text-sm mb-2">Colonnes acceptées (séparateur <code>;</code>)</p>
+              <div className="grid grid-cols-2 gap-1">
+                {['name', 'category', 'unit', 'purchase_price', 'selling_price', 'quantity', 'min_stock'].map(col => (
+                  <span key={col} className="font-mono bg-card border border-border px-2 py-1 rounded-lg">{col}</span>
+                ))}
+              </div>
+            </div>
+
+            {/* File input */}
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-border hover:border-primary/50 rounded-2xl p-8 text-center cursor-pointer transition-colors group"
+            >
+              <Upload className="w-8 h-8 text-muted-foreground group-hover:text-primary mx-auto mb-2 transition-colors" />
+              <p className="font-semibold text-sm">Cliquez pour sélectionner un fichier CSV</p>
+              <p className="text-xs text-muted-foreground mt-1">Encodage UTF-8 recommandé</p>
+              <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleCSVFile} />
+            </div>
+
+            {importError && (
+              <div className="flex items-center gap-3 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl p-4 text-sm font-medium">
+                <AlertTriangle className="w-4 h-4 shrink-0" /> {importError}
+              </div>
+            )}
+
+            {/* Preview */}
+            {importData.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-sm font-black">{importData.length} articles détectés — Aperçu :</p>
+                <div className="max-h-48 overflow-y-auto space-y-2 custom-scrollbar">
+                  {importData.slice(0, 8).map((item, i) => (
+                    <div key={i} className="flex items-center justify-between bg-secondary/30 rounded-xl px-4 py-2.5 text-sm">
+                      <span className="font-semibold truncate max-w-[200px]">{item.name}</span>
+                      <span className="text-muted-foreground text-xs">{item.category}</span>
+                      <span className="font-mono text-xs">{item.quantity} {item.unit}</span>
+                      <span className="text-emerald-500 font-bold text-xs">{item.selling_price}€</span>
+                    </div>
+                  ))}
+                  {importData.length > 8 && <p className="text-xs text-muted-foreground text-center">...et {importData.length - 8} autres articles</p>}
+                </div>
+                <button
+                  onClick={handleImportConfirm}
+                  disabled={importing}
+                  className="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground font-black py-4 rounded-[1.5rem] hover:opacity-90 transition-all shadow-xl shadow-primary/20"
+                >
+                  {importing ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                  Importer {importData.length} articles dans le catalogue
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Sidebar Modal for adding items */}
       {isSidebarOpen && (

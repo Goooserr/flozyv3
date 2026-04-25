@@ -25,27 +25,38 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
   const supabase = createClient()
 
   useEffect(() => {
-    async function loadProfile() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('primary_color, enabled_modules, company_name, logo_url, subscription_plan')
-          .eq('id', user.id)
-          .single()
-        
-        if (!error && data) {
-          if (data.primary_color) setPrimaryColor(data.primary_color)
-          if (data.enabled_modules) setEnabledModules(data.enabled_modules)
-          if (data.company_name) setCompanyName(data.company_name)
-          if (data.logo_url) setLogoUrl(data.logo_url)
-          if (data.subscription_plan) setSubscriptionPlan(data.subscription_plan.toLowerCase())
-        } else if (error) {
-          console.warn("Note: Les colonnes personnalisées ne sont peut-être pas encore créées dans Supabase. Exécutez le script SQL.")
-        }
+    async function loadProfile(userId?: string) {
+      const uid = userId || (await supabase.auth.getUser()).data.user?.id
+      if (!uid) return
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('primary_color, enabled_modules, company_name, logo_url, subscription_plan')
+        .eq('id', uid)
+        .single()
+
+      if (!error && data) {
+        if (data.primary_color) setPrimaryColor(data.primary_color)
+        if (data.enabled_modules) setEnabledModules(data.enabled_modules)
+        if (data.company_name) setCompanyName(data.company_name)
+        if (data.logo_url) setLogoUrl(data.logo_url)
+        if (data.subscription_plan) setSubscriptionPlan(data.subscription_plan.toLowerCase())
+      } else if (error) {
+        console.warn('Note: Les colonnes personnalisées ne sont peut-être pas encore créées dans Supabase. Exécutez le script SQL.')
       }
     }
+
+    // Chargement initial
     loadProfile()
+
+    // Recharge le profil dès que la session est rétablie (nouveau navigateur, onglet, etc.)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+        loadProfile(session.user.id)
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   useEffect(() => {
