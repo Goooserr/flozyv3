@@ -38,9 +38,10 @@ async function getServerSupabase() {
 
 // Client privilégié pour contourner le RLS dans le panel admin
 function createAdminClient() {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    serviceKey!,
     {
       cookies: {
         getAll: () => [],
@@ -352,12 +353,15 @@ export async function getAdminStats() {
 // --- MESSAGERIE ---
 export async function getMessages(otherId: string) {
   const isPrivileged = await isAdminAuthorized()
-  const supabase = isPrivileged ? createAdminClient() : await getServerSupabase()
   
   let userId;
+  let supabase;
+
   if (isPrivileged) {
     userId = ADMIN_ID;
+    supabase = createAdminClient();
   } else {
+    supabase = await getServerSupabase();
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return []
     userId = user.id
@@ -373,12 +377,15 @@ export async function getMessages(otherId: string) {
 
 export async function sendMessage(recipientId: string, content: string) {
   const isPrivileged = await isAdminAuthorized()
-  const supabase = isPrivileged ? createAdminClient() : await getServerSupabase()
   
   let userId;
+  let supabase;
+
   if (isPrivileged) {
     userId = ADMIN_ID;
+    supabase = createAdminClient();
   } else {
+    supabase = await getServerSupabase();
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error("Non authentifié")
     userId = user.id
@@ -387,17 +394,24 @@ export async function sendMessage(recipientId: string, content: string) {
   const { error } = await supabase
     .from('messages')
     .insert([{ sender_id: userId, recipient_id: recipientId, content }])
-  if (error) throw error
+  
+  if (error) {
+    console.error("Error sending message:", error)
+    throw new Error("Erreur lors de l'envoi du message")
+  }
 }
 
 export async function markMessagesAsRead(senderId: string) {
   const isPrivileged = await isAdminAuthorized()
-  const supabase = isPrivileged ? createAdminClient() : await getServerSupabase()
   
   let userId;
+  let supabase;
+
   if (isPrivileged) {
     userId = ADMIN_ID;
+    supabase = createAdminClient();
   } else {
+    supabase = await getServerSupabase();
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     userId = user.id
@@ -410,7 +424,9 @@ export async function markMessagesAsRead(senderId: string) {
     .eq('recipient_id', userId)
     .eq('is_read', false)
 
-  if (error) throw error
+  if (error) {
+    console.error("Error marking messages as read:", error)
+  }
 }
 
 export async function convertQuoteToInvoice(quoteId: string, docNumber: string) {
