@@ -102,6 +102,8 @@ export default function SupportChat() {
         </button>
       ) : (
         <div className="w-[320px] md:w-[380px] h-[500px] bg-card border border-border shadow-2xl rounded-3xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+          {/* Header */}
+          <div className="bg-primary p-4 flex items-center justify-between text-primary-foreground">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-black text-xs">
                 F
