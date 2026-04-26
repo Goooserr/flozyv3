@@ -1,323 +1,197 @@
 import { createClient } from './supabase'
 
+// --- HELPER : Récupère l'ID de l'artisan (soit soi-même, soit son patron) ---
 async function getArtisanId() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+  if (!user) throw new Error("Non authentifié")
   
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, role, employer_id')
+    .select('id, employer_id')
     .eq('id', user.id)
     .single()
     
-  return profile?.role === 'employee' ? profile.employer_id : user.id
+  return profile?.employer_id || user.id
 }
 
+// --- CLIENTS ---
 export async function getClients() {
   const supabase = createClient()
   const artisanId = await getArtisanId()
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('clients')
     .select('*')
     .eq('artisan_id', artisanId)
-    .order('created_at', { ascending: false })
-  
-  if (error) return []
-  return data
+    .order('full_name')
+  return data || []
 }
 
-export async function addClient(client: { full_name: string, email: string, phone: string, address: string, metadata?: any }) {
+export async function addClient(client: any) {
   const supabase = createClient()
   const artisanId = await getArtisanId()
-  
   const { data, error } = await supabase
     .from('clients')
-    .insert([
-      { 
-        ...client, 
-        artisan_id: artisanId,
-        metadata: client.metadata || {}
-      }
-    ])
+    .insert([{ ...client, artisan_id: artisanId }])
     .select()
-
   if (error) throw error
-  return data
+  return data[0]
 }
 
-export async function updateClient(id: string, client: any) {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('clients')
-    .update(client)
-    .eq('id', id)
-    .select()
-
-  if (error) throw error
-  return data
-}
-
-export async function getFieldDefinitions(entityType: string) {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('field_definitions')
-    .select('*')
-    .eq('entity_type', entityType)
-  
-  if (error) {
-    console.error('Error fetching field definitions:', error)
-    return []
-  }
-  return data
-}
-
-export async function addFieldDefinition(definition: { entity_type: string, label: string, field_type: string, required: boolean }) {
-  const supabase = createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  
-  const { data, error } = await supabase
-    .from('field_definitions')
-    .insert([{ ...definition, artisan_id: userData.user?.id }])
-    .select()
-
-  if (error) throw error
-  return data
-}
-
-export async function deleteFieldDefinition(id: string) {
+export async function updateClient(id: string, updates: any) {
   const supabase = createClient()
   const { error } = await supabase
-    .from('field_definitions')
-    .delete()
+    .from('clients')
+    .update(updates)
     .eq('id', id)
-
   if (error) throw error
-  return true
 }
 
-// --- MODULE STOCK ---
+// --- DOCUMENTS (Devis & Factures) ---
+export async function getDocuments() {
+  const supabase = createClient()
+  const artisanId = await getArtisanId()
+  const { data } = await supabase
+    .from('documents')
+    .select('*, clients(*)')
+    .eq('artisan_id', artisanId)
+    .order('created_at', { ascending: false })
+  return data || []
+}
+
+export async function createDocument(doc: any) {
+  const supabase = createClient()
+  const artisanId = await getArtisanId()
+  const { data, error } = await supabase
+    .from('documents')
+    .insert([{ ...doc, artisan_id: artisanId }])
+    .select()
+  if (error) throw error
+  return data[0]
+}
+
+// --- STOCK ---
 export async function getStock() {
   const supabase = createClient()
   const artisanId = await getArtisanId()
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('stock')
     .select('*')
     .eq('artisan_id', artisanId)
     .order('name')
-  if (error) return []
-  return data
+  return data || []
 }
 
-export async function updateStockQuantity(id: string, newQuantity: number) {
+export async function updateStockQuantity(id: string, quantity: number) {
   const supabase = createClient()
-  const { data, error } = await supabase.from('stock').update({ quantity: newQuantity }).eq('id', id).select()
+  const { error } = await supabase
+    .from('stock')
+    .update({ quantity })
+    .eq('id', id)
   if (error) throw error
-  return data
 }
 
-// --- MODULE PLANNING ---
+// --- INTERVENTIONS ---
 export async function getInterventions() {
+  const supabase = createClient()
+  const artisanId = await getArtisanId()
+  const { data } = await supabase
+    .from('interventions')
+    .select('*, clients(*)')
+    .eq('artisan_id', artisanId)
+    .order('start_time', { ascending: false })
+  return data || []
+}
+
+export async function createIntervention(inter: any) {
   const supabase = createClient()
   const artisanId = await getArtisanId()
   const { data, error } = await supabase
     .from('interventions')
-    .select('*, clients(full_name)')
-    .eq('artisan_id', artisanId)
-    .order('start_time')
-  if (error) return []
-  return data
-}
-
-export async function createIntervention(intervention: any) {
-  const supabase = createClient()
-  const artisanId = await getArtisanId()
-  if (!artisanId) return null
-
-  // Mapping date string to start_time if provided
-  const startTime = intervention.date || intervention.start_time
-  const endTime = intervention.end_time || (startTime ? new Date(new Date(startTime).getTime() + 60 * 60 * 1000).toISOString() : null)
-
-  const payload = {
-    ...intervention,
-    artisan_id: artisanId,
-    start_time: startTime,
-    end_time: endTime
-  }
-
-  // Remove 'date' if it exists to avoid DB error
-  delete (payload as any).date
-
-  const { data, error } = await supabase.from('interventions').insert([payload]).select()
-
+    .insert([{ ...inter, artisan_id: artisanId }])
+    .select()
   if (error) throw error
-  return data
+  return data[0]
 }
 
-export async function updateIntervention(id: string, updates: any) {
+// --- PROFILES & ADMIN ---
+export async function updateArtisanProfile(id: string, updates: any) {
   const supabase = createClient()
-  const { data, error } = await supabase.from('interventions').update(updates).eq('id', id).select()
+  const { error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', id)
   if (error) throw error
-  return data
+  return true
 }
 
-// --- ESPACE ADMIN ---
-export async function getAdminStats() {
-  const supabase = createClient()
-  
-  // Vérification admin
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user?.id).single()
-  
-  if (!profile?.is_admin) throw new Error("Accès refusé")
-
-  const [users, clients, docs] = await Promise.all([
-    supabase.from('profiles').select('id', { count: 'exact' }),
-    supabase.from('clients').select('id', { count: 'exact' }),
-    supabase.from('documents').select('amount')
-  ])
-
-  const totalRevenue = docs.data?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0
-
-  return {
-    totalUsers: users.count || 0,
-    totalClients: clients.count || 0,
-    totalRevenue,
-    activeArtisans: users.count || 0
-  }
-}
-
-// --- MODULE CATALOGUE ---
-export async function getCatalogItems() {
-  const supabase = createClient()
-  const { data, error } = await supabase.from('catalog_items').select('*').order('name')
-  if (error) return []
-  return data
-}
-
-// --- MODULE ADMIN & CHAT ---
 export async function getAllArtisans() {
   const supabase = createClient()
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('profiles')
-    .select('*, clients:clients(count)')
-    .order('created_at', { ascending: false })
-  if (error) return []
-  return data
+    .select('*')
+    .eq('role', 'artisan')
+  return data || []
 }
 
 export async function suspendArtisan(id: string) {
   const supabase = createClient()
-  const { error } = await supabase.from('profiles').update({ is_suspended: true }).eq('id', id)
+  const { error } = await supabase
+    .from('profiles')
+    .update({ subscription_status: 'suspended' })
+    .eq('id', id)
   if (error) throw error
-  return true
 }
 
 export async function activateArtisan(id: string) {
   const supabase = createClient()
-  const { error } = await supabase.from('profiles').update({ is_suspended: false }).eq('id', id)
+  const { error } = await supabase
+    .from('profiles')
+    .update({ subscription_status: 'active' })
+    .eq('id', id)
   if (error) throw error
-  return true
 }
 
-export async function updateArtisanProfile(id: string, updates: any) {
-  const supabase = createClient()
-  const { error } = await supabase.from('profiles').update(updates).eq('id', id)
-  if (error) throw error
-  return true
-}
-
-export async function getMessages(otherUserId: string) {
+// --- MESSAGERIE ---
+export async function getMessages(recipientId: string) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
-
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('messages')
     .select('*')
-    .or(`and(sender_id.eq.${user.id},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${user.id})`)
+    .or(`sender_id.eq.${user?.id},recipient_id.eq.${user?.id}`)
     .order('created_at', { ascending: true })
-  
-  if (error) return []
-  return data
+  return data || []
 }
 
 export async function sendMessage(recipientId: string, content: string) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
-
-  await supabase.from('messages').insert([
-    { sender_id: user.id, recipient_id: recipientId, content }
-  ])
+  const { error } = await supabase
+    .from('messages')
+    .insert([{ sender_id: user?.id, recipient_id: recipientId, content }])
+  if (error) throw error
 }
 
-// --- MODULE DOCUMENTS (INVOICES/QUOTES) ---
-export async function getDocuments(type?: 'invoice' | 'quote') {
+export async function convertQuoteToInvoice(quoteId: string, docNumber: string) {
   const supabase = createClient()
-  let query = supabase.from('documents').select('*, clients(full_name)').order('created_at', { ascending: false })
-  
-  if (type) {
-    query = query.eq('type', type)
-  }
-  
-  const { data, error } = await query
-  if (error) return []
-  return data
-}
+  const artisanId = await getArtisanId()
+  const { data: quote } = await supabase.from('documents').select('*').eq('id', quoteId).single()
+  if (!quote) throw new Error("Devis non trouvé")
 
-export async function createDocument(document: any) {
-  const supabase = createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) throw new Error("Non autorisé")
-
-  const { data, error } = await supabase.from('documents').insert([{
-    ...document,
-    artisan_id: userData.user.id
-  }]).select().single()
+  const { data, error } = await supabase
+    .from('documents')
+    .insert([{
+      type: 'invoice',
+      document_number: docNumber,
+      amount: quote.amount,
+      client_id: quote.client_id,
+      artisan_id: artisanId,
+      metadata: quote.metadata,
+      status: 'pending'
+    }])
+    .select()
 
   if (error) throw error
-  return data
+  return data[0]
 }
-
-export async function updateDocumentStatus(id: string, status: string) {
-  const supabase = createClient()
-  const { data, error } = await supabase.from('documents').update({ status }).eq('id', id).select()
-  if (error) throw error
-  return data
-}
-
-export async function convertQuoteToInvoice(id: string, currentNumber: string) {
-  const supabase = createClient()
-  const newNumber = currentNumber.replace('DEV-', 'FAC-')
-  const { data, error } = await supabase.from('documents').update({ 
-    type: 'invoice',
-    document_number: newNumber,
-    status: 'pending'
-  }).eq('id', id).select()
-  if (error) throw error
-  return data
-}
-
-export async function uploadInterventionPhoto(interventionId: string, file: File) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Non connecté')
-
-  const formData = new FormData()
-  formData.append('file', file)
-  formData.append('interventionId', interventionId)
-  formData.append('artisanId', user.id)
-
-  const res = await fetch('/api/upload-photo', {
-    method: 'POST',
-    body: formData,
-  })
-
-  const result = await res.json()
-  if (!res.ok || !result.success) {
-    throw new Error(result.error || "Erreur lors de l'upload")
-  }
-  return result
-}
-
