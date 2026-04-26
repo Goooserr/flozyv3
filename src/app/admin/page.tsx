@@ -16,11 +16,13 @@ import {
   Crown,
   Zap,
   Activity,
-  Database
+  Database,
+  LogOut
 } from 'lucide-react'
 import { getAdminStats, getAllArtisans, getMessages, sendMessage, suspendArtisan, activateArtisan, updateArtisanProfile } from '@/lib/actions'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
 
 export default function AdminPage() {
   const [stats, setStats] = useState<any>({})
@@ -32,9 +34,23 @@ export default function AdminPage() {
   const [newMessage, setNewMessage] = useState('')
   const [activeTab, setActiveTab] = useState<'overview' | 'subscriptions' | 'system'>('overview')
   const router = useRouter()
+  const supabase = createClient()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [filterPlan, setFilterPlan] = useState('all')
+
+  useEffect(() => {
+    // Sécurité locale simple
+    if (localStorage.getItem('flozy_admin_access') !== 'true') {
+      router.push('/admin-login')
+    }
+  }, [router])
+
+  const handleLogout = async () => {
+    localStorage.removeItem('flozy_admin_access')
+    await supabase.auth.signOut()
+    router.push('/admin-login')
+  }
 
   useEffect(() => {
     async function loadData() {
@@ -91,6 +107,7 @@ export default function AdminPage() {
       setSelectedArtisan(updated.find(a => a.id === artisanId))
     }
   }
+
   const filteredArtisans = artisans.filter(a => {
     const matchesSearch = (a.company_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           a.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -107,8 +124,6 @@ export default function AdminPage() {
   const expertPercent = Math.round((expertCount / totalCount) * 100);
   const proPercent = Math.round((proCount / totalCount) * 100);
   const starterPercent = Math.round((starterCount / totalCount) * 100);
-
-  // --- RENDU ---
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-[80vh] gap-4">
@@ -136,14 +151,20 @@ export default function AdminPage() {
                 Opérationnel
               </span>
            </div>
-           <div className="px-4">
+           <div className="px-4 border-r border-border">
               <span className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">Version App</span>
               <p className="text-sm font-bold">v3.4.0-pro</p>
            </div>
+           <button 
+             onClick={handleLogout}
+             className="flex items-center gap-2 px-4 py-2 text-xs font-black uppercase tracking-widest text-rose-500 hover:bg-rose-500/10 transition-all rounded-xl"
+           >
+             <LogOut className="w-4 h-4" />
+             Quitter
+           </button>
         </div>
       </div>
 
-      {/* Admin Tabs */}
       <div className="flex items-center gap-1 bg-secondary/30 p-1 rounded-xl w-fit border border-border/50">
          <button 
            onClick={() => setActiveTab('overview')}
@@ -167,7 +188,6 @@ export default function AdminPage() {
 
       {activeTab === 'overview' && (
         <div className="space-y-8 animate-in fade-in duration-500">
-          {/* Admin Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <AdminStatCard 
               label="Artisans inscrits" 
@@ -198,7 +218,6 @@ export default function AdminPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Real Artisans List */}
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm overflow-hidden relative group">
                 <div className="absolute top-0 right-0 p-12 bg-primary/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110 duration-700" />
@@ -331,7 +350,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* System Performance Status */}
               <div className="bg-card border border-border rounded-[2.5rem] p-8 flex items-center justify-between shadow-sm border-l-4 border-l-emerald-500">
                  <div className="flex items-center gap-5">
                     <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center shadow-inner">
@@ -357,7 +375,6 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Live Chat Panel (Flozy Care) */}
             <div className="bg-card border border-border rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col h-[700px] sticky top-24 border-primary/10">
                {selectedArtisan ? (
                  <>
@@ -479,7 +496,6 @@ export default function AdminPage() {
                   <p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest font-bold">Analyse de la répartition des forfaits actifs</p>
                </div>
                <div className="p-8 space-y-8">
-                  {/* Visual Bar */}
                   <div className="h-8 w-full bg-secondary rounded-full overflow-hidden flex shadow-inner border border-border">
                     <div className="h-full bg-amber-500 transition-all duration-1000" style={{ width: `${expertPercent}%` }} />
                     <div className="h-full bg-primary transition-all duration-1000" style={{ width: `${proPercent}%` }} />

@@ -293,13 +293,15 @@ export async function getAdminStats() {
 }
 
 // --- MESSAGERIE ---
-export async function getMessages(recipientId: string) {
+export async function getMessages(otherId: string) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
   const { data } = await supabase
     .from('messages')
     .select('*')
-    .or(`sender_id.eq.${user?.id},recipient_id.eq.${user?.id}`)
+    .or(`and(sender_id.eq.${user.id},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${user.id})`)
     .order('created_at', { ascending: true })
   return data || []
 }
@@ -310,6 +312,21 @@ export async function sendMessage(recipientId: string, content: string) {
   const { error } = await supabase
     .from('messages')
     .insert([{ sender_id: user?.id, recipient_id: recipientId, content }])
+  if (error) throw error
+}
+
+export async function markMessagesAsRead(senderId: string) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  const { error } = await supabase
+    .from('messages')
+    .update({ is_read: true })
+    .eq('sender_id', senderId)
+    .eq('recipient_id', user.id)
+    .eq('is_read', false)
+
   if (error) throw error
 }
 

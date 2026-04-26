@@ -11,7 +11,7 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-import { FlozyCareWidget } from "@/components/FlozyCareWidget";
+import SupportChat from "@/components/SupportChat";
 
 export default function RootLayout({
   children,
@@ -38,7 +38,7 @@ export default function RootLayout({
                   {children}
                 </main>
                 <QuickActionFAB />
-                <FlozyCareWidget />
+                <SupportChat />
               </div>
             </div>
           )}
