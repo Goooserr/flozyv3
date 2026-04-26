@@ -18,82 +18,57 @@ export async function POST(req: Request) {
   try {
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err: any) {
-    console.error(`[Stripe Webhook] Erreur signature: ${err.message}`);
-    return NextResponse.json({ error: `Webhook Error` }, { status: 400 });
+    return NextResponse.json({ error: `Signature Error: ${err.message}` }, { status: 400 });
   }
 
-  console.log(`[Stripe Webhook] Reçu: ${event.type}`);
+  const debug: any = { event: event.type, updated: false };
 
   if (event.type === 'checkout.session.completed' || event.type === 'invoice.paid' || event.type === 'customer.subscription.updated') {
     const obj = event.data.object as any;
     
-    // 1. Chercher le userId partout
-    let userId = obj.metadata?.userId || obj.subscription_data?.metadata?.userId || obj.client_reference_id;
+    // 1. Identification
+    const userId = obj.metadata?.userId || obj.subscription_data?.metadata?.userId || obj.client_reference_id;
+    const customerEmail = obj.customer_email || obj.customer_details?.email || obj.email;
     
-    // Si c'est une facture, on cherche dans l'abonnement lié
-    if (!userId && obj.subscription) {
-      const sub = await stripe.subscriptions.retrieve(obj.subscription as string);
-      userId = sub.metadata?.userId;
-    }
-
-    // 2. Chercher le planId
+    // 2. Détection du Plan
     let planId = (obj.metadata?.planId || '').toLowerCase();
     if (!planId && obj.subscription) {
        const sub = await stripe.subscriptions.retrieve(obj.subscription as string);
        planId = (sub.metadata?.planId || '').toLowerCase();
     }
-
-    // 3. Fallback par montant si toujours rien
     if (!planId) {
       const amount = obj.amount_total || obj.amount_paid || obj.total || 0;
       if (amount >= 4000) planId = 'expert';
       else if (amount >= 2000) planId = 'pro';
     }
 
-    const customerEmail = obj.customer_email || obj.customer_details?.email || obj.email;
+    if (!planId) planId = 'pro';
 
-    if (!planId) planId = 'pro'; // Par défaut pro si on a un paiement mais pas de plan identifié
-
-    console.log(`[Stripe Webhook] Traitement -> Plan: ${planId} | User: ${userId} | Email: ${customerEmail}`);
+    debug.planId = planId;
+    debug.userId = userId;
+    debug.customerEmail = customerEmail;
 
     const modules = planId === 'expert' 
       ? ['clients', 'documents', 'planning', 'stock']
       : ['clients', 'documents', 'planning'];
 
-    const updatePayload = { 
-      subscription_plan: planId,
-      enabled_modules: modules,
-      subscription_status: 'active'
-    };
+    const updatePayload = { subscription_plan: planId, enabled_modules: modules, subscription_status: 'active' };
 
-    let updated = false;
-
-    // 1. Essai par Email (LE PLUS FIABLE si on recrée des comptes souvent)
+    // Tentative de mise à jour
     if (customerEmail) {
       const { data, error } = await supabaseAdmin.from('profiles').update(updatePayload).eq('email', customerEmail).select();
-      if (!error && data && data.length > 0) {
-        updated = true;
-        console.log(`[Stripe Webhook] SUCCÈS : Plan mis à jour par Email (${customerEmail})`);
-      } else if (error) {
-        console.error(`[Stripe Webhook] Erreur MAJ Email:`, error);
-      }
+      if (!error && data && data.length > 0) debug.updatedByEmail = true;
+      if (error) debug.emailError = error;
     }
 
-    // 2. Essai par ID (Si email a échoué)
-    if (!updated && userId) {
+    if (!debug.updatedByEmail && userId) {
       const { data, error } = await supabaseAdmin.from('profiles').update(updatePayload).eq('id', userId).select();
-      if (!error && data && data.length > 0) {
-        updated = true;
-        console.log(`[Stripe Webhook] SUCCÈS : Plan mis à jour par ID (${userId})`);
-      } else if (error) {
-        console.error(`[Stripe Webhook] Erreur MAJ ID:`, error);
-      }
+      if (!error && data && data.length > 0) debug.updatedById = true;
+      if (error) debug.idError = error;
     }
 
-    if (!updated) {
-      console.error(`[Stripe Webhook] ÉCHEC : Aucun profil trouvé pour l'email ${customerEmail} ou l'ID ${userId}`);
-    }
+    debug.updated = debug.updatedByEmail || debug.updatedById || false;
   }
 
-  return NextResponse.json({ received: true });
+  return NextResponse.json(debug);
 }
