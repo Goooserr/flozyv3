@@ -1,4 +1,30 @@
+'use server'
+
 import { createClient } from './supabase'
+import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
+
+const ADMIN_ID = '76b5136b-e5e6-474c-9469-48c27817bf9c'
+
+// Helper pour vǸrifier si l'utilisateur est autorisǸ via le mot de passe maǩtre admin
+async function isAdminAuthorized() {
+  const cookieStore = await cookies()
+  return cookieStore.get('flozy_admin_access')?.value === 'true'
+}
+
+// Client privilǸgiǸ pour contourner le RLS dans le panel admin
+function createAdminClient() {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: {
+        getAll: () => [],
+        setAll: () => {},
+      },
+    }
+  )
+}
 
 // --- HELPER : Récupère l'ID de l'artisan (soit soi-même, soit son patron) ---
 async function getArtisanId() {
@@ -208,7 +234,8 @@ export async function forceUpgradeToExpert() {
 }
 
 export async function updateArtisanProfile(id: string, updates: any) {
-  const supabase = createClient()
+  const isPrivileged = await isAdminAuthorized()
+  const supabase = isPrivileged ? createAdminClient() : createClient()
   const finalUpdates = { ...updates }
   if (finalUpdates.subscription_plan) {
     finalUpdates.subscription_plan = finalUpdates.subscription_plan.toLowerCase()
@@ -222,7 +249,9 @@ export async function updateArtisanProfile(id: string, updates: any) {
 }
 
 export async function getAllArtisans() {
-  const supabase = createClient()
+  const isPrivileged = await isAdminAuthorized()
+  if (!isPrivileged) return []
+  const supabase = createAdminClient()
   const { data } = await supabase
     .from('profiles')
     .select('*')
@@ -231,7 +260,8 @@ export async function getAllArtisans() {
 }
 
 export async function suspendArtisan(id: string) {
-  const supabase = createClient()
+  const isPrivileged = await isAdminAuthorized()
+  const supabase = isPrivileged ? createAdminClient() : createClient()
   const { error } = await supabase
     .from('profiles')
     .update({ subscription_status: 'suspended' })
@@ -240,7 +270,8 @@ export async function suspendArtisan(id: string) {
 }
 
 export async function activateArtisan(id: string) {
-  const supabase = createClient()
+  const isPrivileged = await isAdminAuthorized()
+  const supabase = isPrivileged ? createAdminClient() : createClient()
   const { error } = await supabase
     .from('profiles')
     .update({ subscription_status: 'active' })
@@ -249,7 +280,9 @@ export async function activateArtisan(id: string) {
 }
 
 export async function getAdminStats() {
-  const supabase = createClient()
+  const isPrivileged = await isAdminAuthorized()
+  if (!isPrivileged) throw new Error("Non autorisǸ")
+  const supabase = createAdminClient()
   
   // 1. Récupération de tous les profils pour les stats d'abonnement
   const { data: profiles } = await supabase.from('profiles').select('subscription_plan, role')
@@ -294,37 +327,63 @@ export async function getAdminStats() {
 
 // --- MESSAGERIE ---
 export async function getMessages(otherId: string) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
+  const isPrivileged = await isAdminAuthorized()
+  const supabase = isPrivileged ? createAdminClient() : createClient()
+  
+  let userId;
+  if (isPrivileged) {
+    userId = ADMIN_ID;
+  } else {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+    userId = user.id
+  }
 
   const { data } = await supabase
     .from('messages')
     .select('*')
-    .or(`and(sender_id.eq.${user.id},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${user.id})`)
+    .or(`and(sender_id.eq.${userId},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${userId})`)
     .order('created_at', { ascending: true })
   return data || []
 }
 
 export async function sendMessage(recipientId: string, content: string) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const isPrivileged = await isAdminAuthorized()
+  const supabase = isPrivileged ? createAdminClient() : createClient()
+  
+  let userId;
+  if (isPrivileged) {
+    userId = ADMIN_ID;
+  } else {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Non authentifiǸ")
+    userId = user.id
+  }
+
   const { error } = await supabase
     .from('messages')
-    .insert([{ sender_id: user?.id, recipient_id: recipientId, content }])
+    .insert([{ sender_id: userId, recipient_id: recipientId, content }])
   if (error) throw error
 }
 
 export async function markMessagesAsRead(senderId: string) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
+  const isPrivileged = await isAdminAuthorized()
+  const supabase = isPrivileged ? createAdminClient() : createClient()
+  
+  let userId;
+  if (isPrivileged) {
+    userId = ADMIN_ID;
+  } else {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    userId = user.id
+  }
 
   const { error } = await supabase
     .from('messages')
     .update({ is_read: true })
     .eq('sender_id', senderId)
-    .eq('recipient_id', user.id)
+    .eq('recipient_id', userId)
     .eq('is_read', false)
 
   if (error) throw error

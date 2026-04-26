@@ -18,7 +18,7 @@ export default function AdminLogin() {
     // Mot de passe maître pour la démo / développement
     setTimeout(() => {
       if (password === 'flozy2024') {
-        localStorage.setItem('flozy_admin_access', 'true')
+        document.cookie = "flozy_admin_access=true; path=/; max-age=86400; SameSite=Lax";
         router.push('/admin')
       } else {
         setError(true)
