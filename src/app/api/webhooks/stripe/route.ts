@@ -73,20 +73,35 @@ export async function POST(req: Request) {
 
     const updatePayload = { subscription_plan: planId, enabled_modules: modules, subscription_status: 'active' };
 
-    // 2. Mise à jour Supabase
-    if (customerEmail) {
+    // 2. Mise à jour Supabase (Stratégie Infaillible)
+    let finalUserId = userId;
+
+    // Si on n'a pas d'ID mais un Email, on cherche l'ID dans auth.users
+    if (!finalUserId && customerEmail) {
+      const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+      if (!authError && authUsers.users) {
+        const user = authUsers.users.find(u => u.email?.toLowerCase() === customerEmail.toLowerCase());
+        if (user) finalUserId = user.id;
+      }
+    }
+
+    if (finalUserId) {
+      const { data, error } = await supabaseAdmin.from('profiles').update(updatePayload).eq('id', finalUserId).select();
+      if (!error && data && data.length > 0) {
+        debug.updatedById = true;
+        // Optionnel: on en profite pour synchroniser l'email s'il manquait
+        if (customerEmail) await supabaseAdmin.from('profiles').update({ email: customerEmail }).eq('id', finalUserId);
+      }
+      if (error) debug.idError = error;
+    } else if (customerEmail) {
+      // Fallback par email uniquement si on n'a vraiment pas trouvé l'ID
       const { data, error } = await supabaseAdmin.from('profiles').update(updatePayload).eq('email', customerEmail).select();
       if (!error && data && data.length > 0) debug.updatedByEmail = true;
       if (error) debug.emailError = error;
     }
 
-    if (!debug.updatedByEmail && userId) {
-      const { data, error } = await supabaseAdmin.from('profiles').update(updatePayload).eq('id', userId).select();
-      if (!error && data && data.length > 0) debug.updatedById = true;
-      if (error) debug.idError = error;
-    }
-
     debug.updated = debug.updatedByEmail || debug.updatedById || false;
+    debug.finalUserId = finalUserId;
   }
 
   return NextResponse.json(debug);
