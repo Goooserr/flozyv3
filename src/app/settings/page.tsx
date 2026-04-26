@@ -23,15 +23,18 @@ import {
   Copy,
   ExternalLink,
   Sparkles,
-  Lock
+  Lock,
+  ArrowRight
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 import { CustomFieldsSettings } from '@/components/CustomFieldsSettings';
 import { ModuleSettings } from '@/components/ModuleSettings';
 import { useTheme } from '@/components/DynamicThemeProvider';
 
 export default function SettingsPage() {
+  const router = useRouter();
   const supabase = createClient();
   const { setPrimaryColor, setCompanyName, setLogoUrl } = useTheme();
   const [loading, setLoading] = useState(true);
@@ -105,6 +108,21 @@ export default function SettingsPage() {
       setSaving(false);
     }
   }
+
+  const copyInviteUrl = () => {
+    navigator.clipboard.writeText(inviteLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDeleteEmployee = async (empId: string) => {
+    if (confirm("Supprimer l'accès de cet employé ?")) {
+      const { error } = await supabase.from('profiles').delete().eq('id', empId);
+      if (!error) {
+        setEmployees(prev => prev.filter(e => e.id !== empId));
+      }
+    }
+  };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -348,7 +366,7 @@ export default function SettingsPage() {
       {profile.role !== 'employee' && (
         <section className="space-y-6">
           {/* Team Management - ONLY FOR EXPERT */}
-          {subscriptionPlan === 'expert' ? (
+          {profile.subscription_plan === 'expert' ? (
             <div className="bg-card border border-border rounded-3xl p-8 mb-12">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                 <div>
@@ -418,7 +436,7 @@ export default function SettingsPage() {
                       <input 
                         type="text" 
                         readOnly 
-                        value={inviteUrl}
+                        value={inviteLink}
                         className="w-full bg-background border border-border rounded-xl px-4 py-3 text-xs pr-24 font-mono"
                       />
                       <button 
