@@ -1,10 +1,26 @@
 import { createClient } from './supabase'
 
+async function getArtisanId() {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, role, employer_id')
+    .eq('id', user.id)
+    .single()
+    
+  return profile?.role === 'employee' ? profile.employer_id : user.id
+}
+
 export async function getClients() {
   const supabase = createClient()
+  const artisanId = await getArtisanId()
   const { data, error } = await supabase
     .from('clients')
     .select('*')
+    .eq('artisan_id', artisanId)
     .order('created_at', { ascending: false })
   
   if (error) return []
@@ -13,14 +29,14 @@ export async function getClients() {
 
 export async function addClient(client: { full_name: string, email: string, phone: string, address: string, metadata?: any }) {
   const supabase = createClient()
-  const { data: userData } = await supabase.auth.getUser()
+  const artisanId = await getArtisanId()
   
   const { data, error } = await supabase
     .from('clients')
     .insert([
       { 
         ...client, 
-        artisan_id: userData.user?.id,
+        artisan_id: artisanId,
         metadata: client.metadata || {}
       }
     ])
@@ -83,7 +99,12 @@ export async function deleteFieldDefinition(id: string) {
 // --- MODULE STOCK ---
 export async function getStock() {
   const supabase = createClient()
-  const { data, error } = await supabase.from('stock').select('*').order('name')
+  const artisanId = await getArtisanId()
+  const { data, error } = await supabase
+    .from('stock')
+    .select('*')
+    .eq('artisan_id', artisanId)
+    .order('name')
   if (error) return []
   return data
 }
@@ -98,15 +119,20 @@ export async function updateStockQuantity(id: string, newQuantity: number) {
 // --- MODULE PLANNING ---
 export async function getInterventions() {
   const supabase = createClient()
-  const { data, error } = await supabase.from('interventions').select('*, clients(full_name)').order('start_time')
+  const artisanId = await getArtisanId()
+  const { data, error } = await supabase
+    .from('interventions')
+    .select('*, clients(full_name)')
+    .eq('artisan_id', artisanId)
+    .order('start_time')
   if (error) return []
   return data
 }
 
 export async function createIntervention(intervention: any) {
   const supabase = createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) return null
+  const artisanId = await getArtisanId()
+  if (!artisanId) return null
 
   // Mapping date string to start_time if provided
   const startTime = intervention.date || intervention.start_time
@@ -114,7 +140,7 @@ export async function createIntervention(intervention: any) {
 
   const payload = {
     ...intervention,
-    artisan_id: userData.user.id,
+    artisan_id: artisanId,
     start_time: startTime,
     end_time: endTime
   }
