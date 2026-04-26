@@ -250,11 +250,45 @@ export async function activateArtisan(id: string) {
 
 export async function getAdminStats() {
   const supabase = createClient()
-  const { data: artisans } = await supabase.from('profiles').select('id').eq('role', 'artisan')
-  const { data: docs } = await supabase.from('documents').select('amount')
+  
+  // 1. Récupération de tous les profils pour les stats d'abonnement
+  const { data: profiles } = await supabase.from('profiles').select('subscription_plan, role')
+  const artisans = profiles?.filter(p => p.role === 'artisan') || []
+  
+  // 2. Calcul du MRR (Estimé)
+  const mrr = artisans.reduce((acc, p) => {
+    const plan = (p.subscription_plan || 'starter').toLowerCase()
+    if (plan === 'expert') return acc + 49
+    if (plan === 'pro') return acc + 29
+    return acc
+  }, 0)
+
+  // 3. Répartition des plans
+  const stats = {
+    total_artisans: artisans.length,
+    total_revenue: mrr, // On affiche le MRR comme revenu de référence
+    expert_count: artisans.filter(p => p.subscription_plan?.toLowerCase() === 'expert').length,
+    pro_count: artisans.filter(p => p.subscription_plan?.toLowerCase() === 'pro').length,
+    starter_count: artisans.filter(p => p.subscription_plan?.toLowerCase() === 'starter' || !p.subscription_plan).length,
+  }
+
+  // 4. Activité globale (System Pulse)
+  const [
+    { count: totalDocs },
+    { count: totalInters },
+    { count: totalMsgs }
+  ] = await Promise.all([
+    supabase.from('documents').select('*', { count: 'exact', head: true }),
+    supabase.from('interventions').select('*', { count: 'exact', head: true }),
+    supabase.from('messages').select('*', { count: 'exact', head: true }),
+  ])
+
   return {
-    total_artisans: artisans?.length || 0,
-    total_revenue: docs?.reduce((acc, d) => acc + (d.amount || 0), 0) || 0
+    ...stats,
+    total_documents: totalDocs || 0,
+    total_interventions: totalInters || 0,
+    total_messages: totalMsgs || 0,
+    platform_status: 'Opérationnel'
   }
 }
 
