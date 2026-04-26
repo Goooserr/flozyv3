@@ -23,30 +23,47 @@ export async function POST(req: Request) {
 
   const debug: any = { event: event.type, updated: false };
 
-  if (event.type === 'checkout.session.completed' || event.type === 'invoice.paid' || event.type === 'customer.subscription.updated') {
+  // Liste des événements que l'on traite
+  const relevantEvents = [
+    'checkout.session.completed',
+    'invoice.paid',
+    'invoice.payment_succeeded',
+    'customer.subscription.created',
+    'customer.subscription.updated'
+  ];
+
+  if (relevantEvents.includes(event.type)) {
     const obj = event.data.object as any;
     
-    // 1. Identification
-    const userId = obj.metadata?.userId || obj.subscription_data?.metadata?.userId || obj.client_reference_id;
-    const customerEmail = obj.customer_email || obj.customer_details?.email || obj.email;
-    
-    // 2. Détection du Plan
+    // 1. Récupération de l'Email et du Plan (Investigation profonde)
+    let customerEmail = obj.customer_email || obj.customer_details?.email || obj.email;
+    let userId = obj.metadata?.userId || obj.subscription_data?.metadata?.userId || obj.client_reference_id;
     let planId = (obj.metadata?.planId || '').toLowerCase();
-    if (!planId && obj.subscription) {
-       const sub = await stripe.subscriptions.retrieve(obj.subscription as string);
-       planId = (sub.metadata?.planId || '').toLowerCase();
+
+    // Si on n'a pas l'email mais qu'on a un ID client, on va le chercher chez Stripe
+    if (!customerEmail && obj.customer) {
+      const customer = await stripe.customers.retrieve(obj.customer as string) as Stripe.Customer;
+      customerEmail = customer.email;
+      if (!userId) userId = customer.metadata?.userId;
     }
+
+    // Si on n'a pas le plan mais qu'on a un abonnement, on va le chercher chez Stripe
+    const subId = obj.subscription || (obj.object === 'subscription' ? obj.id : null);
+    if (!planId && subId) {
+       const sub = await stripe.subscriptions.retrieve(subId as string);
+       planId = (sub.metadata?.planId || '').toLowerCase();
+       if (!userId) userId = sub.metadata?.userId;
+    }
+
+    // Fallback par montant
     if (!planId) {
       const amount = obj.amount_total || obj.amount_paid || obj.total || 0;
       if (amount >= 4000) planId = 'expert';
       else if (amount >= 2000) planId = 'pro';
+      else planId = 'pro'; // Par défaut pro si paiement mais inconnu
     }
 
-    if (!planId) planId = 'pro';
-
-    debug.planId = planId;
-    debug.userId = userId;
-    debug.customerEmail = customerEmail;
+    debug.found = { planId, userId, customerEmail };
 
     const modules = planId === 'expert' 
       ? ['clients', 'documents', 'planning', 'stock']
@@ -54,7 +71,7 @@ export async function POST(req: Request) {
 
     const updatePayload = { subscription_plan: planId, enabled_modules: modules, subscription_status: 'active' };
 
-    // Tentative de mise à jour
+    // 2. Mise à jour Supabase
     if (customerEmail) {
       const { data, error } = await supabaseAdmin.from('profiles').update(updatePayload).eq('email', customerEmail).select();
       if (!error && data && data.length > 0) debug.updatedByEmail = true;
