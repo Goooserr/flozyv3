@@ -74,15 +74,15 @@ export default function SupportChat() {
     }
   }
 
-  if (!currentUser || currentUser.id === ADMIN_ID) return null
+  // Don't show for admin, but show for everyone else (even if loading, it will just be inactive)
+  if (currentUser?.id === ADMIN_ID) return null
 
   const hasUnread = messages.some(m => !m.is_read && m.sender_id === ADMIN_ID)
 
   return (
     <div className={cn(
-      "fixed z-50 transition-all duration-300",
+      "fixed z-[100] transition-all duration-300",
       "bottom-6 right-6 md:bottom-8 md:right-8",
-      // On mobile, move up to avoid QuickActionFAB (which is at bottom-6)
       "max-md:bottom-24"
     )}>
       {!isOpen ? (
@@ -96,9 +96,9 @@ export default function SupportChat() {
               <span className="w-2 h-2 bg-white rounded-full" />
             </span>
           )}
-          <span className="absolute right-full mr-4 px-3 py-1.5 bg-zinc-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl">
+          <div className="absolute right-full mr-4 px-3 py-1.5 bg-zinc-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl border border-white/10">
             Aide & Support
-          </span>
+          </div>
         </button>
       ) : (
         <div className="w-[320px] md:w-[380px] h-[500px] bg-card border border-border shadow-2xl rounded-3xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
