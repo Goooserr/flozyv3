@@ -23,11 +23,13 @@ export async function POST(req: Request) {
 
   const debug: any = { event: event.type, updated: false };
 
-  // Liste des événements que l'on traite
+  // Liste des événements que l'on traite (on est très large pour ne rien rater)
   const relevantEvents = [
     'checkout.session.completed',
     'invoice.paid',
     'invoice.payment_succeeded',
+    'invoice.finalized',
+    'invoice.created',
     'customer.subscription.created',
     'customer.subscription.updated'
   ];
