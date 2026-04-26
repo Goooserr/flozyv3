@@ -77,7 +77,26 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* ===== FIX ZOOM MOBILE iOS/Android =====
+   * Empêche le zoom automatique sur les champs de saisie
+   * qui provoque un rechargement de page et une perte de données.
+   * font-size: 16px minimum est requis par iOS/Android pour ne pas zoomer.
+   */
+  @media (max-width: 768px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
 }
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: oklch(0.7 0 0 / 0.3); border-radius: 9999px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: oklch(0.5 0 0 / 0.5); }
 
 /* Styles pour l'impression PDF */
 @media print {

@@ -18,7 +18,7 @@ import {
   Activity,
   Database
 } from 'lucide-react'
-import { getAdminStats, getAllArtisans, getMessages, sendMessage } from '@/lib/actions'
+import { getAdminStats, getAllArtisans, getMessages, sendMessage, suspendArtisan, activateArtisan, updateArtisanProfile } from '@/lib/actions'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
@@ -80,6 +80,25 @@ export default function AdminPage() {
     await sendMessage(selectedArtisan.id, newMessage)
     setNewMessage('')
     loadChat()
+  }
+
+  async function toggleSuspension(artisan: any) {
+    const action = artisan.is_suspended ? activateArtisan : suspendArtisan
+    await action(artisan.id)
+    const updated = await getAllArtisans()
+    setArtisans(updated)
+    if (selectedArtisan?.id === artisan.id) {
+      setSelectedArtisan(updated.find(a => a.id === artisan.id))
+    }
+  }
+
+  async function handleUpdateProfile(artisanId: string, updates: any) {
+    await updateArtisanProfile(artisanId, updates)
+    const updated = await getAllArtisans()
+    setArtisans(updated)
+    if (selectedArtisan?.id === artisanId) {
+      setSelectedArtisan(updated.find(a => a.id === artisanId))
+    }
   }
 
   if (loading) return (
@@ -234,15 +253,33 @@ export default function AdminPage() {
                       </td>
                       <td className="py-4">
                         <div className="flex justify-center">
-                           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[9px] font-black border border-emerald-500/20 uppercase tracking-tighter">
-                             <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" /> Actif
+                           <div className={cn(
+                             "flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black border uppercase tracking-tighter",
+                             artisan.is_suspended 
+                              ? "bg-rose-500/10 text-rose-500 border-rose-500/20" 
+                              : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                           )}>
+                             <div className={cn("w-1 h-1 rounded-full animate-pulse", artisan.is_suspended ? "bg-rose-500" : "bg-emerald-500")} /> 
+                             {artisan.is_suspended ? 'Suspendu' : 'Actif'}
                            </div>
                         </div>
                       </td>
                       <td className="py-4 text-right">
-                         <button className="p-2 hover:bg-secondary rounded-lg transition-colors opacity-0 group-hover:opacity-100">
-                           <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                         </button>
+                         <div className="flex justify-end gap-1">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); toggleSuspension(artisan); }}
+                              className={cn(
+                                "p-2 rounded-lg transition-colors opacity-0 group-hover:opacity-100",
+                                artisan.is_suspended ? "hover:bg-emerald-500/10 text-emerald-500" : "hover:bg-rose-500/10 text-rose-500"
+                              )}
+                              title={artisan.is_suspended ? "Réactiver" : "Suspendre"}
+                            >
+                              <ShieldAlert className="w-4 h-4" />
+                            </button>
+                            <button className="p-2 hover:bg-secondary rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                              <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                         </div>
                       </td>
                     </tr>
                   ))}

@@ -70,10 +70,29 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/register')
+  if (session) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, is_suspended')
+      .eq('id', session.user.id)
+      .single()
 
-  if (session && isAuthPage) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    if (profile?.is_suspended && !isPublicPage) {
+      return NextResponse.redirect(new URL('/login?error=account_suspended', request.url))
+    }
+
+    const isFinancialPage = request.nextUrl.pathname.startsWith('/invoices') || 
+                            request.nextUrl.pathname.startsWith('/billing') ||
+                            request.nextUrl.pathname.startsWith('/admin')
+
+    if (profile?.role === 'employee' && isFinancialPage) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    const isAuthPage = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/register')
+    if (isAuthPage) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
   }
 
   return response

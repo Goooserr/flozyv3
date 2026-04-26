@@ -36,11 +36,12 @@ const navItems = [
   { name: 'Paramètres', icon: Settings, href: '/settings', module: null },
 ];
 
-function NavList({ enabledModules, pathname, isAdmin, isDocumentsEnabled, onNavigate }: {
+function NavList({ enabledModules, pathname, isAdmin, isDocumentsEnabled, role, onNavigate }: {
   enabledModules: string[];
   pathname: string;
   isAdmin: boolean;
   isDocumentsEnabled: boolean;
+  role?: string;
   onNavigate?: () => void;
 }) {
   const { companyName, logoUrl, primaryColor } = useTheme();
@@ -51,6 +52,9 @@ function NavList({ enabledModules, pathname, isAdmin, isDocumentsEnabled, onNavi
         {navItems.map((item) => {
           const isEnabled = !item.module || enabledModules.includes(item.module);
           const isActive = pathname.startsWith(item.href) && item.href !== '/' || pathname === item.href;
+          
+          // Hide financial items for employees
+          if (role === 'employee' && (item.href === '/invoices' || item.href === '/billing')) return null;
 
           return (
             <Link
@@ -86,7 +90,7 @@ function NavList({ enabledModules, pathname, isAdmin, isDocumentsEnabled, onNavi
         )}
       </nav>
 
-      {isDocumentsEnabled && (
+      {isDocumentsEnabled && role !== 'employee' && (
         <div className="p-4 border-t border-border">
           <Link
             href="/invoices/new"
@@ -106,17 +110,19 @@ export function Sidebar() {
   const pathname = usePathname();
   const { enabledModules, companyName, logoUrl, primaryColor } = useTheme();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<string>('artisan');
   const supabase = createClient();
 
   useEffect(() => {
-    async function checkAdmin() {
+    async function checkUser() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+        const { data } = await supabase.from('profiles').select('is_admin, role').eq('id', user.id).single();
         setIsAdmin(data?.is_admin || false);
+        setRole(data?.role || 'artisan');
       }
     }
-    checkAdmin();
+    checkUser();
   }, []);
 
   const isDocumentsEnabled = enabledModules.includes('documents');
@@ -145,6 +151,7 @@ export function Sidebar() {
         pathname={pathname}
         isAdmin={isAdmin}
         isDocumentsEnabled={isDocumentsEnabled}
+        role={role}
       />
     </aside>
   );
@@ -154,17 +161,19 @@ export function MobileDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   const pathname = usePathname();
   const { enabledModules, companyName, logoUrl, primaryColor, subscriptionPlan } = useTheme();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<string>('artisan');
   const supabase = createClient();
 
   useEffect(() => {
-    async function checkAdmin() {
+    async function checkUser() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+        const { data } = await supabase.from('profiles').select('is_admin, role').eq('id', user.id).single();
         setIsAdmin(data?.is_admin || false);
+        setRole(data?.role || 'artisan');
       }
     }
-    checkAdmin();
+    checkUser();
   }, []);
 
   const isDocumentsEnabled = enabledModules.includes('documents');
@@ -223,6 +232,7 @@ export function MobileDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           pathname={pathname}
           isAdmin={isAdmin}
           isDocumentsEnabled={isDocumentsEnabled}
+          role={role}
           onNavigate={onClose}
         />
       </div>

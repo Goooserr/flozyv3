@@ -180,6 +180,27 @@ export async function getAllArtisans() {
   return data
 }
 
+export async function suspendArtisan(id: string) {
+  const supabase = createClient()
+  const { error } = await supabase.from('profiles').update({ is_suspended: true }).eq('id', id)
+  if (error) throw error
+  return true
+}
+
+export async function activateArtisan(id: string) {
+  const supabase = createClient()
+  const { error } = await supabase.from('profiles').update({ is_suspended: false }).eq('id', id)
+  if (error) throw error
+  return true
+}
+
+export async function updateArtisanProfile(id: string, updates: any) {
+  const supabase = createClient()
+  const { error } = await supabase.from('profiles').update(updates).eq('id', id)
+  if (error) throw error
+  return true
+}
+
 export async function getMessages(otherUserId: string) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()

@@ -19,6 +19,10 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
+  const employerId = searchParams.get('employer_id')
+  const invitedRole = searchParams.get('role') || 'artisan'
+  const isEmployeeInvite = invitedRole === 'employee' && !!employerId
+  
   const router = useRouter()
   const supabase = createClient()
 
@@ -34,8 +38,10 @@ function RegisterForm() {
         options: {
           data: {
             full_name: fullName,
-            company_name: companyName,
-            plan: plan
+            company_name: isEmployeeInvite ? 'Équipe' : companyName,
+            plan: isEmployeeInvite ? 'starter' : plan,
+            role: invitedRole,
+            employer_id: employerId
           }
         }
       })
@@ -83,7 +89,7 @@ function RegisterForm() {
               </div>
             )}
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={cn("grid grid-cols-1 gap-4", !isEmployeeInvite && "md:grid-cols-2")}>
               <div className="relative group">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
                 <input
@@ -96,17 +102,19 @@ function RegisterForm() {
                 />
               </div>
 
-              <div className="relative group">
-                <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
-                <input
-                  type="text"
-                  required
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="Entreprise"
-                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 pl-12 text-sm text-white outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                />
-              </div>
+              {!isEmployeeInvite && (
+                <div className="relative group">
+                  <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
+                  <input
+                    type="text"
+                    required
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Entreprise"
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3.5 pl-12 text-sm text-white outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">
@@ -136,46 +144,51 @@ function RegisterForm() {
               </div>
             </div>
 
-            <div className="space-y-3">
-              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest px-1">Choisissez votre plan</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {plans.map((p) => (
-                  <div 
-                    key={p.id}
-                    onClick={() => setPlan(p.id)}
-                    className={cn(
-                      "cursor-pointer p-4 rounded-2xl border transition-all relative overflow-hidden group",
-                      plan === p.id 
-                        ? "bg-primary/10 border-primary shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]" 
-                        : "bg-black/40 border-white/5 hover:border-white/20"
-                    )}
-                  >
-                    <div className="relative z-10">
-                      <p className={cn("text-[10px] font-bold uppercase tracking-wider mb-1", plan === p.id ? "text-primary" : "text-zinc-500")}>
-                        {p.name}
-                      </p>
-                      <p className="font-bold text-lg text-white">{p.price}</p>
-                      <p className="text-[10px] text-zinc-400 mt-1">{p.features}</p>
-                    </div>
-                    {plan === p.id && (
-                      <div className="absolute top-2 right-2">
-                        <Sparkles className="w-3 h-3 text-primary animate-pulse" />
+            {!isEmployeeInvite && (
+              <div className="space-y-3">
+                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest px-1">Choisissez votre plan</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {plans.map((p) => (
+                    <div 
+                      key={p.id}
+                      onClick={() => setPlan(p.id)}
+                      className={cn(
+                        "cursor-pointer p-4 rounded-2xl border transition-all relative overflow-hidden group",
+                        plan === p.id 
+                          ? "bg-primary/10 border-primary shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]" 
+                          : "bg-black/40 border-white/5 hover:border-white/20"
+                      )}
+                    >
+                      <div className="relative z-10">
+                        <p className={cn("text-[10px] font-bold uppercase tracking-wider mb-1", plan === p.id ? "text-primary" : "text-zinc-500")}>
+                          {p.name}
+                        </p>
+                        <p className="font-bold text-lg text-white">{p.price}</p>
+                        <p className="text-[10px] text-zinc-400 mt-1">{p.features}</p>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {plan === p.id && (
+                        <div className="absolute top-2 right-2">
+                          <Sparkles className="w-3 h-3 text-primary animate-pulse" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <button
               type="submit"
-              disabled={loading || !email || !password || !fullName || !companyName}
+              disabled={loading || !email || !password || !fullName || (!isEmployeeInvite && !companyName)}
               className="w-full flex items-center justify-center gap-2 bg-white text-black rounded-xl py-4 font-bold hover:bg-zinc-200 hover:scale-[1.01] transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4"
             >
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                <>Démarrer avec le plan {plans.find(p => p.id === plan)?.name} <ArrowRight className="w-4 h-4" /></>
+                <>
+                  {isEmployeeInvite ? "Rejoindre l'équipe" : `Démarrer avec le plan ${plans.find(p => p.id === plan)?.name}`}
+                  <ArrowRight className="w-4 h-4" />
+                </>
               )}
             </button>
           </form>

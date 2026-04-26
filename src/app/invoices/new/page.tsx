@@ -12,7 +12,9 @@ import {
   Sparkles,
   Box,
   Loader2,
-  ShieldAlert
+  ShieldAlert,
+  Mail,
+  ChevronDown
 } from 'lucide-react'
 import { useTheme } from '@/components/DynamicThemeProvider'
 import Link from 'next/link'
@@ -23,8 +25,8 @@ import { SignaturePad } from '@/components/SignaturePad'
 export default function NewInvoicePage() {
   const router = useRouter()
   const { primaryColor, companyName, logoUrl } = useTheme()
-  const [items, setItems] = useState([{ description: '', quantity: 1, price: 0, purchasePrice: 0, syncStock: false }])
-  const [client, setClient] = useState({ id: '', name: '', address: '' })
+  const [items, setItems] = useState([{ description: '', quantity: 1, price: 0, purchasePrice: 0, syncStock: false, mode: 'manual' as 'manual'|'catalog' }])
+  const [client, setClient] = useState({ id: '', name: '', address: '', email: '' })
   const [clients, setClients] = useState<any[]>([])
   const [catalogItems, setCatalogItems] = useState<any[]>([])
   const [showCatalog, setShowCatalog] = useState(false)
@@ -36,22 +38,21 @@ export default function NewInvoicePage() {
 
   useEffect(() => {
     async function loadClients() {
-      const { getClients } = await import('@/lib/actions')
-      const data = await getClients()
-      setClients(data)
+      const { getClients, getStock } = await import('@/lib/actions')
+      const [clientData, stockData] = await Promise.all([getClients(), getStock()])
+      setClients(clientData || [])
+      setCatalogItems(stockData || [])
     }
     loadClients()
   }, [])
 
-  async function openCatalog() {
-    setShowCatalog(true)
-    if (catalogItems.length > 0) return
-    setLoadingCatalog(true)
-    const { getStock } = await import('@/lib/actions')
-    const stock = await getStock()
-    // Garder uniquement les articles qui ont un prix de vente
-    setCatalogItems(stock || [])
-    setLoadingCatalog(false)
+  const catalogCategories = [...new Set(catalogItems.map((i: any) => i.category || 'Général'))].sort()
+
+  function handleEmailSend() {
+    const clientEmail = clients.find(c => c.id === client.id)?.email || ''
+    const subject = encodeURIComponent(`${docType === 'quote' ? 'Votre Devis' : 'Votre Facture'} — ${companyName || 'Flozy'}`)
+    const body = encodeURIComponent(`Bonjour ${client.name},\n\nVeuillez trouver ci-joint votre ${docType === 'quote' ? 'devis' : 'facture'} pour un montant de ${totalTTC.toLocaleString()} € TTC.\n\nCordialement,\n${companyName || 'Votre prestataire'}`)
+    window.open(`mailto:${clientEmail}?subject=${subject}&body=${body}`, '_blank')
   }
 
   const handleSave = async () => {
@@ -146,7 +147,7 @@ export default function NewInvoicePage() {
   const tva = totalHT * 0.2
   const totalTTC = totalHT + tva
 
-  const addItem = () => setItems([...items, { description: '', quantity: 1, price: 0, purchasePrice: 0, syncStock: false }])
+  const addItem = (mode: 'manual'|'catalog' = 'manual') => setItems([...items, { description: '', quantity: 1, price: 0, purchasePrice: 0, syncStock: false, mode }])
   const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index))
 
   return (
@@ -214,7 +215,7 @@ export default function NewInvoicePage() {
             </button>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <button 
             onClick={() => setShowSignature(true)}
             className="flex items-center gap-2 px-6 py-2.5 bg-zinc-800 text-white rounded-xl font-bold hover:bg-zinc-700 transition-all text-sm"
@@ -226,6 +227,14 @@ export default function NewInvoicePage() {
             className="flex items-center gap-2 px-6 py-2.5 bg-secondary text-foreground rounded-xl font-bold hover:bg-secondary/80 transition-all text-sm"
           >
             <Download className="w-4 h-4" /> PDF
+          </button>
+          <button
+            onClick={handleEmailSend}
+            disabled={!client.name}
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all text-sm disabled:opacity-40"
+            title={!client.name ? 'Sélectionnez un client d\'abord' : 'Envoyer par email'}
+          >
+            <Mail className="w-4 h-4" /> Email
           </button>
           <button 
             onClick={handleSave}
@@ -263,7 +272,7 @@ export default function NewInvoicePage() {
                   className="bg-secondary/50 border border-border rounded-lg px-2 py-1 text-[10px] font-bold outline-none"
                   onChange={(e) => {
                     const c = clients.find(cl => cl.id === e.target.value)
-                    if (c) setClient({ id: c.id, name: c.full_name, address: c.address || '' })
+                    if (c) setClient({ id: c.id, name: c.full_name, address: c.address || '', email: c.email || '' })
                   }}
                 >
                   <option value="">Sélectionner un client...</option>
@@ -293,15 +302,15 @@ export default function NewInvoicePage() {
                 <FileText className="w-5 h-5 text-primary" />
                 <h3 className="font-bold">Détails des prestations</h3>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <button 
-                  onClick={() => openCatalog()}
+                  onClick={() => addItem('catalog')}
                   className="text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-all flex items-center gap-1.5"
                 >
-                  <Sparkles className="w-3 h-3" /> Catalogue
+                  <Sparkles className="w-3 h-3" /> + Catalogue
                 </button>
                 <button 
-                  onClick={addItem}
+                  onClick={() => addItem('manual')}
                   className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground flex items-center gap-1.5"
                 >
                   <Plus className="w-3 h-3" /> Manuel
@@ -309,123 +318,103 @@ export default function NewInvoicePage() {
               </div>
             </div>
 
-            {/* Catalog Modal - Vrais articles du stock */}
-            {showCatalog && (
-              <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                <div className="bg-card border border-border w-full max-w-lg rounded-3xl p-8 shadow-2xl animate-in zoom-in-95 duration-300">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h3 className="text-xl font-bold">Votre Catalogue</h3>
-                      <p className="text-xs text-muted-foreground">Articles ajoutés dans votre espace Stock</p>
-                    </div>
-                    <button onClick={() => setShowCatalog(false)} className="p-2 hover:bg-secondary rounded-lg"><XIcon className="w-4 h-4 text-muted-foreground" /></button>
-                  </div>
-                  {loadingCatalog ? (
-                    <div className="flex items-center justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-                  ) : catalogItems.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Box className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                      <p className="font-bold">Aucun article dans le catalogue</p>
-                      <p className="text-xs mt-1">Ajoutez des articles dans votre espace Stock pour les retrouver ici.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-3 max-h-[420px] overflow-y-auto pr-2">
-                      {catalogItems.map((item: any, i: number) => (
-                        <button
-                          key={i}
-                          onClick={() => selectFromCatalog(item)}
-                          className="flex items-center justify-between p-4 bg-secondary/30 rounded-2xl border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group text-left"
-                        >
-                          <div>
-                            <span className="text-[9px] font-black uppercase tracking-widest text-primary">{item.category || 'Général'}</span>
-                            <p className="font-bold">{item.name}</p>
-                            <p className="text-xs text-muted-foreground">Stock : {item.quantity} {item.unit}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-black text-primary text-lg">{Number(item.selling_price || 0)} €</p>
-                            <p className="text-[9px] text-muted-foreground">Prix de vente</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+            {/* Pas de modal séparé — chaque ligne catalogue a ses propres dropdowns */}
 
             <div className="space-y-4">
               {items.map((item, index) => (
                 <div key={index} className="space-y-3 p-4 bg-secondary/20 rounded-2xl border border-border/50 animate-in slide-in-from-left-4 duration-300">
-                  <div className="flex gap-4">
-                    <input 
-                      placeholder="Description"
-                      className="flex-1 bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                      value={item.description}
-                      onChange={e => {
-                        const newItems = [...items]
-                        newItems[index].description = e.target.value
-                        setItems(newItems)
-                      }}
-                    />
-                    <button 
-                      onClick={() => removeItem(index)}
-                      className="p-3 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  {item.mode === 'catalog' ? (
+                    /* Mode Catalogue : Catégorie → Produit */
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <div className="flex-1 space-y-1">
+                          <label className="text-[8px] font-black uppercase tracking-widest text-primary ml-1">Catégorie</label>
+                          <select
+                            className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                            onChange={e => {
+                              const newItems = [...items]
+                              newItems[index].description = ''
+                              newItems[index].price = 0
+                              newItems[index].purchasePrice = 0
+                              setItems(newItems)
+                            }}
+                            defaultValue=""
+                          >
+                            <option value="">Catégorie...</option>
+                            {catalogCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                          </select>
+                        </div>
+                        <button onClick={() => removeItem(index)} className="p-3 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors self-end">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground ml-1">Produit / Prestation</label>
+                        <select
+                          className="w-full bg-secondary/50 border border-border rounded-xl px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                          value={item.description}
+                          onChange={e => {
+                            const selected = catalogItems.find((ci: any) => ci.name === e.target.value)
+                            const newItems = [...items]
+                            newItems[index].description = e.target.value
+                            newItems[index].price = Number(selected?.selling_price || 0)
+                            newItems[index].purchasePrice = Number(selected?.purchase_price || 0)
+                            newItems[index].syncStock = true
+                            setItems(newItems)
+                          }}
+                        >
+                          <option value="">Sélectionner un article...</option>
+                          {catalogItems.map((ci: any) => <option key={ci.id} value={ci.name}>{ci.name} — {Number(ci.selling_price || 0)} €</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Mode Manuel */
+                    <div className="flex gap-4">
+                      <input 
+                        placeholder="Description"
+                        className="flex-1 bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                        value={item.description}
+                        onChange={e => {
+                          const newItems = [...items]
+                          newItems[index].description = e.target.value
+                          setItems(newItems)
+                        }}
+                      />
+                      <button onClick={() => removeItem(index)} className="p-3 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                   <div className="grid grid-cols-4 gap-3">
                     <div className="space-y-1">
                       <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground ml-1">Qté</label>
-                      <input 
-                        type="number"
+                      <input type="number"
                         className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                         value={item.quantity}
-                        onChange={e => {
-                          const newItems = [...items]
-                          newItems[index].quantity = Number(e.target.value)
-                          setItems(newItems)
-                        }}
+                        onChange={e => { const newItems = [...items]; newItems[index].quantity = Number(e.target.value); setItems(newItems) }}
                       />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground ml-1">Prix Vente HT</label>
-                      <input 
-                        type="number"
+                      <input type="number"
                         className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                         value={item.price}
-                        onChange={e => {
-                          const newItems = [...items]
-                          newItems[index].price = Number(e.target.value)
-                          setItems(newItems)
-                        }}
+                        onChange={e => { const newItems = [...items]; newItems[index].price = Number(e.target.value); setItems(newItems) }}
                       />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[8px] font-black uppercase tracking-widest text-primary ml-1">Prix Achat HT</label>
-                      <input 
-                        type="number"
+                      <input type="number"
                         className="w-full bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 font-bold"
                         value={item.purchasePrice}
-                        onChange={e => {
-                          const newItems = [...items]
-                          newItems[index].purchasePrice = Number(e.target.value)
-                          setItems(newItems)
-                        }}
+                        onChange={e => { const newItems = [...items]; newItems[index].purchasePrice = Number(e.target.value); setItems(newItems) }}
                       />
                     </div>
-                    <div className="flex items-center justify-center pt-5 gap-2">
-                       <button 
-                        title="Lier au stock"
-                        onClick={() => {
-                          const newItems = [...items]
-                          newItems[index].syncStock = !newItems[index].syncStock
-                          setItems(newItems)
-                        }}
-                        className={cn(
-                          "flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all text-[10px] font-bold uppercase", 
-                          item.syncStock ? "text-primary bg-primary/10 border border-primary/20" : "text-muted-foreground bg-secondary/50 border border-border"
-                        )}
+                    <div className="flex items-center justify-center pt-5">
+                      <button type="button" title="Lier au stock"
+                        onClick={() => { const newItems = [...items]; newItems[index].syncStock = !newItems[index].syncStock; setItems(newItems) }}
+                        className={cn("flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all text-[10px] font-bold uppercase", item.syncStock ? "text-primary bg-primary/10 border border-primary/20" : "text-muted-foreground bg-secondary/50 border border-border")}
                       >
                         <Box className="w-3 h-3" /> {item.syncStock ? 'Lié' : 'Stock'}
                       </button>

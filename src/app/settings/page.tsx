@@ -14,9 +14,14 @@ import {
   Image as ImageIcon,
   Tag,
   LayoutGrid,
-  FileText,
-  ShieldAlert,
-  Trash2
+  FileText, 
+  ShieldAlert, 
+  Trash2,
+  Users,
+  UserPlus,
+  Link as LinkIcon,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { CustomFieldsSettings } from '@/components/CustomFieldsSettings';
@@ -39,6 +44,8 @@ export default function SettingsPage() {
   });
   const [userEmail, setUserEmail] = useState('');
   const [success, setSuccess] = useState(false);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [inviteLink, setInviteLink] = useState('');
 
   const [magicColor, setMagicColor] = useState(false);
 
@@ -47,6 +54,8 @@ export default function SettingsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserEmail(user.email || '');
+        setInviteLink(`${window.location.origin}/register?employer_id=${user.id}&role=employee`);
+        
         const { data } = await supabase
           .from('profiles')
           .select('*')
@@ -54,6 +63,13 @@ export default function SettingsPage() {
           .single();
         
         if (data) setProfile(data);
+
+        // Load employees
+        const { data: empData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('employer_id', user.id);
+        if (empData) setEmployees(empData);
       }
       setLoading(false);
     }
@@ -310,6 +326,99 @@ export default function SettingsPage() {
 
         </div>
       </section>
+
+      {/* Équipe Section */}
+      {profile.role !== 'employee' && (
+        <section className="space-y-6">
+          <div className="flex items-center gap-2 border-b border-border pb-2">
+            <Users className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-bold">Gestion d'Équipe</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-4">
+              <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h4 className="font-bold">Membres de l'équipe</h4>
+                    <p className="text-xs text-muted-foreground">Collaborateurs ayant accès à votre espace.</p>
+                  </div>
+                  <span className="px-3 py-1 bg-secondary rounded-full text-[10px] font-bold">
+                    {employees.length} / 5
+                  </span>
+                </div>
+
+                {employees.length === 0 ? (
+                  <div className="text-center py-12 bg-secondary/20 rounded-2xl border border-dashed border-border">
+                    <UserPlus className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                    <p className="text-sm font-medium text-muted-foreground">Aucun employé pour le moment.</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">Utilisez le lien magique pour inviter vos collaborateurs.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {employees.map((emp) => (
+                      <div key={emp.id} className="flex items-center justify-between p-4 bg-secondary/30 rounded-2xl border border-border/50">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs uppercase">
+                            {emp.full_name?.substring(0, 2) || 'E'}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold">{emp.full_name || 'Sans Nom'}</p>
+                            <p className="text-[10px] text-muted-foreground">Rôle : {emp.role}</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={async () => {
+                            if (confirm("Supprimer cet employé ?")) {
+                              await supabase.from('profiles').delete().eq('id', emp.id);
+                              setEmployees(prev => prev.filter(e => e.id !== emp.id));
+                            }
+                          }}
+                          className="p-2 text-muted-foreground hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-primary/5 border border-primary/20 rounded-3xl p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <h4 className="font-bold text-sm">Lien Magique d'Invitation</h4>
+                </div>
+                <p className="text-xs text-muted-foreground mb-6 leading-relaxed">
+                  Envoyez ce lien à vos employés. Ils pourront créer leur propre accès rattaché à votre compte entreprise.
+                </p>
+                <div className="flex items-center gap-2 bg-card border border-border rounded-xl p-2 mb-4">
+                  <input 
+                    readOnly
+                    value={inviteLink}
+                    className="flex-1 bg-transparent border-none outline-none text-[10px] font-mono truncate"
+                  />
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(inviteLink);
+                      setSuccess(true);
+                      setTimeout(() => setSuccess(false), 2000);
+                    }}
+                    className="p-2 bg-primary text-white rounded-lg hover:opacity-90 transition-opacity"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-[10px] text-center text-muted-foreground italic">
+                  Les employés n'ont pas accès aux factures ni aux paramètres financiers.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Modules Section */}
       <section className="space-y-6">
