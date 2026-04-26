@@ -135,12 +135,14 @@ ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ADD CONSTRAINT unique_email UNIQUE (email);
 
 CREATE POLICY "Profiles access" ON public.profiles FOR SELECT USING (
-  auth.uid() = id 
-  OR employer_id = auth.uid() 
-  OR id = (SELECT employer_id FROM public.profiles WHERE id = auth.uid())
+  auth.role() = 'authenticated'
 );
 
 CREATE POLICY "Profiles update" ON public.profiles FOR UPDATE USING (
+  auth.uid() = id
+);
+
+CREATE POLICY "Profiles insert" ON public.profiles FOR INSERT WITH CHECK (
   auth.uid() = id
 );
 CREATE POLICY "Clients access" ON public.clients FOR ALL USING (artisan_id = auth.uid() OR artisan_id = (SELECT employer_id FROM public.profiles WHERE id = auth.uid()));
