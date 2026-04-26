@@ -21,7 +21,8 @@ import {
   UserPlus,
   Link as LinkIcon,
   Copy,
-  ExternalLink
+  ExternalLink,
+  Sparkles
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { CustomFieldsSettings } from '@/components/CustomFieldsSettings';
@@ -40,7 +41,8 @@ export default function SettingsPage() {
     address: '',
     logo_url: '',
     primary_color: '#000000',
-    subscription_plan: 'starter'
+    subscription_plan: 'starter',
+    role: 'artisan'
   });
   const [userEmail, setUserEmail] = useState('');
   const [success, setSuccess] = useState(false);

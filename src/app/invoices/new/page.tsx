@@ -135,7 +135,8 @@ export default function NewInvoicePage() {
       quantity: 1, 
       price: Number(catalogItem.selling_price || catalogItem.price || 0), 
       purchasePrice: Number(catalogItem.purchase_price || catalogItem.purchasePrice || 0), 
-      syncStock: true 
+      syncStock: true,
+      mode: 'catalog'
     }])
     setShowCatalog(false)
   }
