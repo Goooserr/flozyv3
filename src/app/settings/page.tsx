@@ -22,7 +22,8 @@ import {
   Link as LinkIcon,
   Copy,
   ExternalLink,
-  Sparkles
+  Sparkles,
+  Lock
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
@@ -58,15 +59,16 @@ export default function SettingsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserEmail(user.email || '');
-        setInviteLink(`${window.location.origin}/register?employer_id=${user.id}&role=employee`);
-        
         const { data } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', user.id)
           .single();
         
-        if (data) setProfile(data);
+        if (data) {
+          setProfile(data);
+          setInviteLink(`${window.location.origin}/register?employer_id=${user.id}&role=employee&company=${encodeURIComponent(data.company_name || 'Flozy')}`);
+        }
 
         // Load employees
         const { data: empData } = await supabase
@@ -339,7 +341,22 @@ export default function SettingsPage() {
             <h3 className="text-lg font-bold">Gestion d'Équipe</h3>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {profile.subscription_plan !== 'expert' ? (
+            <div className="bg-primary/5 border border-dashed border-primary/30 rounded-3xl p-12 text-center">
+              <Lock className="w-12 h-12 mx-auto mb-4 text-primary opacity-40" />
+              <h4 className="text-xl font-bold mb-2">Multi-utilisateur (Expert)</h4>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
+                Passez au plan **Expert** pour inviter des employés, partager vos chantiers et centraliser la gestion de votre entreprise.
+              </p>
+              <button 
+                onClick={() => setProfile({ ...profile, subscription_plan: 'expert' })} // Mock upgrade for demo
+                className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 transition-opacity"
+              >
+                Passer en Expert
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-4">
               <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
@@ -434,6 +451,7 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
+          )}
         </section>
       )}
 

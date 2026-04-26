@@ -21,6 +21,7 @@ function RegisterForm() {
   
   const employerId = searchParams.get('employer_id')
   const invitedRole = searchParams.get('role') || 'artisan'
+  const companyNameFromUrl = searchParams.get('company')
   const isEmployeeInvite = invitedRole === 'employee' && !!employerId
   
   const router = useRouter()
@@ -95,6 +96,18 @@ function RegisterForm() {
         </div>
 
         <div className="bg-zinc-900/50 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl">
+          {isEmployeeInvite && (
+            <div className="mb-8 p-4 bg-primary/10 border border-primary/20 rounded-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4">
+              <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shrink-0">
+                <Building2 className="w-6 h-6 text-primary-foreground" />
+              </div>
+              <div>
+                <p className="text-xs text-primary font-bold uppercase tracking-widest">Invitation Équipe</p>
+                <p className="text-sm text-white font-medium">Vous rejoignez <strong>{companyNameFromUrl || 'l\'entreprise'}</strong></p>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleRegister} className="space-y-6">
             {error && (
               <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-sm text-center font-medium animate-in slide-in-from-top-2">
