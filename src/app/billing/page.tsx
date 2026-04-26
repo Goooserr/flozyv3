@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, Suspense, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { CreditCard, CheckCircle2, Zap, Shield, Crown, ArrowRight, Loader2 } from 'lucide-react'
 import { useTheme } from '@/components/DynamicThemeProvider'
 
