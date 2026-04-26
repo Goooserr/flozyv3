@@ -43,6 +43,12 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
 
     if (!profile) return
 
+    console.log('DEBUG - Profil chargé:', { 
+      id: profile.id, 
+      plan: profile.subscription_plan, 
+      modules: profile.enabled_modules 
+    });
+
     let workspaceData = profile
     setUserRole(profile.role || 'artisan')
 
