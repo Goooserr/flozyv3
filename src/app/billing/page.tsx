@@ -41,9 +41,11 @@ const plans = [
   }
 ]
 
-export default function BillingPage() {
+function BillingContent() {
   const { primaryColor, subscriptionPlan } = useTheme()
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const planFromUrl = searchParams.get('plan')
   
   // Mock current user usage
   const invoicesUsed = 3
@@ -52,6 +54,7 @@ export default function BillingPage() {
   const currentPlan = subscriptionPlan || 'starter'
 
   const handleUpgrade = async (plan: any) => {
+    if (!plan) return
     setLoadingPlan(plan.id)
     try {
       const response = await fetch('/api/checkout', {
@@ -71,11 +74,21 @@ export default function BillingPage() {
         throw new Error(data.error);
       }
     } catch (err: any) {
-      alert("Erreur Stripe : " + err.message);
+      console.error(err)
+      // On n'alerte pas si c'est le chargement auto pour ne pas bloquer l'interface
+      if (!planFromUrl) alert("Erreur Stripe : " + err.message);
     } finally {
       setLoadingPlan(null);
     }
   }
+
+  // Lancement automatique si plan dans l'URL
+  useEffect(() => {
+    if (planFromUrl && planFromUrl !== 'starter' && planFromUrl !== currentPlan) {
+      const targetPlan = plans.find(p => p.id === planFromUrl)
+      if (targetPlan) handleUpgrade(targetPlan)
+    }
+  }, [planFromUrl])
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -190,5 +203,13 @@ export default function BillingPage() {
          </div>
       </div>
     </div>
+  )
+}
+
+export default function BillingPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-[60vh]"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+      <BillingContent />
+    </Suspense>
   )
 }

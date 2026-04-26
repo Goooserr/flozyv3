@@ -8,14 +8,19 @@ import { useTheme } from './DynamicThemeProvider'
 
 export function QuickActionFAB() {
   const [isOpen, setIsOpen] = useState(false)
-  const { enabledModules } = useTheme()
+  const { enabledModules, userRole } = useTheme()
 
-  const actions = [
+  let actions = [
     { label: 'Facture / Devis', icon: FileText, href: '/invoices/new', color: 'bg-blue-500', module: 'documents' },
     { label: 'Nouveau Client', icon: UserPlus, href: '/clients', color: 'bg-emerald-500', module: 'clients' },
     { label: 'Intervention', icon: Calendar, href: '/planning', color: 'bg-purple-500', module: 'planning' },
     { label: 'Matériau Stock', icon: Box, href: '/stock', color: 'bg-amber-500', module: 'stock' },
   ]
+
+  // Restriction pour les employés
+  if (userRole === 'employee') {
+    actions = actions.filter(a => a.href !== '/invoices/new');
+  }
 
   return (
     <div className="fixed bottom-6 right-4 md:hidden z-50">

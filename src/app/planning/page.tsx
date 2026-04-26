@@ -18,8 +18,10 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
+import { useTheme } from '@/components/DynamicThemeProvider'
 
 export default function PlanningPage() {
+  const { userRole } = useTheme()
   const [interventions, setInterventions] = useState<any[]>([])
   const [clients, setClients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -32,7 +34,7 @@ export default function PlanningPage() {
     title: '',
     client_id: '',
     status: 'scheduled',
-    date: '',
+    start_time: '',
     address: '',
     notes: ''
   })
@@ -57,18 +59,29 @@ export default function PlanningPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (userRole === 'employee') return
     setSaving(true)
     try {
       const { createIntervention } = await import('@/lib/actions')
       const notesPayload = selectedCatalogLines.length > 0
         ? JSON.stringify({ catalog_lines: selectedCatalogLines, total_sell: totalSell, total_cost: totalCost })
         : newIntervention.notes
-      await createIntervention({ ...newIntervention, notes: notesPayload })
+
+      // Calcul auto de l'heure de fin (1h plus tard)
+      const start = new Date(newIntervention.start_time)
+      const end = new Date(start.getTime() + (60 * 60 * 1000))
+      
+      await createIntervention({ 
+        ...newIntervention, 
+        notes: notesPayload,
+        end_time: end.toISOString()
+      })
       setIsModalOpen(false)
-      setNewIntervention({ title: '', client_id: '', status: 'scheduled', date: '', address: '', notes: '' })
+      setNewIntervention({ title: '', client_id: '', status: 'scheduled', start_time: '', address: '', notes: '' })
       setSelectedCatalogLines([])
       await loadData()
-    } catch {
+    } catch (err) {
+      console.error(err)
       alert("Erreur lors de la création")
     } finally {
       setSaving(false)
@@ -95,12 +108,14 @@ export default function PlanningPage() {
           <h2 className="text-3xl font-bold tracking-tight">Interventions & Photos</h2>
           <p className="text-muted-foreground">Pilotez vos chantiers et stockez vos preuves visuelles.</p>
         </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-105"
-        >
-          <Plus className="w-4 h-4" /> Nouvelle Intervention
-        </button>
+        {userRole !== 'employee' && (
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-105"
+          >
+            <Plus className="w-4 h-4" /> Nouvelle Intervention
+          </button>
+        )}
       </div>
 
       {/* Kanban Board */}
@@ -125,7 +140,9 @@ export default function PlanningPage() {
           <div className="bg-card border border-border w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-black">Planifier un chantier</h3>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-secondary rounded-full transition-colors"><XIcon className="w-5 h-5 text-muted-foreground" /></button>
+              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-secondary rounded-full transition-colors">
+                <Plus className="w-5 h-5 text-muted-foreground rotate-45" />
+              </button>
             </div>
             
             <form onSubmit={handleCreate} className="space-y-4">
@@ -154,10 +171,10 @@ export default function PlanningPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Date / Heure</label>
-                  <input type="datetime-local"
+                  <input type="datetime-local" required
                     className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                    value={newIntervention.date}
-                    onChange={e => setNewIntervention({...newIntervention, date: e.target.value})}
+                    value={newIntervention.start_time}
+                    onChange={e => setNewIntervention({...newIntervention, start_time: e.target.value})}
                   />
                 </div>
                 <div className="space-y-1">
@@ -307,6 +324,7 @@ function NavigationMenu({ address }: { address: string }) {
 }
 
 function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
+  const { userRole } = useTheme()
   const [uploading, setUploading] = useState(false)
   const [showGallery, setShowGallery] = useState(false)
   const [photos, setPhotos] = useState<string[]>([])
@@ -406,8 +424,8 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
         )}
       </div>
 
-      {/* Résumé chiffrage catalogue */}
-      {catalogLines.length > 0 && (
+      {/* Résumé chiffrage catalogue — CACHÉ POUR LES EMPLOYÉS */}
+      {userRole !== 'employee' && catalogLines.length > 0 && (
         <div className="flex items-center gap-3 mb-3 bg-secondary/30 rounded-xl px-3 py-2">
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
             <Euro className="w-3 h-3" /> Coût : <span className="font-black text-foreground ml-0.5">{catalogTotalCost.toFixed(0)} €</span>
@@ -446,7 +464,7 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
           </label>
           {data.address && <NavigationMenu address={data.address} />}
         </div>
-        {data.status === 'completed' && (
+        {data.status === 'completed' && userRole !== 'employee' && (
           <Link href="/invoices/new" className="flex items-center gap-1 px-2 py-1 bg-primary text-primary-foreground rounded-md text-[10px] font-bold hover:opacity-90 shadow-sm shadow-primary/20 transition-all hover:scale-105">
             <FileText className="w-3 h-3" /> Facturer
           </Link>

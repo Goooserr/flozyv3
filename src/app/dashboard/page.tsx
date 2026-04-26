@@ -28,7 +28,7 @@ const statusStyles: any = {
 };
 
 export default function Dashboard() {
-  const { subscriptionPlan } = useTheme()
+  const { subscriptionPlan, userRole } = useTheme()
   const [stats, setStats] = useState<any[]>([])
   const [recentInvoices, setRecentInvoices] = useState<any[]>([])
   const [interventions, setInterventions] = useState<any[]>([])
@@ -47,15 +47,29 @@ export default function Dashboard() {
     const totalRevenue = docs?.reduce((acc: number, curr: any) => acc + (curr.amount || 0), 0) || 0
     const pendingCount = docs?.filter((d: any) => d.status === 'pending').length || 0
     const activeClients = clients?.length || 0
+    const intersCount = inters?.filter((i: any) => i.status === 'scheduled').length || 0
 
-    setStats([
-      { 
+    const newStats = []
+
+    if (userRole === 'employee') {
+      newStats.push({ 
+        label: 'Chantiers prévus', 
+        value: `${intersCount} intervention(s)`, 
+        trend: 'Planning', 
+        icon: CalendarDays,
+        color: 'text-purple-500'
+      })
+    } else {
+      newStats.push({ 
         label: 'Chiffre d\'affaires', 
         value: `${totalRevenue.toLocaleString()} €`, 
         trend: 'À jour', 
         icon: TrendingUp,
         color: 'text-emerald-500'
-      },
+      })
+    }
+
+    newStats.push(
       { 
         label: 'En attente', 
         value: `${pendingCount} doc(s)`, 
@@ -69,9 +83,10 @@ export default function Dashboard() {
         trend: 'Base de données', 
         icon: Users,
         color: 'text-blue-500'
-      },
-    ])
+      }
+    )
 
+    setStats(newStats)
     setRecentInvoices(docs?.slice(0, 5) || [])
     setInterventions(inters || [])
     setLoading(false)
@@ -112,7 +127,7 @@ export default function Dashboard() {
         <p className="text-muted-foreground text-sm">Simplifiez votre gestion quotidienne. Voici l'état de votre activité.</p>
       </div>
 
-      {subscriptionPlan === 'starter' && (
+      {subscriptionPlan === 'starter' && userRole !== 'employee' && (
         <div className="bg-primary/10 border border-primary/20 p-6 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6 animate-in slide-in-from-top duration-500">
           <div className="flex items-center gap-4 text-center md:text-left">
             <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center text-primary shrink-0">
@@ -152,75 +167,6 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         <div className="lg:col-span-2 space-y-8">
-          {/* Recent Invoices Table */}
-          <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
-            <div className="p-6 border-b border-border flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-blue-500/10 text-blue-500 rounded-lg">
-                   <ArrowUpRight className="w-4 h-4" />
-                </div>
-                <h3 className="font-bold">Factures & Devis récents</h3>
-              </div>
-              <Link href="/invoices" className="text-xs font-bold uppercase tracking-widest hover:text-primary transition-colors flex items-center gap-1">
-                Tout voir <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="text-[10px] text-muted-foreground border-b border-border bg-secondary/30">
-                    <th className="px-6 py-3 font-bold uppercase tracking-widest">Client</th>
-                    <th className="px-6 py-3 font-bold uppercase tracking-widest">Montant</th>
-                    <th className="px-6 py-3 font-bold uppercase tracking-widest text-center">Statut</th>
-                    <th className="px-6 py-3 font-bold uppercase tracking-widest text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50">
-                  {recentInvoices.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-12 text-center text-sm text-muted-foreground">
-                         Aucun document pour le moment. <br/>
-                         <Link href="/invoices/new" className="text-primary font-bold hover:underline mt-2 inline-block">Créer votre premier devis</Link>
-                      </td>
-                    </tr>
-                  ) : recentInvoices.map((invoice) => {
-                    const clientName = invoice.clients?.full_name || invoice.metadata?.client_info?.name || 'Client Inconnu';
-                    const amount = (invoice.amount || 0).toLocaleString();
-                    const statusLabel = invoice.status === 'paid' ? 'Payée' : invoice.status === 'pending' ? 'En attente' : 'Retard';
-                    
-                    return (
-                      <tr key={invoice.id} className="text-sm hover:bg-secondary/40 transition-colors group">
-                        <td className="px-6 py-4">
-                          <p className="font-bold">{clientName}</p>
-                          <p className="text-[10px] text-muted-foreground font-mono">#{invoice.document_number || 'DOC'}</p>
-                        </td>
-                        <td className="px-6 py-4 font-black">{amount} €</td>
-                        <td className="px-6 py-4">
-                          <div className="flex justify-center">
-                            <span className={cn(
-                              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider",
-                              statusStyles[invoice.status || 'pending']
-                            )}>
-                              {invoice.status === 'paid' && <CheckCircle2 className="w-3 h-3" />}
-                              {invoice.status === 'pending' && <Clock className="w-3 h-3" />}
-                              {invoice.status === 'overdue' && <AlertCircle className="w-3 h-3" />}
-                              {statusLabel}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <Link href={`/p/${invoice.id}`} target="_blank" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-secondary text-foreground text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-primary hover:text-primary-foreground transition-all">
-                            Voir
-                          </Link>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
           {/* Today's Plan Widget - DYNAMIC */}
           <div className="bg-gradient-to-br from-primary/10 via-card to-card border border-primary/20 rounded-[2.5rem] p-8 flex flex-col md:flex-row gap-8 items-center justify-between relative overflow-hidden group shadow-lg">
              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -228,11 +174,11 @@ export default function Dashboard() {
              </div>
              <div className="flex-1">
                 <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest mb-4 bg-primary/10 w-fit px-3 py-1 rounded-full">
-                   <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> {nextIntervention ? 'Prochaine Intervention' : 'Journée calme'}
+                   <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> {nextIntervention ? 'Prochaine Mission' : 'Journée calme'}
                 </div>
                 <h3 className="text-2xl font-black mb-1">{nextIntervention?.title || "Aucun chantier planifié"}</h3>
                 <p className="text-muted-foreground flex items-center gap-2">
-                   <MapPin className="w-4 h-4" /> {nextIntervention?.address || "Profitez-en pour mettre à jour vos devis !"}
+                   <MapPin className="w-4 h-4" /> {nextIntervention?.address || "Aucun déplacement prévu pour le moment."}
                 </p>
              </div>
              {nextIntervention && (
@@ -240,29 +186,107 @@ export default function Dashboard() {
                   <div className="text-right">
                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Horaire prévu</p>
                      <p className="text-xl font-black text-primary">
-                        {new Date(nextIntervention.date || nextIntervention.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(nextIntervention.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                      </p>
                   </div>
                   <button 
                     onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(nextIntervention.address)}`, '_blank')} 
                     className="w-full flex items-center justify-center gap-2 font-black text-xs bg-white text-black px-6 py-4 rounded-xl hover:bg-zinc-200 transition-all shadow-xl"
                   >
-                     <MapPin className="w-4 h-4" /> Itinéraire
+                     <Navigation className="w-4 h-4" /> Y aller
                   </button>
                </div>
              )}
-             {!nextIntervention && (
-               subscriptionPlan === 'starter' ? (
-                 <Link href="/billing" className="font-black text-xs bg-zinc-800 text-zinc-500 px-6 py-4 rounded-xl flex items-center gap-2 border border-white/5 hover:border-primary/50 transition-all shadow-xl group">
-                    <Lock className="w-4 h-4" /> Planifier un chantier
-                 </Link>
-               ) : (
-                 <Link href="/planning" className="font-black text-xs bg-primary text-primary-foreground px-6 py-4 rounded-xl hover:opacity-90 transition-all shadow-xl">
-                    Planifier un chantier
-                 </Link>
-               )
-             )}
           </div>
+
+          {/* Recent Invoices Table - HIDDEN FOR EMPLOYEES */}
+          {userRole !== 'employee' && (
+            <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
+              <div className="p-6 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-blue-500/10 text-blue-500 rounded-lg">
+                     <ArrowUpRight className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-bold">Factures & Devis récents</h3>
+                </div>
+                <Link href="/invoices" className="text-xs font-bold uppercase tracking-widest hover:text-primary transition-colors flex items-center gap-1">
+                  Tout voir <ChevronRight className="w-3 h-3" />
+                </Link>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="text-[10px] text-muted-foreground border-b border-border bg-secondary/30">
+                      <th className="px-6 py-3 font-bold uppercase tracking-widest">Client</th>
+                      <th className="px-6 py-3 font-bold uppercase tracking-widest">Montant</th>
+                      <th className="px-6 py-3 font-bold uppercase tracking-widest text-center">Statut</th>
+                      <th className="px-6 py-3 font-bold uppercase tracking-widest text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {recentInvoices.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-12 text-center text-sm text-muted-foreground">
+                           Aucun document pour le moment. <br/>
+                           <Link href="/invoices/new" className="text-primary font-bold hover:underline mt-2 inline-block">Créer votre premier devis</Link>
+                        </td>
+                      </tr>
+                    ) : recentInvoices.map((invoice) => {
+                      const clientName = invoice.clients?.full_name || invoice.metadata?.client_info?.name || 'Client Inconnu';
+                      const amount = (invoice.amount || 0).toLocaleString();
+                      const statusLabel = invoice.status === 'paid' ? 'Payée' : invoice.status === 'pending' ? 'En attente' : 'Retard';
+                      
+                      return (
+                        <tr key={invoice.id} className="text-sm hover:bg-secondary/40 transition-colors group">
+                          <td className="px-6 py-4">
+                            <p className="font-bold">{clientName}</p>
+                            <p className="text-[10px] text-muted-foreground font-mono">#{invoice.document_number || 'DOC'}</p>
+                          </td>
+                          <td className="px-6 py-4 font-black">{amount} €</td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-center">
+                              <span className={cn(
+                                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider",
+                                statusStyles[invoice.status || 'pending']
+                              )}>
+                                {invoice.status === 'paid' && <CheckCircle2 className="w-3 h-3" />}
+                                {invoice.status === 'pending' && <Clock className="w-3 h-3" />}
+                                {invoice.status === 'overdue' && <AlertCircle className="w-3 h-3" />}
+                                {statusLabel}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <Link href={`/p/${invoice.id}`} target="_blank" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-secondary text-foreground text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-primary hover:text-primary-foreground transition-all">
+                              Voir
+                            </Link>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Employee Site Photo Widget */}
+          {userRole === 'employee' && (
+            <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-purple-500/10 text-purple-500 rounded-xl">
+                  <Camera className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold">Photos de Chantier</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-8">
+                Envoyez les photos du chantier en cours pour que votre patron puisse les consulter et valider l'intervention.
+              </p>
+              <Link href="/photos" className="w-full flex items-center justify-center gap-3 px-6 py-5 bg-purple-500 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-purple-600 transition-all shadow-xl shadow-purple-500/20">
+                <Camera className="w-6 h-6" /> Envoyer des Photos
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Quick Actions Column */}
@@ -270,15 +294,17 @@ export default function Dashboard() {
           <div className="bg-card border border-border rounded-[2.5rem] p-6 shadow-sm flex flex-col gap-4">
             <h3 className="font-bold text-sm uppercase tracking-widest text-muted-foreground px-2">Actions rapides</h3>
             
-            <Link href="/invoices/new" className="group flex items-center gap-4 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 hover:border-blue-500/40 hover:bg-blue-500/10 transition-all">
-              <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
-                <PlusCircle className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="font-bold text-sm">Nouveau Devis</p>
-                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">PDF Pro en 1 min</p>
-              </div>
-            </Link>
+            {userRole !== 'employee' && (
+              <Link href="/invoices/new" className="group flex items-center gap-4 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 hover:border-blue-500/40 hover:bg-blue-500/10 transition-all">
+                <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
+                  <PlusCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm">Nouveau Devis</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">PDF Pro en 1 min</p>
+                </div>
+              </Link>
+            )}
 
             <button 
               onClick={() => setIsClientModalOpen(true)}
@@ -293,49 +319,39 @@ export default function Dashboard() {
               </div>
             </button>
 
-            {subscriptionPlan === 'starter' ? (
-              <Link href="/billing" className="group flex items-center gap-4 p-4 rounded-2xl bg-zinc-800/20 border border-white/5 hover:border-primary/30 transition-all opacity-60">
-                <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center text-zinc-500 shadow-lg">
-                  <Lock className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="font-bold text-sm text-zinc-400">Intervention</p>
-                  <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">Plan PRO nécessaire</p>
-                </div>
-              </Link>
-            ) : (
-              <Link href="/planning" className="group flex items-center gap-4 p-4 rounded-2xl bg-purple-500/5 border border-purple-500/10 hover:border-purple-500/40 hover:bg-purple-500/10 transition-all">
-                <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-purple-500/20 group-hover:scale-110 transition-transform">
-                  <CalendarDays className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="font-bold text-sm">Intervention</p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Planifier un chantier</p>
-                </div>
-              </Link>
-            )}
+            <Link href="/planning" className="group flex items-center gap-4 p-4 rounded-2xl bg-purple-500/5 border border-purple-500/10 hover:border-purple-500/40 hover:bg-purple-500/10 transition-all">
+              <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-purple-500/20 group-hover:scale-110 transition-transform">
+                <CalendarDays className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="font-bold text-sm">Planning</p>
+                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Voir les missions</p>
+              </div>
+            </Link>
           </div>
 
-          {/* Activity Widget */}
-          <div className="bg-secondary/30 border border-border rounded-[2.5rem] p-6">
-             <h4 className="font-bold text-xs uppercase tracking-widest mb-4 flex items-center gap-2"><Send className="w-3 h-3 text-primary" /> Dernière activité</h4>
-             <div className="space-y-4">
-                <div className="flex gap-3 items-start">
-                   <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5" />
-                   <div>
-                      <p className="text-xs font-bold">Client ajouté</p>
-                      <p className="text-[10px] text-muted-foreground">Il y a 2 heures</p>
-                   </div>
-                </div>
-                <div className="flex gap-3 items-start opacity-50">
-                   <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
-                   <div>
-                      <p className="text-xs font-bold">Devis envoyé</p>
-                      <p className="text-[10px] text-muted-foreground">Hier à 18:30</p>
-                   </div>
-                </div>
-             </div>
-          </div>
+          {/* Activity Widget - HIDDEN FOR EMPLOYEES */}
+          {userRole !== 'employee' && (
+            <div className="bg-secondary/30 border border-border rounded-[2.5rem] p-6">
+               <h4 className="font-bold text-xs uppercase tracking-widest mb-4 flex items-center gap-2"><Send className="w-3 h-3 text-primary" /> Dernière activité</h4>
+               <div className="space-y-4">
+                  <div className="flex gap-3 items-start">
+                     <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5" />
+                     <div>
+                        <p className="text-xs font-bold">Client ajouté</p>
+                        <p className="text-[10px] text-muted-foreground">Il y a 2 heures</p>
+                     </div>
+                  </div>
+                  <div className="flex gap-3 items-start opacity-50">
+                     <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
+                     <div>
+                        <p className="text-xs font-bold">Devis envoyé</p>
+                        <p className="text-[10px] text-muted-foreground">Hier à 18:30</p>
+                     </div>
+                  </div>
+               </div>
+            </div>
+          )}
         </div>
       </div>
 

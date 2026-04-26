@@ -13,7 +13,11 @@ const ThemeContext = createContext({
   enabledModules: ['clients', 'documents'] as string[],
   setEnabledModules: (modules: string[]) => {},
   subscriptionPlan: 'starter',
-  setSubscriptionPlan: (plan: string) => {}
+  setSubscriptionPlan: (plan: string) => {},
+  userRole: 'artisan',
+  setUserRole: (role: string) => {},
+  userId: '' as string | undefined,
+  setUserId: (id: string | undefined) => {}
 })
 
 export function DynamicThemeProvider({ children }: { children: React.ReactNode }) {
@@ -22,11 +26,14 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
   const [logoUrl, setLogoUrl] = useState('')
   const [enabledModules, setEnabledModules] = useState<string[]>(['clients', 'documents'])
   const [subscriptionPlan, setSubscriptionPlan] = useState('starter')
+  const [userRole, setUserRole] = useState('artisan')
+  const [userId, setUserId] = useState<string | undefined>()
   const supabase = createClient()
 
-  async function loadProfile(userId?: string) {
-    const uid = userId || (await supabase.auth.getUser()).data.user?.id
+  async function loadProfile(uId?: string) {
+    const uid = uId || (await supabase.auth.getUser()).data.user?.id
     if (!uid) return
+    setUserId(uid)
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -37,6 +44,7 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
     if (!profile) return
 
     let workspaceData = profile
+    setUserRole(profile.role || 'artisan')
 
     // Si c'est un employé, on récupère les réglages de son patron
     if (profile.role === 'employee' && profile.employer_id) {
@@ -91,7 +99,9 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
       companyName, setCompanyName,
       logoUrl, setLogoUrl,
       enabledModules, setEnabledModules,
-      subscriptionPlan, setSubscriptionPlan
+      subscriptionPlan, setSubscriptionPlan,
+      userRole, setUserRole,
+      userId, setUserId
     }}>
       {children}
     </ThemeContext.Provider>

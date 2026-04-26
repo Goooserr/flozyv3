@@ -49,21 +49,14 @@ function RegisterForm() {
 
       if (signUpError) throw signUpError
 
-      // Client-side fallback: ensure profile is updated with role and employer_id
-      // especially if the SQL trigger hasn't been updated yet.
-      if (isEmployeeInvite && data.user) {
-        await supabase
-          .from('profiles')
-          .update({ 
-            role: 'employee', 
-            employer_id: employerId,
-            company_name: 'Équipe' 
-          })
-          .eq('id', data.user.id)
+      // Redirection intelligente
+      if (isEmployeeInvite) {
+        router.push('/')
+      } else if (plan !== 'starter') {
+        router.push(`/billing?plan=${plan}`)
+      } else {
+        router.push('/')
       }
-
-      // Redirect to dashboard
-      router.push('/')
     } catch (err: any) {
       setError(err.message || 'Une erreur est survenue lors de l\'inscription.')
     } finally {

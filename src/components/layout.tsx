@@ -53,8 +53,10 @@ function NavList({ enabledModules, pathname, isAdmin, isDocumentsEnabled, role, 
           const isEnabled = !item.module || enabledModules.includes(item.module);
           const isActive = pathname.startsWith(item.href) && item.href !== '/' || pathname === item.href;
           
-          // Hide financial items for employees
-          if (role === 'employee' && (item.href === '/invoices' || item.href === '/billing')) return null;
+          // --- MODE TERRAIN (Employé) ---
+          // On ne garde que l'essentiel pour le terrain
+          const fieldModules = ['/dashboard', '/planning', '/photos', '/clients'];
+          if (role === 'employee' && !fieldModules.includes(item.href)) return null;
 
           return (
             <Link

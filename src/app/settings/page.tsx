@@ -84,26 +84,26 @@ export default function SettingsPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    if (profile.role === 'employee') return; // Sécurité supplémentaire
+
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-      const { error } = await supabase
-        .from('profiles')
-        .update(profile)
-        .eq('id', user.id);
+    try {
+      const { updateArtisanProfile } = await import('@/lib/actions');
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (!error) {
+      if (user) {
+        await updateArtisanProfile(user.id, profile);
         setSuccess(true);
         setPrimaryColor(profile.primary_color || '#000000');
         setCompanyName(profile.company_name || '');
         setLogoUrl(profile.logo_url || '');
         setTimeout(() => setSuccess(false), 3000);
-      } else {
-        alert("Erreur lors de l'enregistrement : " + error.message);
       }
+    } catch (err: any) {
+      alert("Erreur lors de l'enregistrement : " + err.message);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -178,7 +178,7 @@ export default function SettingsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           {/* Colonne Formulaire */}
-          <div>
+          <div className={cn(profile.role === 'employee' && "opacity-75 cursor-not-allowed")}>
             <form onSubmit={handleSave} className="bg-card border border-border rounded-3xl p-8 shadow-sm space-y-6">
               
               <div className="flex flex-col items-center justify-center p-6 bg-secondary/30 rounded-2xl border-2 border-dashed border-border mb-6 group relative overflow-hidden transition-colors hover:border-primary/50">
@@ -191,20 +191,24 @@ export default function SettingsPage() {
                        <p className="text-xs text-muted-foreground">PNG, JPG jusqu'à 2MB</p>
                     </div>
                  )}
-                 <input 
-                   type="file" 
-                   accept="image/*" 
-                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                   onChange={handleLogoUpload}
-                 />
-                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                    <p className="text-white text-sm font-bold flex items-center gap-2"><Upload className="w-4 h-4" /> Changer</p>
-                 </div>
+                 {profile.role !== 'employee' && (
+                   <input 
+                     type="file" 
+                     accept="image/*" 
+                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                     onChange={handleLogoUpload}
+                   />
+                 )}
+                 {profile.role !== 'employee' && (
+                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                      <p className="text-white text-sm font-bold flex items-center gap-2"><Upload className="w-4 h-4" /> Changer</p>
+                   </div>
+                 )}
               </div>
 
-              {magicColor && (
-                <div className="bg-primary/10 border border-primary/30 text-primary p-3 rounded-xl text-sm font-medium flex items-center gap-2 animate-in slide-in-from-top-2">
-                  <CheckCircle2 className="w-4 h-4" /> Couleur magique détectée d'après votre logo !
+              {profile.role === 'employee' && (
+                <div className="bg-amber-500/10 border border-amber-500/30 text-amber-500 p-3 rounded-xl text-xs font-medium flex items-center gap-2">
+                  <Lock className="w-3.5 h-3.5" /> En tant qu'employé, vous ne pouvez pas modifier le branding de l'entreprise.
                 </div>
               )}
 
@@ -212,60 +216,67 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center gap-2"> Nom complet </label>
                   <input 
+                    disabled={profile.role === 'employee'}
                     value={profile.full_name}
                     onChange={e => setProfile({...profile, full_name: e.target.value})}
-                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50"
+                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center gap-2"> Entreprise </label>
                   <input 
+                    disabled={profile.role === 'employee'}
                     value={profile.company_name}
                     onChange={e => setProfile({...profile, company_name: e.target.value})}
-                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50"
+                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center gap-2"> Couleur de marque </label>
                   <div className="flex items-center gap-3">
                     <input 
+                      disabled={profile.role === 'employee'}
                       type="color"
                       value={profile.primary_color || '#000000'}
                       onChange={e => setProfile({...profile, primary_color: e.target.value})}
-                      className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-none p-0"
+                      className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-none p-0 disabled:opacity-50"
                     />
                     <input 
+                      disabled={profile.role === 'employee'}
                       type="text"
                       value={profile.primary_color || '#000000'}
                       onChange={e => setProfile({...profile, primary_color: e.target.value})}
-                      className="flex-1 bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/50 uppercase font-mono"
+                      className="flex-1 bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/50 uppercase font-mono disabled:opacity-50"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center gap-2"> Adresse </label>
                   <input 
+                    disabled={profile.role === 'employee'}
                     value={profile.address}
                     onChange={e => setProfile({...profile, address: e.target.value})}
-                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50"
+                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
                   />
                 </div>
               </div>
 
-              <div className="pt-4 flex items-center justify-between border-t border-border mt-4">
-                {success ? (
-                  <p className="text-emerald-500 text-sm flex items-center gap-2 animate-in slide-in-from-left-2">
-                    <CheckCircle2 className="w-4 h-4" /> Enregistré ! L'interface a été mise à jour.
-                  </p>
-                ) : <div />}
-                <button 
-                  disabled={saving}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 disabled:opacity-50 transition-all shadow-sm"
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  Sauvegarder
-                </button>
-              </div>
+              {profile.role !== 'employee' && (
+                <div className="pt-4 flex items-center justify-between border-t border-border mt-4">
+                  {success ? (
+                    <p className="text-emerald-500 text-sm flex items-center gap-2 animate-in slide-in-from-left-2">
+                      <CheckCircle2 className="w-4 h-4" /> Enregistré ! L'interface a été mise à jour.
+                    </p>
+                  ) : <div />}
+                  <button 
+                    disabled={saving}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 disabled:opacity-50 transition-all shadow-sm"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Sauvegarder
+                  </button>
+                </div>
+              )}
             </form>
           </div>
 

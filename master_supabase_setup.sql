@@ -17,6 +17,8 @@ EXCEPTION WHEN duplicate_object THEN null; END $$;
 -- 3. NETTOYAGE COMPLET
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 DROP FUNCTION IF EXISTS public.handle_new_user();
+DROP FUNCTION IF EXISTS public.delete_own_user();
+DROP FUNCTION IF EXISTS public.get_public_document(UUID);
 DROP TABLE IF EXISTS public.intervention_photos CASCADE;
 DROP TABLE IF EXISTS public.documents CASCADE;
 DROP TABLE IF EXISTS public.interventions CASCADE;
@@ -86,7 +88,14 @@ CREATE TABLE public.interventions (
   start_time TIMESTAMPTZ NOT NULL,
   end_time TIMESTAMPTZ,
   status TEXT DEFAULT 'scheduled',
-  photos TEXT[] DEFAULT ARRAY[]::TEXT[],
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 7b. TABLE DES PHOTOS D'INTERVENTION
+CREATE TABLE public.intervention_photos (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  intervention_id UUID REFERENCES public.interventions(id) ON DELETE CASCADE NOT NULL,
+  url TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -123,14 +132,26 @@ ALTER TABLE public.interventions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Profiles access" ON public.profiles FOR SELECT USING (auth.uid() = id OR employer_id = auth.uid());
+CREATE POLICY "Profiles access" ON public.profiles FOR SELECT USING (
+  auth.uid() = id 
+  OR employer_id = auth.uid() 
+  OR id = (SELECT employer_id FROM public.profiles WHERE id = auth.uid())
+);
 CREATE POLICY "Clients access" ON public.clients FOR ALL USING (artisan_id = auth.uid() OR artisan_id = (SELECT employer_id FROM public.profiles WHERE id = auth.uid()));
 CREATE POLICY "Stock access" ON public.stock FOR ALL USING (artisan_id = auth.uid() OR artisan_id = (SELECT employer_id FROM public.profiles WHERE id = auth.uid()));
 CREATE POLICY "Interventions access" ON public.interventions FOR ALL USING (artisan_id = auth.uid() OR artisan_id = (SELECT employer_id FROM public.profiles WHERE id = auth.uid()));
 CREATE POLICY "Documents access" ON public.documents FOR ALL USING (artisan_id = auth.uid() OR artisan_id = (SELECT employer_id FROM public.profiles WHERE id = auth.uid()));
 CREATE POLICY "Messages access" ON public.messages FOR ALL USING (auth.uid() = sender_id OR auth.uid() = recipient_id);
+ALTER TABLE public.intervention_photos ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Intervention Photos access" ON public.intervention_photos FOR ALL USING (
+  EXISTS (
+    SELECT 1 FROM public.interventions i
+    WHERE i.id = intervention_id 
+    AND (i.artisan_id = auth.uid() OR i.artisan_id = (SELECT employer_id FROM public.profiles WHERE id = auth.uid()))
+  )
+);
 
--- 11. TRIGGER INSCRIPTION
+-- 11. TRIGGER INSCRIPTION (SÉCURISÉ)
 CREATE OR REPLACE FUNCTION public.handle_new_user() 
 RETURNS trigger AS $$
 DECLARE
@@ -139,20 +160,20 @@ DECLARE
   user_role TEXT;
   parent_id UUID;
 BEGIN
-  selected_plan := LOWER(COALESCE(new.raw_user_meta_data->>'plan', 'starter'));
   user_role := COALESCE(new.raw_user_meta_data->>'role', 'artisan');
-  IF new.raw_user_meta_data->>'employer_id' IS NOT NULL THEN
-    parent_id := (new.raw_user_meta_data->>'employer_id')::UUID;
-  END IF;
   
+  -- SÉCURITÉ : Tout nouvel artisan commence en 'starter', peu importe son choix
+  -- Il devra payer via Stripe pour passer en Pro ou Expert.
   IF user_role = 'employee' THEN
+    selected_plan := 'starter'; -- Les employés n'ont pas de plan propre
     modules := ARRAY['clients', 'documents', 'planning', 'stock'];
-  ELSIF selected_plan = 'expert' THEN
-    modules := ARRAY['clients', 'documents', 'planning', 'stock'];
-  ELSIF selected_plan = 'pro' THEN
-    modules := ARRAY['clients', 'documents', 'planning'];
+    IF new.raw_user_meta_data->>'employer_id' IS NOT NULL THEN
+      parent_id := (new.raw_user_meta_data->>'employer_id')::UUID;
+    END IF;
   ELSE
+    selected_plan := 'starter'; 
     modules := ARRAY['clients', 'documents'];
+    parent_id := NULL;
   END IF;
 
   INSERT INTO public.profiles (id, full_name, company_name, email, subscription_plan, enabled_modules, role, employer_id)
@@ -162,3 +183,37 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- 12. FONCTION DE SUPPRESSION DE COMPTE (DANGER ZONE)
+CREATE OR REPLACE FUNCTION delete_own_user() 
+RETURNS void AS $$
+BEGIN
+  DELETE FROM auth.users WHERE id = auth.uid();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- 13. FONCTION DE CONSULTATION PUBLIQUE (SANS AUTH)
+CREATE OR REPLACE FUNCTION get_public_document(doc_id UUID)
+RETURNS TABLE (
+    id UUID,
+    type document_type,
+    status invoice_status,
+    amount DECIMAL,
+    document_number TEXT,
+    notes TEXT,
+    metadata JSONB,
+    created_at TIMESTAMPTZ,
+    client_info JSONB,
+    artisan_info JSONB
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        d.id, d.type, d.status, d.amount, d.document_number, d.notes, d.metadata, d.created_at,
+        jsonb_build_object('full_name', c.full_name, 'email', c.email, 'address', c.address) as client_info,
+        jsonb_build_object('company_name', p.company_name, 'logo_url', p.logo_url, 'primary_color', p.primary_color, 'address', p.address, 'email', p.email) as artisan_info
+    FROM public.documents d
+    LEFT JOIN public.clients c ON d.client_id = c.id
+    LEFT JOIN public.profiles p ON d.artisan_id = p.id
+    WHERE d.id = doc_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
