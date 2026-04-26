@@ -86,12 +86,17 @@ export async function POST(req: Request) {
     }
 
     if (finalUserId) {
-      const { data, error } = await supabaseAdmin.from('profiles').update(updatePayload).eq('id', finalUserId).select();
-      if (!error && data && data.length > 0) {
-        debug.updatedById = true;
-        // Optionnel: on en profite pour synchroniser l'email s'il manquait
-        if (customerEmail) await supabaseAdmin.from('profiles').update({ email: customerEmail }).eq('id', finalUserId);
-      }
+      // UPSERT : Crée le profil s'il n'existe pas, ou le met à jour s'il existe
+      const { data, error } = await supabaseAdmin
+        .from('profiles')
+        .upsert({ 
+          id: finalUserId,
+          ...updatePayload,
+          email: customerEmail // On en profite pour mettre l'email
+        }, { onConflict: 'id' })
+        .select();
+
+      if (!error && data && data.length > 0) debug.updatedById = true;
       if (error) debug.idError = error;
     } else if (customerEmail) {
       // Fallback par email uniquement si on n'a vraiment pas trouvé l'ID
