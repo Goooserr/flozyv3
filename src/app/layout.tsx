@@ -12,6 +12,16 @@ const inter = Inter({
 });
 
 import { FlozyCareWidget } from "@/components/FlozyCareWidget";
+import { useTheme } from "@/components/DynamicThemeProvider";
+
+function PlanBadge() {
+  const { subscriptionPlan } = useTheme();
+  return (
+    <div className="fixed top-0 left-0 z-[9999] bg-red-600 text-white px-4 py-1 font-black text-[10px] uppercase shadow-xl pointer-events-none">
+      DEBUG: PLAN = {subscriptionPlan}
+    </div>
+  );
+}
 
 export default function RootLayout({
   children,
@@ -25,6 +35,8 @@ export default function RootLayout({
     <html lang="fr" className="dark h-full">
       <body className={`${inter.className} min-h-full bg-background text-foreground antialiased`}>
         <DynamicThemeProvider>
+          {/* Debug Plan Badge */}
+          <PlanBadge />
           {isPublicPage ? (
             <main className="min-h-screen">
               {children}
