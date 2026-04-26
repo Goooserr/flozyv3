@@ -5,7 +5,7 @@ import "./globals.css";
 import { Sidebar, Header } from "@/components/layout";
 import { DynamicThemeProvider } from "@/components/DynamicThemeProvider";
 import { QuickActionFAB } from "@/components/QuickActionFAB";
-import { usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 const inter = Inter({
   subsets: ["latin"],
