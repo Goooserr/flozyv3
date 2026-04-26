@@ -107,6 +107,10 @@ export async function POST(req: Request) {
 
     debug.updated = debug.updatedByEmail || debug.updatedById || false;
     debug.finalUserId = finalUserId;
+    
+    // On force l'inclusion des erreurs pour le débug
+    if (debug.idError) debug.idErrorMsg = debug.idError.message;
+    if (debug.emailError) debug.emailErrorMsg = debug.emailError.message;
   }
 
   return NextResponse.json(debug);
