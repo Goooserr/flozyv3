@@ -129,11 +129,17 @@ export function Sidebar() {
 
   const isDocumentsEnabled = enabledModules.includes('documents');
 
+  const isAdminView = pathname.startsWith('/admin');
+
   return (
     <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border h-screen sticky top-0">
       <div className="p-6">
         <div className="flex items-center gap-3">
-          {logoUrl ? (
+          {isAdminView ? (
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+              <Shield className="w-4 h-4 text-amber-500" />
+            </div>
+          ) : logoUrl ? (
             <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-lg object-contain" />
           ) : (
             <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
@@ -143,7 +149,7 @@ export function Sidebar() {
             </div>
           )}
           <h1 className="text-lg font-bold truncate">
-            {companyName || 'Mon Entreprise'}
+            {isAdminView ? 'Flozy Nexus' : (companyName || 'Mon Entreprise')}
           </h1>
         </div>
       </div>
@@ -180,6 +186,8 @@ export function MobileDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
   const isDocumentsEnabled = enabledModules.includes('documents');
 
+  const isAdminView = pathname.startsWith('/admin');
+
   return (
     <>
       {/* Backdrop */}
@@ -198,7 +206,11 @@ export function MobileDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         {/* Header du drawer */}
         <div className="p-5 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {logoUrl ? (
+            {isAdminView ? (
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                <Shield className="w-5 h-5 text-amber-500" />
+              </div>
+            ) : logoUrl ? (
               <img src={logoUrl} alt="Logo" className="w-9 h-9 rounded-xl object-contain" />
             ) : (
               <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center">
@@ -209,15 +221,15 @@ export function MobileDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: ()
             )}
             <div>
               <p className="font-bold text-sm leading-tight truncate max-w-[150px]">
-                {companyName || 'Mon Entreprise'}
+                {isAdminView ? 'Flozy Nexus' : (companyName || 'Mon Entreprise')}
               </p>
               <span className={cn(
                 "text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border",
-                subscriptionPlan === 'starter'
-                  ? "text-zinc-500 border-zinc-500/20"
-                  : "text-primary border-primary/20 bg-primary/10"
+                isAdminView 
+                  ? "text-amber-500 border-amber-500/20 bg-amber-500/10"
+                  : (subscriptionPlan === 'starter' ? "text-zinc-500 border-zinc-500/20" : "text-primary border-primary/20 bg-primary/10")
               )}>
-                {subscriptionPlan}
+                {isAdminView ? 'Super-User' : subscriptionPlan}
               </span>
             </div>
           </div>
@@ -245,9 +257,12 @@ export function MobileDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 export function Header() {
   const router = useRouter();
   const supabase = createClient();
+  const pathname = usePathname();
   const [profile, setProfile] = useState<any>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { primaryColor, companyName, logoUrl, subscriptionPlan } = useTheme();
+  
+  const isAdminView = pathname.startsWith('/admin') || (typeof document !== 'undefined' && document.cookie.includes('flozy_admin_access=true') && pathname.startsWith('/admin'));
 
   useEffect(() => {
     async function load() {
@@ -265,6 +280,9 @@ export function Header() {
   }, []);
 
   async function handleSignOut() {
+    if (isAdminView) {
+      document.cookie = "flozy_admin_access=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    }
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();
@@ -285,7 +303,7 @@ export function Header() {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <span className="font-bold truncate max-w-[120px]">{companyName || 'Mon Espace'}</span>
+          <span className="font-bold truncate max-w-[120px]">{isAdminView ? 'Nexus Admin' : (companyName || 'Mon Espace')}</span>
         </div>
 
         <div className="flex-1 flex justify-end items-center gap-4">
@@ -297,9 +315,14 @@ export function Header() {
             >
               <LogOut className="w-4 h-4" />
             </button>
+            
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-secondary overflow-hidden border border-border" style={{ borderColor: primaryColor + '40' }}>
-                {profile?.logo_url ? (
+              <div className="w-8 h-8 rounded-lg bg-secondary overflow-hidden border border-border" style={{ borderColor: isAdminView ? '#f59e0b' : (primaryColor + '40') }}>
+                {isAdminView ? (
+                  <div className="w-full h-full bg-amber-500/10 flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-amber-500" />
+                  </div>
+                ) : profile?.logo_url ? (
                   <img src={profile.logo_url} alt="Logo" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full" style={{ backgroundColor: primaryColor }} />
@@ -307,15 +330,21 @@ export function Header() {
               </div>
               <div className="hidden sm:block text-right">
                 <div className="flex items-center justify-end gap-2">
-                  <p className="text-sm font-medium leading-none">{profile?.company_name || 'Mon Compte'}</p>
+                  <p className="text-sm font-bold leading-none">
+                    {isAdminView ? 'Nexus Admin' : (profile?.company_name || 'Mon Compte')}
+                  </p>
                   <span className={cn(
                     "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border",
-                    subscriptionPlan === 'starter' ? "text-zinc-500 border-zinc-500/20" : "text-primary border-primary/20 bg-primary/10"
+                    isAdminView 
+                      ? "text-amber-500 border-amber-500/20 bg-amber-500/10" 
+                      : (subscriptionPlan === 'starter' ? "text-zinc-500 border-zinc-500/20" : "text-primary border-primary/20 bg-primary/10")
                   )}>
-                    {subscriptionPlan}
+                    {isAdminView ? 'Super-User' : subscriptionPlan}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">{profile?.full_name || 'Artisan'}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {isAdminView ? 'Accès Maître' : (profile?.full_name || 'Artisan')}
+                </p>
               </div>
             </div>
           </div>
