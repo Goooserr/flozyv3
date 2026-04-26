@@ -616,5 +616,4 @@ function SystemPulseCard({ label, count, icon: Icon, status }: any) {
        </div>
     </div>
   )
-   )
 }
