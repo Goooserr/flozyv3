@@ -70,10 +70,10 @@ export function QuickActionFAB() {
         id="fab-main-toggle"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "w-16 h-16 rounded-full flex flex-col items-center justify-center text-white shadow-2xl transition-all duration-300 gap-0.5",
+          "w-16 h-16 rounded-full flex flex-col items-center justify-center shadow-2xl transition-all duration-300 gap-0.5",
           isOpen
-            ? "bg-zinc-800 rotate-45 shadow-zinc-900/50"
-            : "bg-primary shadow-primary/40"
+            ? "bg-zinc-900 text-white rotate-45 shadow-zinc-900/50"
+            : "bg-primary text-primary-foreground shadow-primary/40"
         )}
         aria-label={isOpen ? 'Fermer le menu' : 'Actions rapides'}
       >
@@ -82,7 +82,7 @@ export function QuickActionFAB() {
         ) : (
           <>
             <Plus className="w-6 h-6" />
-            <span className="text-[9px] font-black uppercase tracking-wider leading-none">Action</span>
+            <span className="text-[9px] font-black uppercase tracking-wider leading-none opacity-90">Action</span>
           </>
         )}
       </button>
