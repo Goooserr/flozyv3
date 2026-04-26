@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { getMessages, sendMessage, markMessagesAsRead } from '@/lib/actions'
 import { createClient } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+import { useTheme } from './DynamicThemeProvider'
 
 const ADMIN_ID = '76b5136b-e5e6-474c-9469-48c27817bf9c'
 
@@ -18,6 +19,7 @@ export default function SupportChat() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
+  const { primaryColor } = useTheme()
 
   useEffect(() => {
     async function init() {
@@ -92,9 +94,10 @@ export default function SupportChat() {
       {!isOpen ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="w-14 h-14 md:w-16 md:h-16 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all relative group"
+          style={{ backgroundColor: primaryColor }}
+          className="w-14 h-14 md:w-16 md:h-16 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all relative group"
         >
-          <MessageSquare className="w-6 h-6 md:w-7 md:h-7" />
+          <MessageSquare className="w-6 h-6 md:w-7 md:h-7 fill-white/10" />
           {hasUnread && (
             <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 border-2 border-white rounded-full flex items-center justify-center animate-bounce">
               <span className="w-2 h-2 bg-white rounded-full" />
@@ -107,7 +110,7 @@ export default function SupportChat() {
       ) : (
         <div className="w-[320px] md:w-[380px] h-[500px] bg-card border border-border shadow-2xl rounded-3xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
           {/* Header */}
-          <div className="bg-primary p-4 flex items-center justify-between text-primary-foreground">
+          <div style={{ backgroundColor: primaryColor }} className="p-4 flex items-center justify-between text-white">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-black text-xs">
                 F
@@ -140,21 +143,24 @@ export default function SupportChat() {
               </div>
             ) : (
               messages.map((msg, i) => {
-                const isMe = msg.sender_id === currentUser.id
+                const isMe = msg.sender_id === currentUser?.id
                 return (
                   <div 
                     key={msg.id || i}
                     className={cn(
                       "flex flex-col max-w-[80%] animate-in fade-in duration-300",
-                      isMe ? "ml-auto items-end" : "mr-auto items-start"
+                      isMe ? "mr-auto items-start" : "ml-auto items-end"
                     )}
                   >
-                    <div className={cn(
-                      "px-4 py-2.5 rounded-2xl text-sm shadow-sm",
-                      isMe 
-                        ? "bg-primary text-primary-foreground rounded-tr-none" 
-                        : "bg-card border border-border rounded-tl-none"
-                    )}>
+                    <div 
+                      style={{ backgroundColor: isMe ? '#f4f4f5' : primaryColor }}
+                      className={cn(
+                        "px-4 py-2.5 rounded-2xl text-sm shadow-sm",
+                        isMe 
+                          ? "text-zinc-900 border border-zinc-200 rounded-tl-none" 
+                          : "text-white rounded-tr-none"
+                      )}
+                    >
                       {msg.content}
                     </div>
                     <span className="text-[9px] text-muted-foreground mt-1 px-1">
@@ -181,7 +187,8 @@ export default function SupportChat() {
             <button 
               type="submit"
               disabled={!newMessage.trim() || sending}
-              className="p-2 bg-primary text-primary-foreground rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 transition-all shadow-md"
+              style={{ backgroundColor: primaryColor }}
+              className="p-2 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 transition-all shadow-md"
             >
               {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>
