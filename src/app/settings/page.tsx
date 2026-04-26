@@ -25,6 +25,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
+import { cn } from '@/lib/utils';
 import { CustomFieldsSettings } from '@/components/CustomFieldsSettings';
 import { ModuleSettings } from '@/components/ModuleSettings';
 import { useTheme } from '@/components/DynamicThemeProvider';
