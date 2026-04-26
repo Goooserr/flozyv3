@@ -15,10 +15,11 @@ import { FlozyCareWidget } from "@/components/FlozyCareWidget";
 import { useTheme } from "@/components/DynamicThemeProvider";
 
 function PlanBadge() {
-  const { subscriptionPlan } = useTheme();
+  const { subscriptionPlan, userId } = useTheme();
   return (
-    <div className="fixed top-0 left-0 z-[9999] bg-red-600 text-white px-4 py-1 font-black text-[10px] uppercase shadow-xl pointer-events-none">
-      DEBUG: PLAN = {subscriptionPlan}
+    <div className="fixed top-0 left-0 z-[9999] bg-red-600 text-white px-4 py-1 font-black text-[8px] uppercase shadow-xl pointer-events-none flex flex-col">
+      <span>DEBUG: PLAN = {subscriptionPlan}</span>
+      <span className="opacity-70">ID: {userId}</span>
     </div>
   );
 }
