@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { MessageSquare, Send, X, Loader2, Minus } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 import { getMessages, sendMessage, markMessagesAsRead } from '@/lib/actions'
 import { createClient } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
@@ -74,14 +75,17 @@ export default function SupportChat() {
     }
   }
 
-  // Don't show for admin, but show for everyone else (even if loading, it will just be inactive)
-  if (currentUser?.id === ADMIN_ID) return null
+  const pathname = usePathname()
+  const isAdminPath = pathname.startsWith('/admin') || pathname === '/admin-login'
+
+  // On masque uniquement si on est physiquement dans l'espace admin
+  if (isAdminPath) return null
 
   const hasUnread = messages.some(m => !m.is_read && m.sender_id === ADMIN_ID)
 
   return (
     <div className={cn(
-      "fixed z-[100] transition-all duration-300",
+      "fixed z-[9999] transition-all duration-300",
       "bottom-6 right-6 md:bottom-8 md:right-8",
       "max-md:bottom-24"
     )}>
