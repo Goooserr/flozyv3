@@ -114,12 +114,89 @@ export async function createIntervention(inter: any) {
   return data[0]
 }
 
+export async function updateIntervention(id: string, updates: any) {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('interventions')
+    .update(updates)
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function uploadInterventionPhoto(interventionId: string, file: File) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("Non authentifié")
+
+  const fileName = `${user.id}/${interventionId}/${Date.now()}-${file.name}`
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from('photos')
+    .upload(fileName, file)
+
+  if (uploadError) throw uploadError
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('photos')
+    .getPublicUrl(fileName)
+
+  const { data, error } = await supabase
+    .from('intervention_photos')
+    .insert([{
+      intervention_id: interventionId,
+      artisan_id: user.id,
+      url: publicUrl,
+      file_name: fileName
+    }])
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteInterventionPhoto(photoId: string, fileName: string) {
+  const supabase = createClient()
+  await supabase.storage.from('photos').remove([fileName])
+  const { error } = await supabase
+    .from('intervention_photos')
+    .delete()
+    .eq('id', photoId)
+  if (error) throw error
+}
+
+// --- CHAMPS PERSONNALISÉS ---
+export async function getFieldDefinitions(entityType?: string) {
+  const supabase = createClient()
+  const artisanId = await getArtisanId()
+  let query = supabase.from('field_definitions').select('*').eq('artisan_id', artisanId)
+  if (entityType) query = query.eq('entity_type', entityType)
+  const { data } = await query
+  return data || []
+}
+
+export async function addFieldDefinition(def: any) {
+  const supabase = createClient()
+  const artisanId = await getArtisanId()
+  const { error } = await supabase.from('field_definitions').insert([{ ...def, artisan_id: artisanId }])
+  if (error) throw error
+}
+
+export async function deleteFieldDefinition(id: string) {
+  const supabase = createClient()
+  const { error } = await supabase.from('field_definitions').delete().eq('id', id)
+  if (error) throw error
+}
+
 // --- PROFILES & ADMIN ---
 export async function updateArtisanProfile(id: string, updates: any) {
   const supabase = createClient()
+  const finalUpdates = { ...updates }
+  if (finalUpdates.subscription_plan) {
+    finalUpdates.subscription_plan = finalUpdates.subscription_plan.toLowerCase()
+  }
   const { error } = await supabase
     .from('profiles')
-    .update(updates)
+    .update(finalUpdates)
     .eq('id', id)
   if (error) throw error
   return true
@@ -150,6 +227,16 @@ export async function activateArtisan(id: string) {
     .update({ subscription_status: 'active' })
     .eq('id', id)
   if (error) throw error
+}
+
+export async function getAdminStats() {
+  const supabase = createClient()
+  const { data: artisans } = await supabase.from('profiles').select('id').eq('role', 'artisan')
+  const { data: docs } = await supabase.from('documents').select('amount')
+  return {
+    total_artisans: artisans?.length || 0,
+    total_revenue: docs?.reduce((acc, d) => acc + (d.amount || 0), 0) || 0
+  }
 }
 
 // --- MESSAGERIE ---

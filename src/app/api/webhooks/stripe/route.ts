@@ -3,10 +3,8 @@ import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
-// Utilisation d'un client admin pour outrepasser les RLS lors de la mise à jour du plan
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -15,96 +13,51 @@ const supabaseAdmin = createClient(
 export async function POST(req: Request) {
   const body = await req.text();
   const sig = req.headers.get('stripe-signature')!;
-
-  console.log(`📦 Webhook reçu - Taille du corps: ${body.length} octets`);
-  console.log(`🔑 Signature Stripe présente: ${!!sig}`);
-
   let event: Stripe.Event;
 
   try {
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
-    console.log(`✅ Signature Webhook validée - Type d'événement: ${event.type}`);
   } catch (err: any) {
-    console.error(`❌ Erreur de validation Webhook: ${err.message}`);
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
 
-  // Gérer l'événement checkout.session.completed OU invoice.paid OU customer.subscription.updated
   if (event.type === 'checkout.session.completed' || event.type === 'invoice.paid' || event.type === 'customer.subscription.updated') {
     const session = event.data.object as any;
+    const userId = session.metadata?.userId || session.client_reference_id;
+    const customerEmail = session.customer_email || session.customer_details?.email;
     
-    // 1. Extraction profonde des données
-    const userId = session.metadata?.userId || 
-                   session.subscription_details?.metadata?.userId || 
-                   session.client_reference_id;
+    // Normalisation du plan ID (tout en minuscules)
+    let planId = (session.metadata?.planId || '').toLowerCase();
 
-    let planId = session.metadata?.planId || 
-                 session.subscription_details?.metadata?.planId;
-
-    // 2. FALLBACK DE SÉCURITÉ : Détection par le montant (si metadata absentes)
-    if (!planId || planId === 'pro') {
-      const amount = session.amount_paid || session.total || 0;
-      if (amount >= 4900) planId = 'expert';
-      else if (amount >= 2900) planId = 'pro';
+    // Détection automatique par montant si planId est manquant
+    if (!planId) {
+      const amount = session.amount_total || session.amount_paid || 0;
+      if (amount >= 4500) planId = 'expert';
+      else if (amount >= 2500) planId = 'pro';
       else planId = 'starter';
-      console.log(`ℹ️ Plan identifié par montant (${amount/100}€) : ${planId}`);
     }
 
-    const customerEmail = session.customer_email || session.customer_details?.email;
+    // Définition des modules selon le palier
+    const modules = planId === 'expert' 
+      ? ['clients', 'documents', 'planning', 'stock']
+      : planId === 'pro' 
+        ? ['clients', 'documents', 'planning']
+        : ['clients', 'documents'];
 
-    console.log(`🔔 STRIPE WEBHOOK : [${event.type}]`);
-    console.log(`   - UserID: ${userId}`);
-    console.log(`   - Email: ${customerEmail}`);
-    console.log(`   - Plan final: ${planId}`);
+    console.log(`[Stripe Webhook] Mise à jour plan : ${planId} pour ${userId || customerEmail}`);
 
-    if (userId || customerEmail) {
-      const modules = planId === 'expert' 
-        ? ['clients', 'documents', 'planning', 'stock']
-        : planId === 'pro' 
-          ? ['clients', 'documents', 'planning']
-          : ['clients', 'documents'];
+    const updatePayload = { 
+      subscription_plan: planId,
+      enabled_modules: modules,
+      subscription_status: 'active'
+    };
 
-      // 1. Tentative par ID (Recommandé)
-      if (userId) {
-        console.log(`🔄 Mise à jour par ID: ${userId}...`);
-        const { data, error } = await supabaseAdmin
-          .from('profiles')
-          .update({ 
-            subscription_plan: planId,
-            subscription_status: 'active',
-            enabled_modules: modules
-          })
-          .eq('id', userId)
-          .select();
-
-        if (error) console.error('❌ Erreur Supabase (ID):', error);
-        if (data && data.length > 0) {
-          console.log('✅ SUCCÈS : Plan activé via ID !');
-          return NextResponse.json({ received: true });
-        }
-      }
-
-      // 2. Tentative par Email (Fallback)
-      if (customerEmail) {
-        console.log(`🔄 Fallback : Mise à jour par Email: ${customerEmail}...`);
-        const { data, error } = await supabaseAdmin
-          .from('profiles')
-          .update({ 
-            subscription_plan: planId,
-            subscription_status: 'active',
-            enabled_modules: modules
-          })
-          .eq('email', customerEmail)
-          .select();
-
-        if (error) console.error('❌ Erreur Supabase (Email):', error);
-        if (data && data.length > 0) {
-          console.log('✅ SUCCÈS : Plan activé via Email !');
-          return NextResponse.json({ received: true });
-        }
-      }
-
-      console.warn('⚠️ ATTENTION : Aucun compte trouvé correspondant à cet ID ou cet Email.');
+    if (userId) {
+      const { error } = await supabaseAdmin.from('profiles').update(updatePayload).eq('id', userId);
+      if (error) console.error("[Stripe Webhook] Erreur mise à jour ID:", error);
+    } else if (customerEmail) {
+      const { error } = await supabaseAdmin.from('profiles').update(updatePayload).eq('email', customerEmail);
+      if (error) console.error("[Stripe Webhook] Erreur mise à jour Email:", error);
     }
   }
 

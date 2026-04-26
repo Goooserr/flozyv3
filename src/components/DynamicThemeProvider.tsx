@@ -24,48 +24,49 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
   const [subscriptionPlan, setSubscriptionPlan] = useState('starter')
   const supabase = createClient()
 
-  useEffect(() => {
-    async function loadProfile(userId?: string) {
-      const uid = userId || (await supabase.auth.getUser()).data.user?.id
-      if (!uid) return
+  async function loadProfile(userId?: string) {
+    const uid = userId || (await supabase.auth.getUser()).data.user?.id
+    if (!uid) return
 
-      // First check if user is an employee
-      const { data: userProfile } = await supabase
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', uid)
+      .single()
+
+    if (!profile) return
+
+    let workspaceData = profile
+
+    // Si c'est un employé, on récupère les réglages de son patron
+    if (profile.role === 'employee' && profile.employer_id) {
+      const { data: employer } = await supabase
         .from('profiles')
-        .select('role, employer_id, primary_color, enabled_modules, company_name, logo_url, subscription_plan')
-        .eq('id', uid)
+        .select('*')
+        .eq('id', profile.employer_id)
         .single()
-
-      if (!userProfile) return
-
-      let workspaceData = userProfile
-
-      // If employee, fetch employer's profile for workspace settings
-      if (userProfile.role === 'employee' && userProfile.employer_id) {
-        const { data: employerProfile } = await supabase
-          .from('profiles')
-          .select('primary_color, enabled_modules, company_name, logo_url, subscription_plan')
-          .eq('id', userProfile.employer_id)
-          .single()
-        
-        if (employerProfile) {
-          workspaceData = { ...userProfile, ...employerProfile }
-        }
+      
+      if (employer) {
+        workspaceData = { ...workspaceData, ...employer, subscription_plan: employer.subscription_plan }
       }
-
-      if (workspaceData.primary_color) setPrimaryColor(workspaceData.primary_color)
-      if (workspaceData.enabled_modules) setEnabledModules(workspaceData.enabled_modules)
-      if (workspaceData.company_name) setCompanyName(workspaceData.company_name)
-      if (workspaceData.logo_url) setLogoUrl(workspaceData.logo_url)
-      if (workspaceData.subscription_plan) setSubscriptionPlan(workspaceData.subscription_plan.toLowerCase())
     }
 
-    // Chargement initial
+    if (workspaceData.primary_color) setPrimaryColor(workspaceData.primary_color)
+    if (workspaceData.enabled_modules) setEnabledModules(workspaceData.enabled_modules)
+    if (workspaceData.company_name) setCompanyName(workspaceData.company_name)
+    if (workspaceData.logo_url) setLogoUrl(workspaceData.logo_url)
+    
+    // Normalisation forcée pour éviter les bugs de casse
+    if (workspaceData.subscription_plan) {
+      setSubscriptionPlan(workspaceData.subscription_plan.toLowerCase())
+    }
+  }
+
+  useEffect(() => {
     loadProfile()
 
-    // Recharge le profil dès que la session est rétablie (nouveau navigateur, onglet, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session?.user) {
         loadProfile(session.user.id)
       }
     })
@@ -74,20 +75,14 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
   }, [])
 
   useEffect(() => {
-    // Injection de la variable CSS --primary
-    // On convertit l'hex en oklch ou on utilise directement hex si on change le globals.css
     document.documentElement.style.setProperty('--primary-custom', primaryColor)
-    
-    // On peut aussi calculer une version plus claire pour les survol/badges
     const r = parseInt(primaryColor.slice(1, 3), 16)
     const g = parseInt(primaryColor.slice(3, 5), 16)
     const b = parseInt(primaryColor.slice(5, 7), 16)
     document.documentElement.style.setProperty('--primary-custom-rgb', `${r}, ${g}, ${b}`)
-    
-    // Calcul de la luminance pour déterminer si le texte doit être blanc ou noir
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    const foreground = luminance > 0.6 ? '#000000' : '#ffffff';
-    document.documentElement.style.setProperty('--primary-custom-foreground', foreground);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    const foreground = luminance > 0.6 ? '#000000' : '#ffffff'
+    document.documentElement.style.setProperty('--primary-custom-foreground', foreground)
   }, [primaryColor])
 
   return (
