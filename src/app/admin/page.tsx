@@ -91,6 +91,7 @@ export default function AdminPage() {
       setSelectedArtisan(updated.find(a => a.id === artisanId))
     }
   }
+  const filteredArtisans = artisans.filter(a => {
     const matchesSearch = (a.company_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           a.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           a.email?.toLowerCase().includes(searchQuery.toLowerCase()));
