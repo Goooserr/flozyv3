@@ -188,6 +188,25 @@ export async function deleteFieldDefinition(id: string) {
 }
 
 // --- PROFILES & ADMIN ---
+export async function forceUpgradeToExpert() {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("Non authentifié")
+  
+  const { error } = await supabase
+    .from('profiles')
+    .upsert({ 
+      id: user.id,
+      subscription_plan: 'expert',
+      enabled_modules: ['clients', 'documents', 'planning', 'stock'],
+      subscription_status: 'active',
+      email: user.email
+    })
+  
+  if (error) throw error
+  return true
+}
+
 export async function updateArtisanProfile(id: string, updates: any) {
   const supabase = createClient()
   const finalUpdates = { ...updates }
