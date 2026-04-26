@@ -48,6 +48,19 @@ function RegisterForm() {
 
       if (signUpError) throw signUpError
 
+      // Client-side fallback: ensure profile is updated with role and employer_id
+      // especially if the SQL trigger hasn't been updated yet.
+      if (isEmployeeInvite && data.user) {
+        await supabase
+          .from('profiles')
+          .update({ 
+            role: 'employee', 
+            employer_id: employerId,
+            company_name: 'Équipe' 
+          })
+          .eq('id', data.user.id)
+      }
+
       // Redirect to dashboard
       router.push('/')
     } catch (err: any) {
@@ -180,7 +193,12 @@ function RegisterForm() {
             <button
               type="submit"
               disabled={loading || !email || !password || !fullName || (!isEmployeeInvite && !companyName)}
-              className="w-full flex items-center justify-center gap-2 bg-white text-black rounded-xl py-4 font-bold hover:bg-zinc-200 hover:scale-[1.01] transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+              className={cn(
+                "w-full flex items-center justify-center gap-2 rounded-xl py-4 font-bold hover:scale-[1.01] transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4",
+                isEmployeeInvite 
+                  ? "bg-primary text-primary-foreground" 
+                  : "bg-white text-black hover:bg-zinc-200"
+              )}
             >
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

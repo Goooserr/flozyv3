@@ -48,6 +48,7 @@ export default function SettingsPage() {
   const [success, setSuccess] = useState(false);
   const [employees, setEmployees] = useState<any[]>([]);
   const [inviteLink, setInviteLink] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const [magicColor, setMagicColor] = useState(false);
 
@@ -396,21 +397,34 @@ export default function SettingsPage() {
                 <p className="text-xs text-muted-foreground mb-6 leading-relaxed">
                   Envoyez ce lien à vos employés. Ils pourront créer leur propre accès rattaché à votre compte entreprise.
                 </p>
-                <div className="flex items-center gap-2 bg-card border border-border rounded-xl p-2 mb-4">
+                <div className="flex items-center gap-2 bg-secondary/50 border border-border rounded-xl p-3 mb-4 group/link">
                   <input 
                     readOnly
                     value={inviteLink}
-                    className="flex-1 bg-transparent border-none outline-none text-[10px] font-mono truncate"
+                    className="flex-1 bg-transparent border-none outline-none text-[10px] font-mono truncate text-muted-foreground"
                   />
                   <button 
-                    onClick={() => {
-                      navigator.clipboard.writeText(inviteLink);
-                      setSuccess(true);
-                      setTimeout(() => setSuccess(false), 2000);
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(inviteLink);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      } catch (err) {
+                        alert("Erreur lors de la copie. Le lien est : " + inviteLink);
+                      }
                     }}
-                    className="p-2 bg-primary text-white rounded-lg hover:opacity-90 transition-opacity"
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-[10px] transition-all",
+                      copied 
+                        ? "bg-emerald-500 text-white" 
+                        : "bg-zinc-900 text-white hover:bg-black"
+                    )}
                   >
-                    <Copy className="w-3.5 h-3.5" />
+                    {copied ? (
+                      <> <CheckCircle2 className="w-3 h-3" /> Copié ! </>
+                    ) : (
+                      <> <Copy className="w-3 h-3" /> Copier </>
+                    )}
                   </button>
                 </div>
                 <p className="text-[10px] text-center text-muted-foreground italic">
