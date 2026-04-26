@@ -19,7 +19,7 @@ import {
   Database,
   LogOut
 } from 'lucide-react'
-import { getAdminStats, getAllArtisans, getMessages, sendMessage, suspendArtisan, activateArtisan, updateArtisanProfile } from '@/lib/actions'
+import { getAdminStats, getAllArtisans, getMessages, sendMessage, suspendArtisan, activateArtisan, updateArtisanProfile, markMessagesAsRead } from '@/lib/actions'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -78,6 +78,9 @@ export default function AdminPage() {
   async function loadChat() {
     if (!selectedArtisan) return
     const msgs = await getMessages(selectedArtisan.id)
+    if (msgs.some(m => !m.is_read && m.recipient_id !== selectedArtisan.id)) {
+      markMessagesAsRead(selectedArtisan.id).catch(console.error)
+    }
     setChatMessages(msgs)
   }
 
