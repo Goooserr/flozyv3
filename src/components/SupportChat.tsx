@@ -96,8 +96,8 @@ export default function SupportChat() {
               <span className="w-2 h-2 bg-white rounded-full" />
             </span>
           )}
-          <span className="absolute right-full mr-4 px-3 py-1.5 bg-zinc-900 text-white text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            Besoin d'aide ?
+          <span className="absolute right-full mr-4 px-3 py-1.5 bg-zinc-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl">
+            Aide & Support
           </span>
         </button>
       ) : (
@@ -117,7 +117,7 @@ export default function SupportChat() {
               onClick={() => setIsOpen(false)}
               className="p-2 hover:bg-white/10 rounded-xl transition-colors"
             >
-              <Minus className="w-4 h-4" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
@@ -175,6 +175,7 @@ export default function SupportChat() {
               className="flex-1 bg-secondary/50 border border-border rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             />
             <button 
+              type="submit"
               disabled={!newMessage.trim() || sending}
               className="p-2 bg-primary text-primary-foreground rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 transition-all shadow-md"
             >
@@ -183,27 +184,6 @@ export default function SupportChat() {
           </form>
         </div>
       )}
-
-      {/* Toggle Button */}
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl transition-all duration-300 hover:scale-110 active:scale-90 relative group",
-          isOpen ? "bg-card border border-border text-foreground" : "bg-primary text-primary-foreground"
-        )}
-      >
-        {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
-        {!isOpen && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 border-2 border-background rounded-full animate-pulse" />
-        )}
-        
-        {/* Tooltip */}
-        {!isOpen && (
-          <div className="absolute right-full mr-4 px-3 py-1.5 bg-zinc-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl whitespace-nowrap">
-            Aide & Support
-          </div>
-        )}
-      </button>
     </div>
   )
 }

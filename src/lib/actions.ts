@@ -1,6 +1,5 @@
 'use server'
 
-import { createClient } from './supabase'
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 
@@ -12,7 +11,32 @@ async function isAdminAuthorized() {
   return cookieStore.get('flozy_admin_access')?.value === 'true'
 }
 
-// Client privilǸgiǸ pour contourner le RLS dans le panel admin
+// Helper pour créer un client Supabase côté serveur avec gestion des cookies
+async function getServerSupabase() {
+  const cookieStore = await cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Ignoré si appelé depuis un Server Component
+          }
+        },
+      },
+    }
+  )
+}
+
+// Client privilégié pour contourner le RLS dans le panel admin
 function createAdminClient() {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,7 +52,7 @@ function createAdminClient() {
 
 // --- HELPER : Récupère l'ID de l'artisan (soit soi-même, soit son patron) ---
 async function getArtisanId() {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error("Non authentifié")
   
@@ -43,7 +67,7 @@ async function getArtisanId() {
 
 // --- CLIENTS ---
 export async function getClients() {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const artisanId = await getArtisanId()
   const { data } = await supabase
     .from('clients')
@@ -54,7 +78,7 @@ export async function getClients() {
 }
 
 export async function addClient(client: any) {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const artisanId = await getArtisanId()
   const { data, error } = await supabase
     .from('clients')
@@ -65,7 +89,7 @@ export async function addClient(client: any) {
 }
 
 export async function updateClient(id: string, updates: any) {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const { error } = await supabase
     .from('clients')
     .update(updates)
@@ -75,7 +99,7 @@ export async function updateClient(id: string, updates: any) {
 
 // --- DOCUMENTS (Devis & Factures) ---
 export async function getDocuments() {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const artisanId = await getArtisanId()
   const { data } = await supabase
     .from('documents')
@@ -86,7 +110,7 @@ export async function getDocuments() {
 }
 
 export async function createDocument(doc: any) {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const artisanId = await getArtisanId()
   const { data, error } = await supabase
     .from('documents')
@@ -98,7 +122,7 @@ export async function createDocument(doc: any) {
 
 // --- STOCK ---
 export async function getStock() {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const artisanId = await getArtisanId()
   const { data } = await supabase
     .from('stock')
@@ -109,7 +133,7 @@ export async function getStock() {
 }
 
 export async function updateStockQuantity(id: string, quantity: number) {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const { error } = await supabase
     .from('stock')
     .update({ quantity })
@@ -119,7 +143,7 @@ export async function updateStockQuantity(id: string, quantity: number) {
 
 // --- INTERVENTIONS ---
 export async function getInterventions() {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const artisanId = await getArtisanId()
   const { data } = await supabase
     .from('interventions')
@@ -130,7 +154,7 @@ export async function getInterventions() {
 }
 
 export async function createIntervention(inter: any) {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const artisanId = await getArtisanId()
   const { data, error } = await supabase
     .from('interventions')
@@ -141,7 +165,7 @@ export async function createIntervention(inter: any) {
 }
 
 export async function updateIntervention(id: string, updates: any) {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const { error } = await supabase
     .from('interventions')
     .update(updates)
@@ -150,7 +174,7 @@ export async function updateIntervention(id: string, updates: any) {
 }
 
 export async function uploadInterventionPhoto(interventionId: string, file: File) {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error("Non authentifié")
 
@@ -181,7 +205,7 @@ export async function uploadInterventionPhoto(interventionId: string, file: File
 }
 
 export async function deleteInterventionPhoto(photoId: string, fileName: string) {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   await supabase.storage.from('photos').remove([fileName])
   const { error } = await supabase
     .from('intervention_photos')
@@ -192,7 +216,7 @@ export async function deleteInterventionPhoto(photoId: string, fileName: string)
 
 // --- CHAMPS PERSONNALISÉS ---
 export async function getFieldDefinitions(entityType?: string) {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const artisanId = await getArtisanId()
   let query = supabase.from('field_definitions').select('*').eq('artisan_id', artisanId)
   if (entityType) query = query.eq('entity_type', entityType)
@@ -201,21 +225,21 @@ export async function getFieldDefinitions(entityType?: string) {
 }
 
 export async function addFieldDefinition(def: any) {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const artisanId = await getArtisanId()
   const { error } = await supabase.from('field_definitions').insert([{ ...def, artisan_id: artisanId }])
   if (error) throw error
 }
 
 export async function deleteFieldDefinition(id: string) {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const { error } = await supabase.from('field_definitions').delete().eq('id', id)
   if (error) throw error
 }
 
 // --- PROFILES & ADMIN ---
 export async function forceUpgradeToExpert() {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error("Non authentifié")
   
@@ -235,7 +259,7 @@ export async function forceUpgradeToExpert() {
 
 export async function updateArtisanProfile(id: string, updates: any) {
   const isPrivileged = await isAdminAuthorized()
-  const supabase = isPrivileged ? createAdminClient() : createClient()
+  const supabase = isPrivileged ? createAdminClient() : await getServerSupabase()
   const finalUpdates = { ...updates }
   if (finalUpdates.subscription_plan) {
     finalUpdates.subscription_plan = finalUpdates.subscription_plan.toLowerCase()
@@ -261,7 +285,7 @@ export async function getAllArtisans() {
 
 export async function suspendArtisan(id: string) {
   const isPrivileged = await isAdminAuthorized()
-  const supabase = isPrivileged ? createAdminClient() : createClient()
+  const supabase = isPrivileged ? createAdminClient() : await getServerSupabase()
   const { error } = await supabase
     .from('profiles')
     .update({ subscription_status: 'suspended' })
@@ -271,7 +295,7 @@ export async function suspendArtisan(id: string) {
 
 export async function activateArtisan(id: string) {
   const isPrivileged = await isAdminAuthorized()
-  const supabase = isPrivileged ? createAdminClient() : createClient()
+  const supabase = isPrivileged ? createAdminClient() : await getServerSupabase()
   const { error } = await supabase
     .from('profiles')
     .update({ subscription_status: 'active' })
@@ -328,7 +352,7 @@ export async function getAdminStats() {
 // --- MESSAGERIE ---
 export async function getMessages(otherId: string) {
   const isPrivileged = await isAdminAuthorized()
-  const supabase = isPrivileged ? createAdminClient() : createClient()
+  const supabase = isPrivileged ? createAdminClient() : await getServerSupabase()
   
   let userId;
   if (isPrivileged) {
@@ -349,14 +373,14 @@ export async function getMessages(otherId: string) {
 
 export async function sendMessage(recipientId: string, content: string) {
   const isPrivileged = await isAdminAuthorized()
-  const supabase = isPrivileged ? createAdminClient() : createClient()
+  const supabase = isPrivileged ? createAdminClient() : await getServerSupabase()
   
   let userId;
   if (isPrivileged) {
     userId = ADMIN_ID;
   } else {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error("Non authentifiǸ")
+    if (!user) throw new Error("Non authentifié")
     userId = user.id
   }
 
@@ -368,7 +392,7 @@ export async function sendMessage(recipientId: string, content: string) {
 
 export async function markMessagesAsRead(senderId: string) {
   const isPrivileged = await isAdminAuthorized()
-  const supabase = isPrivileged ? createAdminClient() : createClient()
+  const supabase = isPrivileged ? createAdminClient() : await getServerSupabase()
   
   let userId;
   if (isPrivileged) {
@@ -390,7 +414,7 @@ export async function markMessagesAsRead(senderId: string) {
 }
 
 export async function convertQuoteToInvoice(quoteId: string, docNumber: string) {
-  const supabase = createClient()
+  const supabase = await getServerSupabase()
   const artisanId = await getArtisanId()
   const { data: quote } = await supabase.from('documents').select('*').eq('id', quoteId).single()
   if (!quote) throw new Error("Devis non trouvé")
