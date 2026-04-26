@@ -347,23 +347,110 @@ export default function SettingsPage() {
       {/* Équipe Section */}
       {profile.role !== 'employee' && (
         <section className="space-y-6">
-          <div className="flex items-center gap-2 border-b border-border pb-2">
-            <Users className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-bold">Gestion d'Équipe</h3>
-          </div>
-          
-          {profile.subscription_plan !== 'expert' ? (
-            <div className="bg-primary/5 border border-dashed border-primary/30 rounded-3xl p-12 text-center">
-              <Lock className="w-12 h-12 mx-auto mb-4 text-primary opacity-40" />
-              <h4 className="text-xl font-bold mb-2">Multi-utilisateur (Expert)</h4>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
-                Passez au plan **Expert** pour inviter des employés, partager vos chantiers et centraliser la gestion de votre entreprise.
+          {/* Team Management - ONLY FOR EXPERT */}
+          {subscriptionPlan === 'expert' ? (
+            <div className="bg-card border border-border rounded-3xl p-8 mb-12">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                <div>
+                  <h2 className="text-2xl font-bold flex items-center gap-3">
+                    <Users className="w-6 h-6 text-primary" />
+                    Gestion d'Équipe
+                  </h2>
+                  <p className="text-muted-foreground mt-1">Gérez vos collaborateurs et leurs accès.</p>
+                </div>
+                <div className="bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-bold border border-primary/20">
+                  {employees.length} / 5 Employés
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* List */}
+                <div className="lg:col-span-2 space-y-4">
+                  <h3 className="font-bold text-lg mb-4">Membres de l'équipe</h3>
+                  {employees.length === 0 ? (
+                    <div className="border-2 border-dashed border-border rounded-2xl p-12 text-center">
+                      <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Users className="w-8 h-8 text-muted-foreground opacity-50" />
+                      </div>
+                      <h4 className="font-bold text-lg mb-2">Aucun employé pour le moment.</h4>
+                      <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+                        Utilisez le lien magique pour inviter vos collaborateurs.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {employees.map((emp) => (
+                        <div key={emp.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-2xl border border-border">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                              {emp.full_name?.charAt(0) || 'E'}
+                            </div>
+                            <div>
+                              <p className="font-bold">{emp.full_name}</p>
+                              <p className="text-xs text-muted-foreground">{emp.email}</p>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => handleDeleteEmployee(emp.id)}
+                            className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                            title="Supprimer l'accès"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Invite Link */}
+                <div className="bg-muted/30 border border-border rounded-3xl p-6 h-fit">
+                  <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                    Lien Magique
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Envoyez ce lien à vos employés pour qu'ils rejoignent votre espace.
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        readOnly 
+                        value={inviteUrl}
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3 text-xs pr-24 font-mono"
+                      />
+                      <button 
+                        onClick={copyInviteUrl}
+                        className="absolute right-1.5 top-1.5 bottom-1.5 px-3 bg-secondary hover:bg-secondary/80 rounded-lg text-xs font-bold flex items-center gap-2 transition-all"
+                      >
+                        {copied ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        {copied ? 'Copié' : 'Copier'}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground italic text-center px-4">
+                      Les employés n'ont accès qu'aux fonctions terrain (planning, photos, clients).
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-card border border-border rounded-3xl p-12 mb-12 text-center relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
+              <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Lock className="w-8 h-8 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold mb-3">Multi-utilisateur (Expert)</h2>
+              <p className="text-muted-foreground max-w-md mx-auto mb-8">
+                Passez au plan <strong>Expert</strong> pour inviter des employés, partager vos chantiers et centraliser la gestion de votre entreprise.
               </p>
               <button 
-                onClick={() => setProfile({ ...profile, subscription_plan: 'expert' })} // Mock upgrade for demo
-                className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 transition-opacity"
+                onClick={() => router.push('/billing?plan=expert')}
+                className="px-8 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 transition-all flex items-center gap-2 mx-auto"
               >
-                Passer en Expert
+                Passer en Expert <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           ) : (

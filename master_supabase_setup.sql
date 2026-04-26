@@ -132,10 +132,16 @@ ALTER TABLE public.interventions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE public.profiles ADD CONSTRAINT unique_email UNIQUE (email);
+
 CREATE POLICY "Profiles access" ON public.profiles FOR SELECT USING (
   auth.uid() = id 
   OR employer_id = auth.uid() 
   OR id = (SELECT employer_id FROM public.profiles WHERE id = auth.uid())
+);
+
+CREATE POLICY "Profiles update" ON public.profiles FOR UPDATE USING (
+  auth.uid() = id
 );
 CREATE POLICY "Clients access" ON public.clients FOR ALL USING (artisan_id = auth.uid() OR artisan_id = (SELECT employer_id FROM public.profiles WHERE id = auth.uid()));
 CREATE POLICY "Stock access" ON public.stock FOR ALL USING (artisan_id = auth.uid() OR artisan_id = (SELECT employer_id FROM public.profiles WHERE id = auth.uid()));
