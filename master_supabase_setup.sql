@@ -114,9 +114,21 @@ CREATE TABLE public.documents (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 9. TABLE DES MESSAGES
+-- 9. TABLE DES CONVERSATIONS
+CREATE TABLE public.conversations (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  artisan_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE UNIQUE,
+  last_message_content TEXT,
+  last_message_at TIMESTAMPTZ DEFAULT NOW(),
+  unread_count_admin INT DEFAULT 0,
+  unread_count_artisan INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 10. TABLE DES MESSAGES
 CREATE TABLE public.messages (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  conversation_id UUID REFERENCES public.conversations(id) ON DELETE CASCADE,
   sender_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   recipient_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   content TEXT NOT NULL,
@@ -124,12 +136,13 @@ CREATE TABLE public.messages (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 10. SÉCURITÉ (RLS)
+-- 11. SÉCURITÉ (RLS)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.stock ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.interventions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE public.profiles ADD CONSTRAINT unique_email UNIQUE (email);
@@ -150,6 +163,11 @@ CREATE POLICY "Stock access" ON public.stock FOR ALL USING (artisan_id = auth.ui
 CREATE POLICY "Interventions access" ON public.interventions FOR ALL USING (artisan_id = auth.uid() OR artisan_id = (SELECT employer_id FROM public.profiles WHERE id = auth.uid()));
 CREATE POLICY "Documents access" ON public.documents FOR ALL USING (artisan_id = auth.uid() OR artisan_id = (SELECT employer_id FROM public.profiles WHERE id = auth.uid()));
 CREATE POLICY "Messages access" ON public.messages FOR ALL USING (auth.uid() = sender_id OR auth.uid() = recipient_id);
+CREATE POLICY "Conversations access" ON public.conversations FOR ALL USING (
+  auth.uid() = artisan_id 
+  OR (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
+  OR (SELECT employer_id FROM public.profiles WHERE id = auth.uid()) = artisan_id
+);
 ALTER TABLE public.intervention_photos ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Intervention Photos access" ON public.intervention_photos FOR ALL USING (
   EXISTS (

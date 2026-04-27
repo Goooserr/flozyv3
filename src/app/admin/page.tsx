@@ -18,10 +18,10 @@ import {
   Filter
 } from 'lucide-react'
 import { 
-  getAllArtisans, 
   getAdminStats, 
   suspendArtisan, 
   activateArtisan,
+  getConversations,
   getMessages,
   sendMessage,
   markMessagesAsRead
@@ -37,7 +37,8 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'artisans' | 'support'>('overview')
   
   // Support Chat State
-  const [selectedArtisan, setSelectedArtisan] = useState<any>(null)
+  const [conversations, setConversations] = useState<any[]>([])
+  const [selectedConv, setSelectedConv] = useState<any>(null)
   const [messages, setMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
@@ -59,12 +60,14 @@ export default function AdminDashboard() {
 
   async function loadData() {
     try {
-      const [s, a] = await Promise.all([
+      const [s, a, c] = await Promise.all([
         getAdminStats(),
-        getAllArtisans()
+        getAllArtisans(),
+        getConversations()
       ])
       setStats(s)
       setArtisans(a)
+      setConversations(c)
     } catch (err) {
       console.error(err)
     } finally {
@@ -74,18 +77,18 @@ export default function AdminDashboard() {
 
   // --- Support Logic ---
   useEffect(() => {
-    if (selectedArtisan && activeTab === 'support') {
+    if (selectedConv && activeTab === 'support') {
       const fetchMsgs = async () => {
-        const msgs = await getMessages(selectedArtisan.id, true)
+        const msgs = await getMessages(selectedConv.artisan_id, true)
         setMessages(msgs)
         // Mark as read when admin views them
-        await markMessagesAsRead(selectedArtisan.id, true)
+        await markMessagesAsRead(selectedConv.artisan_id, true)
       }
       fetchMsgs()
       const interval = setInterval(fetchMsgs, 5000)
       return () => clearInterval(interval)
     }
-  }, [selectedArtisan, activeTab])
+  }, [selectedConv, activeTab])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -96,13 +99,13 @@ export default function AdminDashboard() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newMessage.trim() || !selectedArtisan) return
+    if (!newMessage.trim() || !selectedConv) return
     
     setSending(true)
     try {
-      await sendMessage(selectedArtisan.id, newMessage, true)
+      await sendMessage(selectedConv.artisan_id, newMessage, true)
       setNewMessage('')
-      const msgs = await getMessages(selectedArtisan.id, true)
+      const msgs = await getMessages(selectedConv.artisan_id, true)
       setMessages(msgs)
     } catch (err) {
       console.error(err)
@@ -313,37 +316,50 @@ export default function AdminDashboard() {
                   <MessageSquare className="w-4 h-4" /> Conversations
                 </div>
                 <div className="flex-1 overflow-y-auto">
-                  {artisans.map((a) => (
-                    <button
-                      key={a.id}
-                      onClick={() => {
-                        setSelectedArtisan(a);
-                        setMobileSupportView('chat');
-                      }}
-                      className={cn(
-                        "w-full p-4 flex items-center gap-3 hover:bg-secondary/50 transition-colors text-left border-b border-border/30",
-                        selectedArtisan?.id === a.id && "bg-secondary border-l-4 border-l-primary"
-                      )}
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center font-bold text-primary">
-                        {a.business_name?.[0] || a.email?.[0].toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold truncate">{a.business_name || 'Artisan'}</p>
-                        <p className="text-xs text-muted-foreground truncate">{a.email}</p>
-                      </div>
-                    </button>
-                  ))}
+                  {conversations.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground">
+                      <p className="text-xs">Aucune conversation active</p>
+                    </div>
+                  ) : (
+                    conversations.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => {
+                          setSelectedConv(c);
+                          setMobileSupportView('chat');
+                        }}
+                        className={cn(
+                          "w-full p-4 flex items-center gap-3 hover:bg-secondary/50 transition-colors text-left border-b border-border/30 relative",
+                          selectedConv?.id === c.id && "bg-secondary border-l-4 border-l-primary"
+                        )}
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center font-bold text-primary shrink-0">
+                          {c.artisan?.business_name?.[0] || c.artisan?.email?.[0].toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-bold truncate text-sm">{c.artisan?.business_name || 'Artisan'}</p>
+                            {c.unread_count_admin > 0 && (
+                              <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
+                            )}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground truncate italic">
+                            {c.last_message_content || "Nouvelle discussion"}
+                          </p>
+                        </div>
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
 
-                  <div className={cn(
-                    "lg:col-span-2 flex flex-col bg-background relative",
-                    mobileSupportView === 'list' && "max-lg:hidden"
-                  )}>
-                {selectedArtisan ? (
+                <div className={cn(
+                  "lg:col-span-2 flex flex-col bg-background relative",
+                  mobileSupportView === 'list' && "max-lg:hidden"
+                )}>
+                {selectedConv ? (
                   <>
-                    <div className="p-4 border-b border-border flex items-center justify-between">
+                    <div className="p-4 border-b border-border flex items-center justify-between bg-card/30">
                       <div className="flex items-center gap-3">
                         <button 
                           onClick={() => setMobileSupportView('list')}
@@ -351,10 +367,15 @@ export default function AdminDashboard() {
                         >
                           <ArrowUpRight className="w-5 h-5 rotate-[225deg]" />
                         </button>
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center font-bold text-primary text-xs">
-                          {selectedArtisan.business_name?.[0] || 'A'}
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary text-sm border border-primary/20">
+                          {selectedConv.artisan?.business_name?.[0] || 'A'}
                         </div>
-                        <h3 className="font-bold">{selectedArtisan.business_name || 'Conversation'}</h3>
+                        <div>
+                          <h3 className="font-bold text-sm leading-tight">{selectedConv.artisan?.business_name || 'Conversation'}</h3>
+                          <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" /> Live
+                          </p>
+                        </div>
                       </div>
                     </div>
                     
@@ -375,7 +396,7 @@ export default function AdminDashboard() {
                             )}
                           >
                             <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1 px-1">
-                              {isMe ? "Nexus Admin (Vous)" : (selectedArtisan.business_name || "Artisan")}
+                              {isMe ? "Nexus Admin (Vous)" : (selectedConv.artisan?.full_name || "Artisan")}
                             </span>
                             <div className={cn(
                               "max-w-[80%] p-4 rounded-2xl text-sm shadow-sm",

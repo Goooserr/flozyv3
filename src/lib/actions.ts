@@ -365,28 +365,49 @@ export async function getAdminStats() {
   }
 }
 
-// --- MESSAGERIE ---
-export async function getMessages(otherId: string, isAdmin: boolean = false) {
+// --- MESSAGERIE (ARCHITECTURE CONVERSATIONS) ---
+
+export async function getConversations() {
   const isPrivileged = await isAdminAuthorized()
+  if (!isPrivileged) return []
   
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from('conversations')
+    .select('*, artisan:artisan_id(*)')
+    .order('last_message_at', { ascending: false })
+  
+  return data || []
+}
+
+export async function getMessages(otherId: string, isAdmin: boolean = false) {
   let userId;
-  let supabase = createAdminClient(); // Utilisation du client privilégié pour bypass RLS (Sécurisé car on vérifie l'auth juste après)
+  let supabase = createAdminClient(); 
 
   if (isAdmin) {
-    if (!isPrivileged) throw new Error("Non autorisé");
+    if (!await isAdminAuthorized()) throw new Error("Non autorisé");
     userId = ADMIN_ID;
   } else {
-    // Vérifier l'auth pour les artisans
     const userSupabase = await getServerSupabase();
     const { data: { user } } = await userSupabase.auth.getUser();
     if (!user) return [];
     userId = await getArtisanId();
   }
 
+  // On récupère la conversation liée à cet artisan
+  const artisanId = isAdmin ? otherId : userId;
+  const { data: conv } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('artisan_id', artisanId)
+    .single();
+
+  if (!conv) return [];
+
   const { data } = await supabase
     .from('messages')
     .select('*')
-    .or(`and(sender_id.eq.${userId},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${userId})`)
+    .eq('conversation_id', conv.id)
     .order('created_at', { ascending: true })
   
   return data?.map(m => ({
@@ -397,40 +418,74 @@ export async function getMessages(otherId: string, isAdmin: boolean = false) {
 
 export async function sendMessage(recipientId: string, content: string, isAdmin: boolean = false) {
   let userId;
-  let supabase = createAdminClient(); // Utilisation du client privilégié pour bypass RLS
+  let supabase = createAdminClient(); 
 
   if (isAdmin) {
     if (!await isAdminAuthorized()) throw new Error("Non autorisé");
     userId = ADMIN_ID;
   } else {
-    // Vérifier l'auth pour les artisans
     const userSupabase = await getServerSupabase();
     const { data: { user } } = await userSupabase.auth.getUser();
     if (!user) throw new Error("Non authentifié");
     userId = await getArtisanId();
   }
 
-  const { error } = await supabase
+  // 1. Trouver ou Créer la conversation
+  const artisanId = isAdmin ? recipientId : userId;
+  let { data: conv } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('artisan_id', artisanId)
+    .single();
+
+  if (!conv) {
+    const { data: newConv, error: convError } = await supabase
+      .from('conversations')
+      .insert([{ artisan_id: artisanId }])
+      .select()
+      .single();
+    if (convError) throw convError;
+    conv = newConv;
+  }
+
+  // 2. Insérer le message
+  const { error: msgError } = await supabase
     .from('messages')
     .insert([{ 
+      conversation_id: conv.id,
       sender_id: userId, 
       recipient_id: recipientId, 
       content: content.trim(),
       is_read: false
     }])
   
-  if (error) {
-    console.error("Error sending message:", error)
-    throw new Error(`Erreur lors de l'envoi : ${error.message}`)
+  if (msgError) throw msgError;
+
+  // 3. Mettre à jour la conversation
+  // On utilise un simple update ici pour le compteur (on pourrait utiliser rpc pour plus de précision)
+  const { data: currentConv } = await supabase.from('conversations').select('unread_count_admin, unread_count_artisan').eq('id', conv.id).single();
+  
+  const updateData: any = {
+    last_message_content: content.trim(),
+    last_message_at: new Date().toISOString()
+  };
+
+  if (isAdmin) {
+    updateData.unread_count_artisan = (currentConv?.unread_count_artisan || 0) + 1;
+  } else {
+    updateData.unread_count_admin = (currentConv?.unread_count_admin || 0) + 1;
   }
+
+  await supabase.from('conversations').update(updateData).eq('id', conv.id);
 }
 
 export async function markMessagesAsRead(senderId: string, isAdmin: boolean = false) {
+  const isPrivileged = await isAdminAuthorized()
   let userId;
   let supabase = createAdminClient();
 
   if (isAdmin) {
-    if (!await isAdminAuthorized()) return;
+    if (!isPrivileged) return;
     userId = ADMIN_ID;
   } else {
     const userSupabase = await getServerSupabase();
@@ -439,16 +494,22 @@ export async function markMessagesAsRead(senderId: string, isAdmin: boolean = fa
     userId = await getArtisanId();
   }
 
-  const { error } = await supabase
+  const artisanId = isAdmin ? senderId : userId;
+
+  // Reset le compteur dans la conversation
+  if (isAdmin) {
+    await supabase.from('conversations').update({ unread_count_admin: 0 }).eq('artisan_id', artisanId);
+  } else {
+    await supabase.from('conversations').update({ unread_count_artisan: 0 }).eq('artisan_id', artisanId);
+  }
+
+  // Marquer les messages individuels
+  await supabase
     .from('messages')
     .update({ is_read: true })
     .eq('sender_id', senderId)
     .eq('recipient_id', userId)
     .eq('is_read', false)
-
-  if (error) {
-    console.error("Error marking messages as read:", error)
-  }
 }
 
 export async function convertQuoteToInvoice(quoteId: string, docNumber: string) {

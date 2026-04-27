@@ -37,7 +37,7 @@ export default function SupportChat() {
 
   // Mark as read when opening
   useEffect(() => {
-    if (isOpen && messages.some(m => !m.is_read && m.sender_id === ADMIN_ID)) {
+    if (isOpen && messages.some(m => !m.is_read && m.is_from_admin)) {
       markMessagesAsRead(ADMIN_ID, false).catch(console.error)
       setMessages(prev => prev.map(m => ({ ...m, is_read: true })))
     }
@@ -80,7 +80,7 @@ export default function SupportChat() {
   // On masque uniquement si on est physiquement dans l'espace admin
   if (isAdminPath) return null
 
-  const hasUnread = messages.some(m => !m.is_read && m.sender_id === ADMIN_ID)
+  const hasUnread = messages.some(m => !m.is_read && m.is_from_admin)
 
   return (
     <div className={cn(
