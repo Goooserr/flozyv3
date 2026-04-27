@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { 
   getAdminStats, 
+  getAllArtisans,
   suspendArtisan, 
   activateArtisan,
   getConversations,
