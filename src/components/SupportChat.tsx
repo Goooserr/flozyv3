@@ -147,9 +147,8 @@ export default function SupportChat() {
               </div>
             ) : (
               messages.map((msg, i) => {
-                // Identification robuste : si le sender est admin, c'est le Support
-                const isFromSupport = msg.sender?.is_admin
-                const isMe = !isFromSupport
+                // Identification robuste via le flag is_from_admin ajouté par le serveur
+                const isMe = !msg.is_from_admin
                 return (
                   <div 
                     key={msg.id || i}

@@ -363,25 +363,25 @@ export default function AdminDashboard() {
                       className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[calc(600px-130px)]"
                     >
                       {messages.map((m, i) => {
-                        // Identification robuste : si le sender est admin, c'est MOI (l'Admin)
-                        const isFromSupport = m.sender?.is_admin
-                        const isFromClient = !isFromSupport
+                        // Identification robuste via le flag is_from_admin ajouté par le serveur
+                        const isMe = m.is_from_admin
+                        const isFromClient = !isMe
                         return (
                           <div 
                             key={m.id || i} 
                             className={cn(
                               "flex flex-col",
-                              isFromClient ? "items-start" : "items-end"
+                              isMe ? "items-end" : "items-start"
                             )}
                           >
                             <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1 px-1">
-                              {isFromClient ? (selectedArtisan.business_name || "Artisan") : "Nexus Admin (Vous)"}
+                              {isMe ? "Nexus Admin (Vous)" : (selectedArtisan.business_name || "Artisan")}
                             </span>
                             <div className={cn(
                               "max-w-[80%] p-4 rounded-2xl text-sm shadow-sm",
-                              isFromClient 
-                                ? "bg-secondary border border-border text-foreground rounded-tl-none"
-                                : "bg-primary text-primary-foreground rounded-tr-none"
+                              isMe 
+                                ? "bg-primary text-primary-foreground rounded-tr-none"
+                                : "bg-secondary border border-border text-foreground rounded-tl-none"
                             )}>
                               {m.content}
                               <div className={cn(

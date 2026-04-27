@@ -11,20 +11,16 @@ async function isAdminAuthorized() {
   const hasAccessCookie = cookieStore.get('flozy_admin_access')?.value === 'true'
   
   if (hasAccessCookie) {
-    // S'assurer que le profil admin existe dans la DB
+    // S'assurer que le profil admin existe et est correctement configuré
     const supabase = createAdminClient()
-    const { data: profile } = await supabase.from('profiles').select('id').eq('id', ADMIN_ID).single()
-    
-    if (!profile) {
-      await supabase.from('profiles').insert([{
-        id: ADMIN_ID,
-        full_name: 'Nexus Admin',
-        company_name: 'Flozy Support',
-        role: 'admin',
-        is_admin: true,
-        email: 'support@flozy.com'
-      }])
-    }
+    await supabase.from('profiles').upsert([{
+      id: ADMIN_ID,
+      full_name: 'Nexus Admin',
+      company_name: 'Flozy Support',
+      role: 'admin',
+      is_admin: true,
+      email: 'support@flozy.com'
+    }])
   }
   
   return hasAccessCookie
@@ -389,10 +385,14 @@ export async function getMessages(otherId: string, isAdmin: boolean = false) {
 
   const { data } = await supabase
     .from('messages')
-    .select('*, sender:sender_id(is_admin)')
+    .select('*')
     .or(`and(sender_id.eq.${userId},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${userId})`)
     .order('created_at', { ascending: true })
-  return data || []
+  
+  return data?.map(m => ({
+    ...m,
+    is_from_admin: m.sender_id === ADMIN_ID
+  })) || []
 }
 
 export async function sendMessage(recipientId: string, content: string, isAdmin: boolean = false) {
