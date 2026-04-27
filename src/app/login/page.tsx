@@ -28,8 +28,12 @@ export default function LoginPage() {
 
       if (signInError) throw signInError
 
-      // Redirect to dashboard
-      router.push('/')
+      const MASTER_ADMIN_EMAILS = ['florian.benoit73@gmail.com', 'support@flozy.com'];
+      if (MASTER_ADMIN_EMAILS.includes(email.toLowerCase())) {
+        router.push('/admin')
+      } else {
+        router.push('/dashboard')
+      }
       router.refresh()
     } catch (err: any) {
       setError(err.message || 'Email ou mot de passe incorrect.')

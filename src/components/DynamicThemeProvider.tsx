@@ -17,7 +17,9 @@ const ThemeContext = createContext({
   userRole: 'artisan',
   setUserRole: (role: string) => {},
   userId: '' as string | undefined,
-  setUserId: (id: string | undefined) => {}
+  setUserId: (id: string | undefined) => {},
+  isAdmin: false,
+  setIsAdmin: (isAdmin: boolean) => {}
 })
 
 export function DynamicThemeProvider({ children }: { children: React.ReactNode }) {
@@ -28,6 +30,7 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
   const [subscriptionPlan, setSubscriptionPlan] = useState('starter')
   const [userRole, setUserRole] = useState('artisan')
   const [userId, setUserId] = useState<string | undefined>()
+  const [isAdmin, setIsAdmin] = useState(false)
   const supabase = createClient()
 
   async function loadProfile(uId?: string) {
@@ -45,6 +48,7 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
 
     let workspaceData = profile
     setUserRole(profile.role || 'artisan')
+    setIsAdmin(profile.is_admin || false)
 
     // Si c'est un employé, on récupère les réglages de son patron
     if (profile.role === 'employee' && profile.employer_id) {
@@ -101,7 +105,8 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
       enabledModules, setEnabledModules,
       subscriptionPlan, setSubscriptionPlan,
       userRole, setUserRole,
-      userId, setUserId
+      userId, setUserId,
+      isAdmin, setIsAdmin
     }}>
       {children}
     </ThemeContext.Provider>

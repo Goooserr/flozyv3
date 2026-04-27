@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   TrendingUp, 
   Clock, 
@@ -30,7 +31,8 @@ const statusStyles: any = {
 };
 
 export default function Dashboard() {
-  const { subscriptionPlan, userRole } = useTheme()
+  const router = useRouter()
+  const { subscriptionPlan, userRole, isAdmin } = useTheme()
   const [stats, setStats] = useState<any[]>([])
   const [recentInvoices, setRecentInvoices] = useState<any[]>([])
   const [interventions, setInterventions] = useState<any[]>([])
@@ -95,8 +97,12 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
+    if (isAdmin) {
+      router.push('/admin')
+      return
+    }
     loadData()
-  }, [])
+  }, [isAdmin])
 
   const handleQuickClient = async (e: React.FormEvent) => {
     e.preventDefault()
