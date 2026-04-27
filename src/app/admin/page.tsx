@@ -362,13 +362,12 @@ export default function AdminDashboard() {
                       ref={scrollRef}
                       className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[calc(600px-130px)]"
                     >
-                      {messages.map((m) => {
-                        // Logique infaillible : si l'envoyeur est l'admin (identifié par ADMIN_ID)
-                        const isFromAdmin = m.sender_id === ADMIN_ID
-                        const isFromClient = !isFromAdmin
+                      {messages.map((m, i) => {
+                        // Identification robuste : tout ce qui n'est pas ADMIN est le CLIENT
+                        const isFromClient = m.sender_id !== ADMIN_ID
                         return (
                           <div 
-                            key={m.id} 
+                            key={m.id || i} 
                             className={cn(
                               "flex flex-col",
                               isFromClient ? "items-start" : "items-end"

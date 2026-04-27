@@ -23,7 +23,20 @@ export default function SupportChat() {
   useEffect(() => {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser()
-      setCurrentUser(user)
+      if (user) {
+        setCurrentUser(user)
+        // Récupérer l'ID de l'artisan (soi-même ou son patron) pour l'identification
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, employer_id')
+          .eq('id', user.id)
+          .single()
+        
+        if (profile) {
+          const artisanId = profile.employer_id || profile.id
+          setCurrentUser((prev: any) => ({ ...prev, artisanId }))
+        }
+      }
     }
     init()
   }, [])
@@ -149,8 +162,8 @@ export default function SupportChat() {
               </div>
             ) : (
               messages.map((msg, i) => {
-                const isSupport = msg.sender_id === ADMIN_ID
-                const isMe = !isSupport
+                // Identification robuste : tout ce qui n'est pas ADMIN est "MOI" (l'Artisan)
+                const isMe = msg.sender_id !== ADMIN_ID
                 return (
                   <div 
                     key={msg.id || i}
