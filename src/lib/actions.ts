@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 
-const ADMIN_ID = '76b5136b-e5e6-474c-9469-48c27817bf9c'
+export const ADMIN_ID = '76b5136b-e5e6-474c-9469-48c27817bf9c'
 
 // Helper pour vǸrifier si l'utilisateur est autorisǸ via le mot de passe maǩtre admin
 async function isAdminAuthorized() {
@@ -364,9 +364,11 @@ export async function getMessages(otherId: string) {
     supabase = createAdminClient();
   } else {
     supabase = await getServerSupabase();
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return []
-    userId = user.id
+    try {
+      userId = await getArtisanId();
+    } catch {
+      return [];
+    }
   }
 
   const { data } = await supabase
@@ -386,11 +388,9 @@ export async function sendMessage(recipientId: string, content: string, isAdmin:
     userId = ADMIN_ID;
     supabase = createAdminClient();
   } else {
-    // Force l'identité Artisan (Client) via la session Supabase
+    // Force l'identité Artisan (via son ID de patron si c'est un employé)
     supabase = await getServerSupabase();
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error("Vous devez être connecté pour envoyer un message.")
-    userId = user.id
+    userId = await getArtisanId();
   }
 
   const { error } = await supabase
@@ -419,9 +419,11 @@ export async function markMessagesAsRead(senderId: string) {
     supabase = createAdminClient();
   } else {
     supabase = await getServerSupabase();
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    userId = user.id
+    try {
+      userId = await getArtisanId();
+    } catch {
+      return;
+    }
   }
 
   const { error } = await supabase

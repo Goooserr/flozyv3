@@ -3,12 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { MessageSquare, Send, X, Loader2, Minus } from 'lucide-react'
 import { usePathname } from 'next/navigation'
-import { getMessages, sendMessage, markMessagesAsRead } from '@/lib/actions'
+import { getMessages, sendMessage, markMessagesAsRead, ADMIN_ID } from '@/lib/actions'
 import { createClient } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { useTheme } from './DynamicThemeProvider'
-
-const ADMIN_ID = '76b5136b-e5e6-474c-9469-48c27817bf9c'
 
 export default function SupportChat() {
   const [isOpen, setIsOpen] = useState(false)
@@ -88,8 +86,9 @@ export default function SupportChat() {
   return (
     <div className={cn(
       "fixed z-[9999] transition-all duration-300",
-      "bottom-6 right-6 md:bottom-8 md:right-8",
-      "max-md:bottom-24"
+      isOpen 
+        ? "inset-0 md:inset-auto md:bottom-8 md:right-8" 
+        : "bottom-6 right-6 md:bottom-8 md:right-8 max-md:bottom-24"
     )}>
       {!isOpen ? (
         <button
@@ -108,23 +107,29 @@ export default function SupportChat() {
           </div>
         </button>
       ) : (
-        <div className="w-[320px] md:w-[380px] h-[500px] bg-card border border-border shadow-2xl rounded-3xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className={cn(
+          "bg-card border border-border shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200",
+          "w-full h-full md:w-[380px] md:h-[600px] md:rounded-3xl"
+        )}>
           {/* Header */}
-          <div style={{ backgroundColor: primaryColor }} className="p-4 flex items-center justify-between text-white">
+          <div style={{ backgroundColor: primaryColor }} className="p-4 md:p-5 flex items-center justify-between text-white shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-black text-xs">
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-black text-xs border border-white/10">
                 F
               </div>
               <div>
-                <p className="text-sm font-bold">Support Flozy</p>
-                <p className="text-[10px] opacity-80 uppercase tracking-widest font-bold">En ligne</p>
+                <p className="text-sm md:text-base font-bold">Support Flozy</p>
+                <p className="text-[10px] opacity-80 uppercase tracking-widest font-bold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                  En ligne
+                </p>
               </div>
             </div>
             <button 
               onClick={() => setIsOpen(false)}
-              className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+              className="p-2.5 hover:bg-white/10 rounded-2xl transition-colors active:scale-90"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5 md:w-4 md:h-4" />
             </button>
           </div>
 
@@ -143,30 +148,34 @@ export default function SupportChat() {
               </div>
             ) : (
               messages.map((msg, i) => {
-                const isMe = msg.sender_id === currentUser?.id
+                const isSupport = msg.sender_id === ADMIN_ID
+                const isMe = !isSupport
                 return (
                   <div 
                     key={msg.id || i}
                     className={cn(
-                      "flex flex-col max-w-[80%] animate-in fade-in duration-300",
-                      isMe ? "mr-auto items-start" : "ml-auto items-end"
+                      "flex flex-col max-w-[85%] animate-in fade-in duration-300",
+                      isMe ? "ml-auto items-end" : "mr-auto items-start"
                     )}
                   >
                     <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1 px-1">
                       {isMe ? "Vous" : "Support Flozy"}
                     </span>
                     <div 
-                      style={{ backgroundColor: isMe ? '#f4f4f5' : primaryColor }}
+                      style={{ backgroundColor: isMe ? primaryColor : '#f4f4f5' }}
                       className={cn(
                         "px-4 py-2.5 rounded-2xl text-sm shadow-sm",
                         isMe 
-                          ? "text-zinc-900 border border-zinc-200 rounded-tl-none"
-                          : "text-white rounded-tr-none"
+                          ? "text-white rounded-tr-none"
+                          : "text-zinc-900 border border-zinc-200 rounded-tl-none"
                       )}
                     >
                       {msg.content}
                     </div>
-                    <span className="text-[9px] text-muted-foreground mt-1 px-1">
+                    <span className={cn(
+                      "text-[9px] text-muted-foreground mt-1 px-1",
+                      isMe ? "text-right" : "text-left"
+                    )}>
                       {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -178,22 +187,22 @@ export default function SupportChat() {
           {/* Footer Input */}
           <form 
             onSubmit={handleSend}
-            className="p-4 bg-card border-t border-border flex items-center gap-2"
+            className="p-4 md:p-6 bg-card border-t border-border flex items-center gap-2 max-md:pb-12"
           >
             <input 
               type="text" 
               placeholder="Écrivez votre message..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              className="flex-1 bg-secondary/50 border border-border rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="flex-1 bg-secondary/50 border border-border rounded-2xl px-4 py-3 text-base md:text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/50"
             />
             <button 
               type="submit"
               disabled={!newMessage.trim() || sending}
               style={{ backgroundColor: primaryColor }}
-              className="p-2 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 transition-all shadow-md"
+              className="w-12 h-12 flex items-center justify-center text-white rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 transition-all shadow-lg"
             >
-              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             </button>
           </form>
         </div>

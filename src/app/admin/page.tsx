@@ -24,7 +24,8 @@ import {
   activateArtisan,
   getMessages,
   sendMessage,
-  markMessagesAsRead
+  markMessagesAsRead,
+  ADMIN_ID
 } from '@/lib/actions'
 import { cn } from '@/lib/utils'
 
@@ -347,30 +348,29 @@ export default function AdminDashboard() {
                       className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[calc(600px-130px)]"
                     >
                       {messages.map((m) => {
-                        // Logique infaillible : si l'envoyeur est l'artisan sǸlectionnǸ, c'est le CLIENT -> GAUCHE
-                        // Sinon, c'est le SUPPORT (Admin) -> DROITE
-                        const isArtisanSender = m.sender_id === selectedArtisan.id
+                        // Logique infaillible : si l'envoyeur n'est PAS l'ADMIN, c'est le CLIENT
+                        const isFromClient = m.sender_id !== ADMIN_ID
                         return (
                           <div 
                             key={m.id} 
                             className={cn(
                               "flex flex-col",
-                              isArtisanSender ? "items-start" : "items-end"
+                              isFromClient ? "items-start" : "items-end"
                             )}
                           >
                             <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1 px-1">
-                              {isArtisanSender ? (selectedArtisan.business_name || "Artisan") : "Nexus Admin (Vous)"}
+                              {isFromClient ? (selectedArtisan.business_name || "Artisan") : "Nexus Admin (Vous)"}
                             </span>
                             <div className={cn(
                               "max-w-[80%] p-4 rounded-2xl text-sm shadow-sm",
-                              isArtisanSender 
+                              isFromClient 
                                 ? "bg-secondary border border-border text-foreground rounded-tl-none"
                                 : "bg-primary text-primary-foreground rounded-tr-none"
                             )}>
                               {m.content}
                               <div className={cn(
                                 "text-[10px] mt-1 opacity-50",
-                                isArtisanSender ? "text-muted-foreground" : "text-primary-foreground"
+                                isFromClient ? "text-muted-foreground" : "text-primary-foreground"
                               )}>
                                 {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </div>
