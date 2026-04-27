@@ -152,6 +152,9 @@ export default function SupportChat() {
                       isMe ? "mr-auto items-start" : "ml-auto items-end"
                     )}
                   >
+                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1 px-1">
+                      {isMe ? "Vous" : "Support Flozy"}
+                    </span>
                     <div 
                       style={{ backgroundColor: isMe ? '#f4f4f5' : primaryColor }}
                       className={cn(

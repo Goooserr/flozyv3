@@ -352,10 +352,13 @@ export default function AdminDashboard() {
                           <div 
                             key={m.id} 
                             className={cn(
-                              "flex",
-                              isAdmin ? "justify-start" : "justify-end"
+                              "flex flex-col",
+                              isAdmin ? "items-start" : "items-end"
                             )}
                           >
+                            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1 px-1">
+                              {isAdmin ? "Nexus Admin" : (selectedArtisan.business_name || "Artisan")}
+                            </span>
                             <div className={cn(
                               "max-w-[80%] p-4 rounded-2xl text-sm shadow-sm",
                               isAdmin 
