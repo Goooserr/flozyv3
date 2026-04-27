@@ -439,12 +439,23 @@ export async function sendMessage(recipientId: string, content: string, isAdmin:
     .single();
 
   if (!conv) {
+    console.log("Creating new conversation for artisan:", artisanId);
     const { data: newConv, error: convError } = await supabase
       .from('conversations')
-      .insert([{ artisan_id: artisanId }])
+      .insert([{ 
+        artisan_id: artisanId,
+        last_message_content: content.trim(),
+        last_message_at: new Date().toISOString(),
+        unread_count_admin: isAdmin ? 0 : 1,
+        unread_count_artisan: isAdmin ? 1 : 0
+      }])
       .select()
       .single();
-    if (convError || !newConv) throw convError || new Error("Échec de la création de la conversation");
+    
+    if (convError || !newConv) {
+      console.error("Failed to create conversation:", convError);
+      throw convError || new Error("Échec de la création de la conversation");
+    }
     conv = newConv;
   }
 
