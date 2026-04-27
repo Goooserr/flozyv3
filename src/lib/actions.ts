@@ -371,24 +371,25 @@ export async function getAdminStats() {
 
 // --- MESSAGERIE ---
 export async function getMessages(otherId: string, isAdmin: boolean = false) {
+  const isPrivileged = await isAdminAuthorized()
+  
   let userId;
-  let supabase;
+  let supabase = createAdminClient(); // Utilisation du client privilégié pour bypass RLS (Sécurisé car on vérifie l'auth juste après)
 
   if (isAdmin) {
+    if (!isPrivileged) throw new Error("Non autorisé");
     userId = ADMIN_ID;
-    supabase = createAdminClient();
   } else {
-    supabase = await getServerSupabase();
-    try {
-      userId = await getArtisanId();
-    } catch {
-      return [];
-    }
+    // Vérifier l'auth pour les artisans
+    const userSupabase = await getServerSupabase();
+    const { data: { user } } = await userSupabase.auth.getUser();
+    if (!user) return [];
+    userId = await getArtisanId();
   }
 
   const { data } = await supabase
     .from('messages')
-    .select('*')
+    .select('*, sender:sender_id(is_admin)')
     .or(`and(sender_id.eq.${userId},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${userId})`)
     .order('created_at', { ascending: true })
   return data || []
@@ -396,15 +397,16 @@ export async function getMessages(otherId: string, isAdmin: boolean = false) {
 
 export async function sendMessage(recipientId: string, content: string, isAdmin: boolean = false) {
   let userId;
-  let supabase;
+  let supabase = createAdminClient(); // Utilisation du client privilégié pour bypass RLS
 
   if (isAdmin) {
-    // Force l'identité Admin (Support)
+    if (!await isAdminAuthorized()) throw new Error("Non autorisé");
     userId = ADMIN_ID;
-    supabase = createAdminClient();
   } else {
-    // Force l'identité Artisan (via son ID de patron si c'est un employé)
-    supabase = await getServerSupabase();
+    // Vérifier l'auth pour les artisans
+    const userSupabase = await getServerSupabase();
+    const { data: { user } } = await userSupabase.auth.getUser();
+    if (!user) throw new Error("Non authentifié");
     userId = await getArtisanId();
   }
 
@@ -425,18 +427,16 @@ export async function sendMessage(recipientId: string, content: string, isAdmin:
 
 export async function markMessagesAsRead(senderId: string, isAdmin: boolean = false) {
   let userId;
-  let supabase;
+  let supabase = createAdminClient();
 
   if (isAdmin) {
+    if (!await isAdminAuthorized()) return;
     userId = ADMIN_ID;
-    supabase = createAdminClient();
   } else {
-    supabase = await getServerSupabase();
-    try {
-      userId = await getArtisanId();
-    } catch {
-      return;
-    }
+    const userSupabase = await getServerSupabase();
+    const { data: { user } } = await userSupabase.auth.getUser();
+    if (!user) return;
+    userId = await getArtisanId();
   }
 
   const { error } = await supabase

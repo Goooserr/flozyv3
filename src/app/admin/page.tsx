@@ -363,8 +363,9 @@ export default function AdminDashboard() {
                       className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[calc(600px-130px)]"
                     >
                       {messages.map((m, i) => {
-                        // Identification robuste : tout ce qui n'est pas ADMIN est le CLIENT
-                        const isFromClient = m.sender_id !== ADMIN_ID
+                        // Identification robuste : si le sender est admin, c'est MOI (l'Admin)
+                        const isFromSupport = m.sender?.is_admin
+                        const isFromClient = !isFromSupport
                         return (
                           <div 
                             key={m.id || i} 

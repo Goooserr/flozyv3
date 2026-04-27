@@ -20,7 +20,13 @@ export default function SupportChat() {
   const supabase = createClient()
   const { primaryColor } = useTheme()
 
-    // On ne fetch plus le profil ici car on utilise l'identification relative (msg.sender_id !== ADMIN_ID)
+  useEffect(() => {
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) setCurrentUser(user)
+    }
+    init()
+  }, [])
 
   // Poll for messages even when closed to show notification dot
   useEffect(() => {
@@ -141,8 +147,9 @@ export default function SupportChat() {
               </div>
             ) : (
               messages.map((msg, i) => {
-                // Identification robuste : tout ce qui n'est pas ADMIN est "MOI" (l'Artisan)
-                const isMe = msg.sender_id !== ADMIN_ID
+                // Identification robuste : si le sender est admin, c'est le Support
+                const isFromSupport = msg.sender?.is_admin
+                const isMe = !isFromSupport
                 return (
                   <div 
                     key={msg.id || i}
