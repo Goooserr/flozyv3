@@ -372,12 +372,50 @@ export async function getConversations() {
   if (!isPrivileged) return []
   
   const supabase = createAdminClient()
-  const { data } = await supabase
+  
+  // 1. Récupérer les conversations
+  const { data: convs, error: convError } = await supabase
     .from('conversations')
-    .select('*, artisan:artisan_id(*)')
+    .select('*, artisan:artisan_id(id, full_name, company_name, business_name, email)')
     .order('last_message_at', { ascending: false })
   
-  return data || []
+  if (convError) {
+    console.error("Error fetching conversations:", convError)
+    return []
+  }
+
+  // 2. Si aucune conversation mais des messages existent, on tente une réparation
+  if (!convs || convs.length === 0) {
+    console.log("No conversations found, checking for messages...")
+    const { data: msgs } = await supabase.from('messages').select('sender_id, recipient_id, content, created_at').order('created_at', { ascending: false })
+    
+    if (msgs && msgs.length > 0) {
+      console.log("Found messages without conversations, repairing...")
+      // On prend le dernier message pour chaque artisan
+      const artisansToRepair = new Set(msgs.map(m => m.sender_id === ADMIN_ID ? m.recipient_id : m.sender_id))
+      
+      for (const artisanId of artisansToRepair) {
+        const lastMsg = msgs.find(m => m.sender_id === artisanId || m.recipient_id === artisanId)
+        if (lastMsg) {
+          await supabase.from('conversations').upsert([{
+            artisan_id: artisanId,
+            last_message_content: lastMsg.content,
+            last_message_at: lastMsg.created_at,
+            unread_count_admin: 1 // Par sécurité
+          }], { onConflict: 'artisan_id' })
+        }
+      }
+      
+      // On recharge après réparation
+      const { data: repaired } = await supabase
+        .from('conversations')
+        .select('*, artisan:artisan_id(id, full_name, company_name, business_name, email)')
+        .order('last_message_at', { ascending: false })
+      return repaired || []
+    }
+  }
+
+  return convs || []
 }
 
 export async function getMessages(otherId: string, isAdmin: boolean = false) {
