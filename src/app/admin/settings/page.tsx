@@ -15,11 +15,15 @@ import {
   Bell,
   Save,
   CheckCircle2,
-  Loader2
+  Loader2,
+  X,
+  UserMinus,
+  Plus
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/components/DynamicThemeProvider'
 import { useRouter } from 'next/navigation'
+import { getAdminUsers, promoteToAdmin, removeAdminAccess } from '@/lib/actions'
 
 export default function NexusSettings() {
   const { isAdmin } = useTheme()
@@ -27,6 +31,26 @@ export default function NexusSettings() {
   const [activeSection, setActiveSection] = useState('branding')
   const [loading, setLoading] = useState(false)
   const [saved, setSaved] = useState(false)
+  
+  const [admins, setAdmins] = useState<any[]>([])
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [newAdminEmail, setNewAdminEmail] = useState('')
+  const [actionLoading, setActionLoading] = useState(false)
+
+  const loadAdmins = async () => {
+    try {
+      const data = await getAdminUsers()
+      setAdmins(data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadAdmins()
+    }
+  }, [isAdmin])
 
   // Redirection de sécurité
   useEffect(() => {
@@ -159,22 +183,42 @@ export default function NexusSettings() {
                 <section className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-bold flex items-center gap-2 text-white">
-                      <Shield className="w-5 h-5 text-amber-500" /> Admins Permanents
+                      <Shield className="w-5 h-5 text-amber-500" /> Admins de la Plateforme
                     </h3>
-                    <button className="text-[10px] font-black uppercase tracking-widest bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 transition-all">
-                      Ajouter un accès
+                    <button 
+                      onClick={() => setIsAddModalOpen(true)}
+                      className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl border border-white/10 transition-all"
+                    >
+                      <Plus className="w-3 h-3" /> Ajouter un accès
                     </button>
                   </div>
                   <div className="space-y-3">
-                    <AdminAccount email="florian.benoit73@gmail.com" role="Propriétaire" />
-                    <AdminAccount email="support@flozy.com" role="Système" />
+                    {admins.map((admin) => (
+                      <AdminAccount 
+                        key={admin.id}
+                        email={admin.email} 
+                        role={admin.email === 'florian.benoit73@gmail.com' ? 'Propriétaire' : 'Administrateur'} 
+                        onRemove={() => {
+                          if (confirm(`Retirer les droits admin à ${admin.email} ?`)) {
+                            setActionLoading(true)
+                            removeAdminAccess(admin.id).then(() => {
+                              loadAdmins()
+                              setActionLoading(false)
+                            }).catch(err => {
+                              alert(err.message)
+                              setActionLoading(false)
+                            })
+                          }
+                        }}
+                      />
+                    ))}
                   </div>
                 </section>
 
                 <div className="p-6 bg-amber-500/5 border border-amber-500/10 rounded-3xl">
                   <p className="text-xs text-amber-500/80 leading-relaxed italic">
-                    Note : Les admins permanents ont un accès total sans vérification de plan d'abonnement. 
-                    Ils peuvent suspendre et supprimer n'importe quel compte artisan.
+                    Note : Les administrateurs ont un accès total à la zone Nexus. 
+                    Assurez-vous de ne donner cet accès qu'à des personnes de confiance.
                   </p>
                 </div>
               </div>
@@ -213,6 +257,55 @@ export default function NexusSettings() {
           </div>
         </div>
       </div>
+
+      {/* Modal Ajout Admin */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-zinc-900 border border-white/10 rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white">Nouvel Accès Admin</h3>
+              <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-white/5 rounded-full text-zinc-500">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <p className="text-sm text-zinc-400">
+                L'utilisateur doit déjà avoir un compte sur Flozy pour être promu.
+              </p>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Adresse Email</label>
+                <input 
+                  type="email"
+                  placeholder="email@exemple.com"
+                  value={newAdminEmail}
+                  onChange={(e) => setNewAdminEmail(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:ring-2 focus:ring-amber-500/20 transition-all"
+                />
+              </div>
+              <button 
+                onClick={async () => {
+                  setActionLoading(true)
+                  try {
+                    await promoteToAdmin(newAdminEmail)
+                    await loadAdmins()
+                    setIsAddModalOpen(false)
+                    setNewAdminEmail('')
+                  } catch (err: any) {
+                    alert(err.message)
+                  } finally {
+                    setActionLoading(false)
+                  }
+                }}
+                disabled={actionLoading || !newAdminEmail}
+                className="w-full bg-amber-500 text-black font-black py-4 rounded-2xl hover:bg-amber-400 disabled:opacity-50 transition-all uppercase tracking-widest text-sm"
+              >
+                {actionLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Accorder l'accès"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -234,7 +327,7 @@ function SettingsNavButton({ active, onClick, icon, label }: any) {
   )
 }
 
-function AdminAccount({ email, role }: { email: string, role: string }) {
+function AdminAccount({ email, role, onRemove }: { email: string, role: string, onRemove: () => void }) {
   return (
     <div className="flex items-center justify-between p-4 bg-black/30 border border-white/5 rounded-2xl group hover:border-white/10 transition-all">
       <div className="flex items-center gap-3">
@@ -246,7 +339,18 @@ function AdminAccount({ email, role }: { email: string, role: string }) {
           <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{role}</p>
         </div>
       </div>
-      <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+      <div className="flex items-center gap-4">
+        <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+        {email !== 'florian.benoit73@gmail.com' && (
+          <button 
+            onClick={onRemove}
+            className="p-2 opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-rose-500 transition-all"
+            title="Retirer les droits"
+          >
+            <UserMinus className="w-4 h-4" />
+          </button>
+        )}
+      </div>
     </div>
   )
 }

@@ -30,9 +30,6 @@ async function getServerSupabase() {
   )
 }
 
-// Emails autorisés à être admins permanents
-const MASTER_ADMIN_EMAILS = ['florian.benoit73@gmail.com', 'support@flozy.com'];
-
 // Helper pour vérifier si l'utilisateur est autorisé via le mot de passe maître admin
 async function isAdminAuthorized() {
   const cookieStore = await cookies()
@@ -41,23 +38,80 @@ async function isAdminAuthorized() {
   const supabase = await getServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   
-  const isMasterEmail = user?.email && MASTER_ADMIN_EMAILS.includes(user.email)
+  if (hasAccessCookie) return true
   
-  if (hasAccessCookie || isMasterEmail) {
-    // Si c'est un email maître, on s'assure qu'il est admin dans la base
-    if (user?.id && isMasterEmail) {
-      const adminClient = createAdminClient()
-      await adminClient.from('profiles').update({ 
-        is_admin: true, 
-        role: 'admin',
-        full_name: 'Nexus Admin',
-        company_name: 'Flozy Support'
-      }).eq('id', user.id)
-    }
-    return true
+  if (user) {
+    const { data } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single()
+    if (data?.is_admin) return true
   }
+
+  // Backup : Florian est toujours admin par email
+  if (user?.email === 'florian.benoit73@gmail.com') return true
   
   return false
+}
+
+export async function getAdminUsers() {
+  const isPrivileged = await isAdminAuthorized()
+  if (!isPrivileged) throw new Error("Non autorisé")
+  
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from('profiles')
+    .select('id, email, full_name, role, is_admin')
+    .eq('is_admin', true)
+    .order('created_at', { ascending: true })
+    
+  return data || []
+}
+
+export async function promoteToAdmin(email: string) {
+  const isPrivileged = await isAdminAuthorized()
+  if (!isPrivileged) throw new Error("Non autorisé")
+  
+  const supabase = createAdminClient()
+  
+  // On cherche d'abord l'utilisateur par son email dans les profils
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email.toLowerCase())
+    .single()
+    
+  if (!profile) throw new Error("Aucun utilisateur trouvé avec cet email. Il doit d'abord créer un compte.")
+  
+  const { error } = await supabase
+    .from('profiles')
+    .update({ 
+      is_admin: true, 
+      role: 'admin' 
+    })
+    .eq('id', profile.id)
+    
+  if (error) throw error
+  return true
+}
+
+export async function removeAdminAccess(userId: string) {
+  const isPrivileged = await isAdminAuthorized()
+  if (!isPrivileged) throw new Error("Non autorisé")
+  
+  // On ne peut pas se retirer soi-même pour éviter de s'enfermer dehors
+  const supabase = await getServerSupabase()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user?.id === userId) throw new Error("Vous ne pouvez pas retirer vos propres droits admin.")
+
+  const adminClient = createAdminClient()
+  const { error } = await adminClient
+    .from('profiles')
+    .update({ 
+      is_admin: false, 
+      role: 'artisan' 
+    })
+    .eq('id', userId)
+    
+  if (error) throw error
+  return true
 }
 
 // Helper pour récupérer l'ID de l'admin officiel (Florian ou support)
