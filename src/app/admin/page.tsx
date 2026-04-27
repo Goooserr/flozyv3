@@ -353,22 +353,22 @@ export default function AdminDashboard() {
                             key={m.id} 
                             className={cn(
                               "flex flex-col",
-                              isAdmin ? "items-start" : "items-end"
+                              isAdmin ? "items-end" : "items-start"
                             )}
                           >
                             <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1 px-1">
-                              {isAdmin ? "Nexus Admin" : (selectedArtisan.business_name || "Artisan")}
+                              {isAdmin ? "Nexus Admin (Vous)" : (selectedArtisan.business_name || "Artisan")}
                             </span>
                             <div className={cn(
                               "max-w-[80%] p-4 rounded-2xl text-sm shadow-sm",
                               isAdmin 
-                                ? "bg-secondary border border-border text-foreground rounded-tl-none" 
-                                : "bg-primary text-primary-foreground rounded-tr-none"
+                                ? "bg-primary text-primary-foreground rounded-tr-none"
+                                : "bg-secondary border border-border text-foreground rounded-tl-none"
                             )}>
                               {m.content}
                               <div className={cn(
                                 "text-[10px] mt-1 opacity-50",
-                                isAdmin ? "text-muted-foreground" : "text-primary-foreground"
+                                isAdmin ? "text-primary-foreground" : "text-muted-foreground"
                               )}>
                                 {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </div>
