@@ -448,6 +448,7 @@ export async function sendMessage(recipientId: string, content: string, isAdmin:
     conv = newConv;
   }
 
+  if (!conv?.id) throw new Error("ID de conversation manquant");
   const conversationId = conv.id;
 
   // 2. Insérer le message
