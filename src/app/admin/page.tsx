@@ -341,7 +341,9 @@ export default function AdminDashboard() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <p className="font-bold truncate text-sm">{c.artisan?.business_name || 'Artisan'}</p>
+                            <p className="font-bold truncate text-sm">
+                              {c.artisan?.business_name || c.artisan?.company_name || c.artisan?.full_name || 'Artisan'}
+                            </p>
                             {c.unread_count_admin > 0 && (
                               <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
                             )}
