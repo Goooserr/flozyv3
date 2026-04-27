@@ -384,6 +384,10 @@ export async function sendMessage(recipientId: string, content: string) {
   if (isPrivileged) {
     userId = ADMIN_ID;
     supabase = createAdminClient();
+    // Sécurité au cas où l'artisan test aurait le même ID que l'admin
+    if (recipientId === ADMIN_ID) {
+      console.warn("Tentative d'envoi de message à soi-même (Admin)")
+    }
   } else {
     supabase = await getServerSupabase();
     const { data: { user } } = await supabase.auth.getUser()
@@ -393,11 +397,16 @@ export async function sendMessage(recipientId: string, content: string) {
 
   const { error } = await supabase
     .from('messages')
-    .insert([{ sender_id: userId, recipient_id: recipientId, content }])
+    .insert([{ 
+      sender_id: userId, 
+      recipient_id: recipientId, 
+      content: content.trim(),
+      is_read: false
+    }])
   
   if (error) {
     console.error("Error sending message:", error)
-    throw new Error("Erreur lors de l'envoi du message")
+    throw new Error(`Erreur Supabase: ${error.message}`)
   }
 }
 
