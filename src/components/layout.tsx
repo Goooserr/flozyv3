@@ -63,10 +63,12 @@ function NavList({ enabledModules, pathname, isAdmin, isDocumentsEnabled, role, 
             
             // Renommer pour le contexte admin
             const displayName = item.href === '/dashboard' ? 'Nexus Stats' : 'Réglages Nexus';
+            const targetHref = item.href === '/dashboard' ? '/admin' : '/admin/settings';
+            
             return (
               <Link
                 key={item.name}
-                href={item.href === '/dashboard' ? '/admin' : item.href}
+                href={targetHref}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary/50",
                   isActive && "bg-secondary text-foreground"
