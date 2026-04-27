@@ -8,7 +8,9 @@ const ADMIN_ID = '76b5136b-e5e6-474c-9469-48c27817bf9c'
 // Helper pour vǸrifier si l'utilisateur est autorisǸ via le mot de passe maǩtre admin
 async function isAdminAuthorized() {
   const cookieStore = await cookies()
-  return cookieStore.get('flozy_admin_access')?.value === 'true'
+  const hasAccessCookie = cookieStore.get('flozy_admin_access')?.value === 'true'
+  // On ne considère comme admin que si le cookie est présent ET qu'on n'est pas en train d'agir en tant qu'artisan
+  return hasAccessCookie
 }
 
 // Helper pour créer un client Supabase côté serveur avec gestion des cookies
@@ -379,20 +381,18 @@ export async function sendMessage(recipientId: string, content: string) {
   const isPrivileged = await isAdminAuthorized()
   
   let userId;
-  let supabase;
+  let supabase = await getServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (isPrivileged) {
+  if (user) {
+    // Si un utilisateur est connecté (artisan), on utilise son ID réel
+    userId = user.id;
+  } else if (isPrivileged) {
+    // Sinon, si on a le cookie admin, on utilise l'ID Admin
     userId = ADMIN_ID;
     supabase = createAdminClient();
-    // Sécurité au cas où l'artisan test aurait le même ID que l'admin
-    if (recipientId === ADMIN_ID) {
-      console.warn("Tentative d'envoi de message à soi-même (Admin)")
-    }
   } else {
-    supabase = await getServerSupabase();
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error("Non authentifié")
-    userId = user.id
+    throw new Error("Non authentifié")
   }
 
   const { error } = await supabase
