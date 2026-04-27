@@ -5,27 +5,6 @@ import { createServerClient } from '@supabase/ssr'
 
 import { ADMIN_ID } from './constants'
 
-// Helper pour vǸrifier si l'utilisateur est autorisǸ via le mot de passe maǩtre admin
-async function isAdminAuthorized() {
-  const cookieStore = await cookies()
-  const hasAccessCookie = cookieStore.get('flozy_admin_access')?.value === 'true'
-  
-  if (hasAccessCookie) {
-    // S'assurer que le profil admin existe et est correctement configuré
-    const supabase = createAdminClient()
-    await supabase.from('profiles').upsert([{
-      id: ADMIN_ID,
-      full_name: 'Nexus Admin',
-      company_name: 'Flozy Support',
-      role: 'admin',
-      is_admin: true,
-      email: 'support@flozy.com'
-    }])
-  }
-  
-  return hasAccessCookie
-}
-
 // Helper pour créer un client Supabase côté serveur avec gestion des cookies
 async function getServerSupabase() {
   const cookieStore = await cookies()
@@ -49,6 +28,50 @@ async function getServerSupabase() {
       },
     }
   )
+}
+
+// Emails autorisés à être admins permanents
+const MASTER_ADMIN_EMAILS = ['florian.benoit73@gmail.com', 'support@flozy.com'];
+
+// Helper pour vérifier si l'utilisateur est autorisé via le mot de passe maître admin
+async function isAdminAuthorized() {
+  const cookieStore = await cookies()
+  const hasAccessCookie = cookieStore.get('flozy_admin_access')?.value === 'true'
+  
+  const supabase = await getServerSupabase()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  const isMasterEmail = user?.email && MASTER_ADMIN_EMAILS.includes(user.email)
+  
+  if (hasAccessCookie || isMasterEmail) {
+    // Si c'est un email maître, on s'assure qu'il est admin dans la base
+    if (user?.id && isMasterEmail) {
+      const adminClient = createAdminClient()
+      await adminClient.from('profiles').update({ 
+        is_admin: true, 
+        role: 'admin',
+        full_name: 'Nexus Admin',
+        company_name: 'Flozy Support'
+      }).eq('id', user.id)
+    }
+    return true
+  }
+  
+  return false
+}
+
+// Helper pour récupérer l'ID de l'admin officiel (Florian ou support)
+async function getOfficialAdminId() {
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('role', 'admin')
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .single()
+  
+  return data?.id || ADMIN_ID // Fallback sur la constante si non trouvé
 }
 
 // Client privilégié pour contourner le RLS dans le panel admin
@@ -429,11 +452,12 @@ export async function getConversations() {
     return []
   }
 
-  // 2. Si aucune conversation mais des messages existent, on tente une réparation
+    // 2. Si aucune conversation mais des messages existent, on tente une réparation
   if (!convs || convs.length === 0) {
+    const adminId = await getOfficialAdminId()
     const { data: msgs } = await supabase.from('messages').select('sender_id, recipient_id, content, created_at').order('created_at', { ascending: false })
     if (msgs && msgs.length > 0) {
-      const artisansToRepair = new Set(msgs.map(m => m.sender_id === ADMIN_ID ? m.recipient_id : m.sender_id))
+      const artisansToRepair = new Set(msgs.map(m => m.sender_id === adminId ? m.recipient_id : m.sender_id))
       for (const artisanId of artisansToRepair) {
         if (!artisanId) continue
         const lastMsg = msgs.find(m => m.sender_id === artisanId || m.recipient_id === artisanId)
@@ -494,9 +518,10 @@ export async function getMessages(otherId: string, isAdmin: boolean = false) {
     .eq('conversation_id', conv.id)
     .order('created_at', { ascending: true })
   
+  const adminId = await getOfficialAdminId()
   return data?.map(m => ({
     ...m,
-    is_from_admin: m.sender_id === ADMIN_ID
+    is_from_admin: m.sender_id === adminId
   })) || []
 }
 
@@ -506,7 +531,7 @@ export async function sendMessage(recipientId: string, content: string, isAdmin:
 
   if (isAdmin) {
     if (!await isAdminAuthorized()) throw new Error("Non autorisé");
-    userId = ADMIN_ID;
+    userId = await getOfficialAdminId();
   } else {
     const userSupabase = await getServerSupabase();
     const { data: { user } } = await userSupabase.auth.getUser();
@@ -547,12 +572,13 @@ export async function sendMessage(recipientId: string, content: string, isAdmin:
   const conversationId = conv.id;
 
   // 2. Insérer le message
+  const adminId = await getOfficialAdminId()
   const { error: msgError } = await supabase
     .from('messages')
     .insert([{ 
       conversation_id: conversationId,
       sender_id: userId, 
-      recipient_id: recipientId, 
+      recipient_id: isAdmin ? recipientId : adminId, 
       content: content.trim(),
       is_read: false
     }])
