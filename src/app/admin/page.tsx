@@ -24,9 +24,9 @@ import {
   activateArtisan,
   getMessages,
   sendMessage,
-  markMessagesAsRead,
-  ADMIN_ID
+  markMessagesAsRead
 } from '@/lib/actions'
+import { ADMIN_ID } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
 export default function AdminDashboard() {

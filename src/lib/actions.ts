@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 
-export const ADMIN_ID = '76b5136b-e5e6-474c-9469-48c27817bf9c'
+import { ADMIN_ID } from './constants'
 
 // Helper pour vǸrifier si l'utilisateur est autorisǸ via le mot de passe maǩtre admin
 async function isAdminAuthorized() {
