@@ -370,13 +370,11 @@ export async function getAdminStats() {
 }
 
 // --- MESSAGERIE ---
-export async function getMessages(otherId: string) {
-  const isPrivileged = await isAdminAuthorized()
-  
+export async function getMessages(otherId: string, isAdmin: boolean = false) {
   let userId;
   let supabase;
 
-  if (isPrivileged) {
+  if (isAdmin) {
     userId = ADMIN_ID;
     supabase = createAdminClient();
   } else {
@@ -425,13 +423,11 @@ export async function sendMessage(recipientId: string, content: string, isAdmin:
   }
 }
 
-export async function markMessagesAsRead(senderId: string) {
-  const isPrivileged = await isAdminAuthorized()
-  
+export async function markMessagesAsRead(senderId: string, isAdmin: boolean = false) {
   let userId;
   let supabase;
 
-  if (isPrivileged) {
+  if (isAdmin) {
     userId = ADMIN_ID;
     supabase = createAdminClient();
   } else {

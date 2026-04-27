@@ -20,40 +20,19 @@ export default function SupportChat() {
   const supabase = createClient()
   const { primaryColor } = useTheme()
 
-  useEffect(() => {
-    async function init() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setCurrentUser(user)
-        // Récupérer l'ID de l'artisan (soi-même ou son patron) pour l'identification
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id, employer_id')
-          .eq('id', user.id)
-          .single()
-        
-        if (profile) {
-          const artisanId = profile.employer_id || profile.id
-          setCurrentUser((prev: any) => ({ ...prev, artisanId }))
-        }
-      }
-    }
-    init()
-  }, [])
+    // On ne fetch plus le profil ici car on utilise l'identification relative (msg.sender_id !== ADMIN_ID)
 
   // Poll for messages even when closed to show notification dot
   useEffect(() => {
-    if (currentUser && currentUser.id !== ADMIN_ID) {
-      loadMessages()
-      const interval = setInterval(loadMessages, 5000)
-      return () => clearInterval(interval)
-    }
-  }, [currentUser])
+    loadMessages()
+    const interval = setInterval(loadMessages, 5000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Mark as read when opening
   useEffect(() => {
     if (isOpen && messages.some(m => !m.is_read && m.sender_id === ADMIN_ID)) {
-      markMessagesAsRead(ADMIN_ID).catch(console.error)
+      markMessagesAsRead(ADMIN_ID, false).catch(console.error)
       setMessages(prev => prev.map(m => ({ ...m, is_read: true })))
     }
   }, [isOpen, messages])
@@ -66,7 +45,7 @@ export default function SupportChat() {
 
   async function loadMessages() {
     try {
-      const msgs = await getMessages(ADMIN_ID)
+      const msgs = await getMessages(ADMIN_ID, false)
       setMessages(msgs)
     } catch (error) {
       console.error('Error loading messages:', error)

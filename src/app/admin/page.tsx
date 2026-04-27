@@ -76,10 +76,10 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (selectedArtisan && activeTab === 'support') {
       const fetchMsgs = async () => {
-        const msgs = await getMessages(selectedArtisan.id)
+        const msgs = await getMessages(selectedArtisan.id, true)
         setMessages(msgs)
         // Mark as read when admin views them
-        await markMessagesAsRead(selectedArtisan.id)
+        await markMessagesAsRead(selectedArtisan.id, true)
       }
       fetchMsgs()
       const interval = setInterval(fetchMsgs, 5000)
@@ -102,7 +102,7 @@ export default function AdminDashboard() {
     try {
       await sendMessage(selectedArtisan.id, newMessage, true)
       setNewMessage('')
-      const msgs = await getMessages(selectedArtisan.id)
+      const msgs = await getMessages(selectedArtisan.id, true)
       setMessages(msgs)
     } catch (err) {
       console.error(err)
