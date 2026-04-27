@@ -444,15 +444,17 @@ export async function sendMessage(recipientId: string, content: string, isAdmin:
       .insert([{ artisan_id: artisanId }])
       .select()
       .single();
-    if (convError) throw convError;
+    if (convError || !newConv) throw convError || new Error("Échec de la création de la conversation");
     conv = newConv;
   }
+
+  const conversationId = conv.id;
 
   // 2. Insérer le message
   const { error: msgError } = await supabase
     .from('messages')
     .insert([{ 
-      conversation_id: conv.id,
+      conversation_id: conversationId,
       sender_id: userId, 
       recipient_id: recipientId, 
       content: content.trim(),
@@ -463,7 +465,7 @@ export async function sendMessage(recipientId: string, content: string, isAdmin:
 
   // 3. Mettre à jour la conversation
   // On utilise un simple update ici pour le compteur (on pourrait utiliser rpc pour plus de précision)
-  const { data: currentConv } = await supabase.from('conversations').select('unread_count_admin, unread_count_artisan').eq('id', conv.id).single();
+  const { data: currentConv } = await supabase.from('conversations').select('unread_count_admin, unread_count_artisan').eq('id', conversationId).single();
   
   const updateData: any = {
     last_message_content: content.trim(),
@@ -476,7 +478,7 @@ export async function sendMessage(recipientId: string, content: string, isAdmin:
     updateData.unread_count_admin = (currentConv?.unread_count_admin || 0) + 1;
   }
 
-  await supabase.from('conversations').update(updateData).eq('id', conv.id);
+  await supabase.from('conversations').update(updateData).eq('id', conversationId);
 }
 
 export async function markMessagesAsRead(senderId: string, isAdmin: boolean = false) {
