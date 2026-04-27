@@ -67,7 +67,7 @@ export default function SupportChat() {
 
     setSending(true)
     try {
-      await sendMessage(ADMIN_ID, newMessage.trim())
+      await sendMessage(ADMIN_ID, newMessage.trim(), false)
       setNewMessage('')
       await loadMessages()
     } catch (error) {

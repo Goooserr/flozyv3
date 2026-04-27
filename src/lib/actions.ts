@@ -377,22 +377,31 @@ export async function getMessages(otherId: string) {
   return data || []
 }
 
-export async function sendMessage(recipientId: string, content: string) {
+export async function sendMessage(recipientId: string, content: string, isAdmin: boolean = false) {
   const isPrivileged = await isAdminAuthorized()
   
   let userId;
-  let supabase = await getServerSupabase();
-  const { data: { user } } = await supabase.auth.getUser()
+  let supabase;
 
-  if (user) {
-    // Si un utilisateur est connecté (artisan), on utilise son ID réel
-    userId = user.id;
-  } else if (isPrivileged) {
-    // Sinon, si on a le cookie admin, on utilise l'ID Admin
+  if (isAdmin && isPrivileged) {
+    // Envoi explicite en tant qu'admin
     userId = ADMIN_ID;
     supabase = createAdminClient();
   } else {
-    throw new Error("Non authentifié")
+    // Envoi en tant qu'utilisateur (artisan)
+    supabase = await getServerSupabase();
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      // Fallback si c'est l'admin qui teste sans être connecté en tant qu'artisan
+      if (isPrivileged) {
+        userId = ADMIN_ID;
+        supabase = createAdminClient();
+      } else {
+        throw new Error("Non authentifié")
+      }
+    } else {
+      userId = user.id
+    }
   }
 
   const { error } = await supabase

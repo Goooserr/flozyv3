@@ -98,7 +98,7 @@ export default function AdminDashboard() {
     
     setSending(true)
     try {
-      await sendMessage(selectedArtisan.id, newMessage)
+      await sendMessage(selectedArtisan.id, newMessage, true)
       setNewMessage('')
       const msgs = await getMessages(selectedArtisan.id)
       setMessages(msgs)
