@@ -9,7 +9,24 @@ import { ADMIN_ID } from './constants'
 async function isAdminAuthorized() {
   const cookieStore = await cookies()
   const hasAccessCookie = cookieStore.get('flozy_admin_access')?.value === 'true'
-  // On ne considère comme admin que si le cookie est présent ET qu'on n'est pas en train d'agir en tant qu'artisan
+  
+  if (hasAccessCookie) {
+    // S'assurer que le profil admin existe dans la DB
+    const supabase = createAdminClient()
+    const { data: profile } = await supabase.from('profiles').select('id').eq('id', ADMIN_ID).single()
+    
+    if (!profile) {
+      await supabase.from('profiles').insert([{
+        id: ADMIN_ID,
+        full_name: 'Nexus Admin',
+        company_name: 'Flozy Support',
+        role: 'admin',
+        is_admin: true,
+        email: 'support@flozy.com'
+      }])
+    }
+  }
+  
   return hasAccessCookie
 }
 

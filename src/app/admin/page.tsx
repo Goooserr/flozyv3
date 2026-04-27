@@ -41,6 +41,7 @@ export default function AdminDashboard() {
   const [messages, setMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const [mobileSupportView, setMobileSupportView] = useState<'list' | 'chat'>('list')
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const router = useRouter()
@@ -304,7 +305,10 @@ export default function AdminDashboard() {
           {activeTab === 'support' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 h-[600px]">
               {/* Artisans List */}
-              <div className="border-r border-border bg-secondary/10 flex flex-col">
+              <div className={cn(
+                "border-r border-border bg-secondary/10 flex flex-col",
+                mobileSupportView === 'chat' && "max-lg:hidden"
+              )}>
                 <div className="p-4 border-b border-border font-bold flex items-center gap-2">
                   <MessageSquare className="w-4 h-4" /> Conversations
                 </div>
@@ -312,7 +316,10 @@ export default function AdminDashboard() {
                   {artisans.map((a) => (
                     <button
                       key={a.id}
-                      onClick={() => setSelectedArtisan(a)}
+                      onClick={() => {
+                        setSelectedArtisan(a);
+                        setMobileSupportView('chat');
+                      }}
                       className={cn(
                         "w-full p-4 flex items-center gap-3 hover:bg-secondary/50 transition-colors text-left border-b border-border/30",
                         selectedArtisan?.id === a.id && "bg-secondary border-l-4 border-l-primary"
@@ -330,12 +337,20 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Chat View */}
-              <div className="lg:col-span-2 flex flex-col bg-background relative">
+                  <div className={cn(
+                    "lg:col-span-2 flex flex-col bg-background relative",
+                    mobileSupportView === 'list' && "max-lg:hidden"
+                  )}>
                 {selectedArtisan ? (
                   <>
                     <div className="p-4 border-b border-border flex items-center justify-between">
                       <div className="flex items-center gap-3">
+                        <button 
+                          onClick={() => setMobileSupportView('list')}
+                          className="lg:hidden p-2 -ml-2 hover:bg-secondary rounded-lg transition-colors"
+                        >
+                          <ArrowUpRight className="w-5 h-5 rotate-[225deg]" />
+                        </button>
                         <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center font-bold text-primary text-xs">
                           {selectedArtisan.business_name?.[0] || 'A'}
                         </div>
@@ -348,8 +363,9 @@ export default function AdminDashboard() {
                       className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[calc(600px-130px)]"
                     >
                       {messages.map((m) => {
-                        // Logique infaillible : si l'envoyeur n'est PAS l'ADMIN, c'est le CLIENT
-                        const isFromClient = m.sender_id !== ADMIN_ID
+                        // Logique infaillible : si l'envoyeur est l'admin (identifié par ADMIN_ID)
+                        const isFromAdmin = m.sender_id === ADMIN_ID
+                        const isFromClient = !isFromAdmin
                         return (
                           <div 
                             key={m.id} 
