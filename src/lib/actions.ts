@@ -378,30 +378,19 @@ export async function getMessages(otherId: string) {
 }
 
 export async function sendMessage(recipientId: string, content: string, isAdmin: boolean = false) {
-  const isPrivileged = await isAdminAuthorized()
-  
   let userId;
   let supabase;
 
-  if (isAdmin && isPrivileged) {
-    // Envoi explicite en tant qu'admin
+  if (isAdmin) {
+    // Force l'identité Admin (Support)
     userId = ADMIN_ID;
     supabase = createAdminClient();
   } else {
-    // Envoi en tant qu'utilisateur (artisan)
+    // Force l'identité Artisan (Client) via la session Supabase
     supabase = await getServerSupabase();
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      // Fallback si c'est l'admin qui teste sans être connecté en tant qu'artisan
-      if (isPrivileged) {
-        userId = ADMIN_ID;
-        supabase = createAdminClient();
-      } else {
-        throw new Error("Non authentifié")
-      }
-    } else {
-      userId = user.id
-    }
+    if (!user) throw new Error("Vous devez être connecté pour envoyer un message.")
+    userId = user.id
   }
 
   const { error } = await supabase
@@ -415,7 +404,7 @@ export async function sendMessage(recipientId: string, content: string, isAdmin:
   
   if (error) {
     console.error("Error sending message:", error)
-    throw new Error(`Erreur Supabase: ${error.message}`)
+    throw new Error(`Erreur lors de l'envoi : ${error.message}`)
   }
 }
 
