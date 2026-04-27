@@ -53,8 +53,32 @@ function NavList({ enabledModules, pathname, isAdmin, isDocumentsEnabled, role, 
           const isEnabled = !item.module || enabledModules.includes(item.module);
           const isActive = pathname.startsWith(item.href) && item.href !== '/' || pathname === item.href;
           
+          const isAdminView = pathname.startsWith('/admin');
+
+          // --- MODE ADMIN ---
+          // Si on est dans la zone admin, on ne montre que Dashboard et Paramètres (ou rien si on veut purger)
+          if (isAdminView) {
+            const adminAllowed = ['/dashboard', '/settings'];
+            if (!adminAllowed.includes(item.href)) return null;
+            
+            // Renommer pour le contexte admin
+            const displayName = item.href === '/dashboard' ? 'Nexus Stats' : 'Réglages Nexus';
+            return (
+              <Link
+                key={item.name}
+                href={item.href === '/dashboard' ? '/admin' : item.href}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                  isActive && "bg-secondary text-foreground"
+                )}
+              >
+                <item.icon className="w-4 h-4" />
+                {displayName}
+              </Link>
+            );
+          }
+
           // --- MODE TERRAIN (Employé) ---
-          // On ne garde que l'essentiel pour le terrain
           const fieldModules = ['/dashboard', '/planning', '/photos', '/clients'];
           if (role === 'employee' && !fieldModules.includes(item.href)) return null;
 
@@ -80,7 +104,7 @@ function NavList({ enabledModules, pathname, isAdmin, isDocumentsEnabled, role, 
           );
         })}
 
-        {isAdmin && (
+        {isAdmin && !pathname.startsWith('/admin') && (
           <Link
             href="/admin"
             onClick={onNavigate}
@@ -90,9 +114,20 @@ function NavList({ enabledModules, pathname, isAdmin, isDocumentsEnabled, role, 
             Zone Admin
           </Link>
         )}
+
+        {isAdmin && pathname.startsWith('/admin') && (
+          <Link
+            href="/dashboard"
+            onClick={onNavigate}
+            className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-lg transition-all mt-10 border border-border"
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            Retour Artisan
+          </Link>
+        )}
       </nav>
 
-      {isDocumentsEnabled && role !== 'employee' && (
+      {isDocumentsEnabled && role !== 'employee' && !pathname.startsWith('/admin') && (
         <div className="p-4 border-t border-border">
           <Link
             href="/invoices/new"

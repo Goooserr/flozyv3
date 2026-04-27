@@ -319,6 +319,51 @@ export async function activateArtisan(id: string) {
   if (error) throw error
 }
 
+export async function updateArtisanPlan(id: string, plan: string) {
+  const isPrivileged = await isAdminAuthorized()
+  if (!isPrivileged) throw new Error("Non autorisé")
+  
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('profiles')
+    .update({ 
+      subscription_plan: plan.toLowerCase(),
+      // Mettre à jour les modules activés par défaut pour le plan
+      enabled_modules: plan.toLowerCase() === 'starter' 
+        ? ['clients', 'documents'] 
+        : ['clients', 'documents', 'planning', 'stock']
+    })
+    .eq('id', id)
+  
+  if (error) throw error
+  return true
+}
+
+export async function deleteArtisanAccount(id: string) {
+  const isPrivileged = await isAdminAuthorized()
+  if (!isPrivileged) throw new Error("Non autorisé")
+  
+  const supabase = createAdminClient()
+  
+  // 1. Supprimer le profil (les cascades devraient gérer le reste dans la DB)
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .delete()
+    .eq('id', id)
+  
+  if (profileError) throw profileError
+
+  // 2. Supprimer l'utilisateur de l'Auth Supabase (nécessite la Service Role Key)
+  const { error: authError } = await supabase.auth.admin.deleteUser(id)
+  
+  if (authError) {
+    console.error("Auth deletion error:", authError)
+    // On ne throw pas forcément ici si le profil est déjà parti, mais c'est mieux de savoir
+  }
+
+  return true
+}
+
 export async function getAdminStats() {
   const isPrivileged = await isAdminAuthorized()
   if (!isPrivileged) throw new Error("Non autorisǸ")

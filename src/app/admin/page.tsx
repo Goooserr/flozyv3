@@ -15,7 +15,8 @@ import {
   Activity,
   ArrowUpRight,
   Clock,
-  Filter
+  Filter,
+  Trash2
 } from 'lucide-react'
 import { 
   getAdminStats, 
@@ -25,7 +26,9 @@ import {
   getConversations,
   getMessages,
   sendMessage,
-  markMessagesAsRead
+  markMessagesAsRead,
+  updateArtisanPlan,
+  deleteArtisanAccount
 } from '@/lib/actions'
 import { ADMIN_ID } from '@/lib/constants'
 import { cn } from '@/lib/utils'
@@ -258,14 +261,20 @@ export default function AdminDashboard() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={cn(
-                            "px-2 py-1 rounded-md text-[10px] font-bold uppercase",
-                            artisan.subscription_plan === 'expert' ? "bg-amber-500/10 text-amber-500" :
-                            artisan.subscription_plan === 'pro' ? "bg-indigo-500/10 text-indigo-500" :
-                            "bg-slate-500/10 text-slate-500"
-                          )}>
-                            {artisan.subscription_plan || 'starter'}
-                          </span>
+                          <select 
+                            value={artisan.subscription_plan || 'starter'}
+                            onChange={(e) => updateArtisanPlan(artisan.id, e.target.value).then(loadData)}
+                            className={cn(
+                              "bg-transparent border-none text-[10px] font-bold uppercase cursor-pointer outline-none focus:ring-1 focus:ring-primary/20 rounded px-1",
+                              artisan.subscription_plan === 'expert' ? "text-amber-500" :
+                              artisan.subscription_plan === 'pro' ? "text-indigo-500" :
+                              "text-slate-500"
+                            )}
+                          >
+                            <option value="starter" className="bg-card text-foreground">Starter</option>
+                            <option value="pro" className="bg-card text-foreground">Pro</option>
+                            <option value="expert" className="bg-card text-foreground">Expert</option>
+                          </select>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1.5">
@@ -276,8 +285,8 @@ export default function AdminDashboard() {
                             <span className="text-sm capitalize">{artisan.subscription_status || 'active'}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
                             {artisan.subscription_status === 'active' ? (
                               <button 
                                 onClick={() => suspendArtisan(artisan.id).then(loadData)}
@@ -295,8 +304,17 @@ export default function AdminDashboard() {
                                 <CheckCircle2 className="w-4 h-4" />
                               </button>
                             )}
-                            <button className="p-2 hover:bg-secondary rounded-lg transition-colors">
-                              <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                            
+                            <button 
+                              onClick={() => {
+                                if (confirm(`Supprimer définitivement le compte de ${artisan.business_name || artisan.email} ? Cette action est irréversible.`)) {
+                                  deleteArtisanAccount(artisan.id).then(loadData)
+                                }
+                              }}
+                              className="p-2 text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10 rounded-lg transition-colors"
+                              title="Supprimer le compte"
+                            >
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </td>
