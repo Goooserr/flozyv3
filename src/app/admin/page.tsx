@@ -40,6 +40,7 @@ export default function AdminDashboard() {
   const [messages, setMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   const router = useRouter()
 
@@ -83,6 +84,13 @@ export default function AdminDashboard() {
       return () => clearInterval(interval)
     }
   }, [selectedArtisan, activeTab])
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [messages])
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -334,7 +342,10 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                    <div 
+                      ref={scrollRef}
+                      className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[calc(600px-130px)]"
+                    >
                       {messages.map((m) => {
                         const isAdmin = m.sender_id === '76b5136b-e5e6-474c-9469-48c27817bf9c'
                         return (
@@ -342,19 +353,19 @@ export default function AdminDashboard() {
                             key={m.id} 
                             className={cn(
                               "flex",
-                              isAdmin ? "justify-end" : "justify-start"
+                              isAdmin ? "justify-start" : "justify-end"
                             )}
                           >
                             <div className={cn(
                               "max-w-[80%] p-4 rounded-2xl text-sm shadow-sm",
                               isAdmin 
-                                ? "bg-primary text-primary-foreground rounded-tr-none" 
-                                : "bg-secondary border border-border rounded-tl-none"
+                                ? "bg-secondary border border-border text-foreground rounded-tl-none" 
+                                : "bg-primary text-primary-foreground rounded-tr-none"
                             )}>
                               {m.content}
                               <div className={cn(
                                 "text-[10px] mt-1 opacity-50",
-                                isAdmin ? "text-primary-foreground" : "text-muted-foreground"
+                                isAdmin ? "text-muted-foreground" : "text-primary-foreground"
                               )}>
                                 {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </div>
