@@ -143,25 +143,25 @@ export default function SupportChat() {
               </div>
             ) : (
               messages.map((msg, i) => {
-                const isFromAdmin = msg.sender_id === ADMIN_ID
+                const isMe = msg.sender_id === currentUser?.id
                 return (
                   <div 
                     key={msg.id || i}
                     className={cn(
                       "flex flex-col max-w-[80%] animate-in fade-in duration-300",
-                      isFromAdmin ? "ml-auto items-end" : "mr-auto items-start"
+                      isMe ? "mr-auto items-start" : "ml-auto items-end"
                     )}
                   >
                     <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1 px-1">
-                      {isFromAdmin ? "Support Flozy" : "Vous"}
+                      {isMe ? "Vous" : "Support Flozy"}
                     </span>
                     <div 
-                      style={{ backgroundColor: isFromAdmin ? primaryColor : '#f4f4f5' }}
+                      style={{ backgroundColor: isMe ? '#f4f4f5' : primaryColor }}
                       className={cn(
                         "px-4 py-2.5 rounded-2xl text-sm shadow-sm",
-                        isFromAdmin 
-                          ? "text-white rounded-tr-none"
-                          : "text-zinc-900 border border-zinc-200 rounded-tl-none"
+                        isMe 
+                          ? "text-zinc-900 border border-zinc-200 rounded-tl-none"
+                          : "text-white rounded-tr-none"
                       )}
                     >
                       {msg.content}

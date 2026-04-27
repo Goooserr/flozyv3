@@ -347,28 +347,30 @@ export default function AdminDashboard() {
                       className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[calc(600px-130px)]"
                     >
                       {messages.map((m) => {
-                        const isAdmin = m.sender_id === '76b5136b-e5e6-474c-9469-48c27817bf9c'
+                        // Logique infaillible : si l'envoyeur est l'artisan sǸlectionnǸ, c'est le CLIENT -> GAUCHE
+                        // Sinon, c'est le SUPPORT (Admin) -> DROITE
+                        const isArtisanSender = m.sender_id === selectedArtisan.id
                         return (
                           <div 
                             key={m.id} 
                             className={cn(
                               "flex flex-col",
-                              isAdmin ? "items-end" : "items-start"
+                              isArtisanSender ? "items-start" : "items-end"
                             )}
                           >
                             <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1 px-1">
-                              {isAdmin ? "Nexus Admin (Vous)" : (selectedArtisan.business_name || "Artisan")}
+                              {isArtisanSender ? (selectedArtisan.business_name || "Artisan") : "Nexus Admin (Vous)"}
                             </span>
                             <div className={cn(
                               "max-w-[80%] p-4 rounded-2xl text-sm shadow-sm",
-                              isAdmin 
-                                ? "bg-primary text-primary-foreground rounded-tr-none"
-                                : "bg-secondary border border-border text-foreground rounded-tl-none"
+                              isArtisanSender 
+                                ? "bg-secondary border border-border text-foreground rounded-tl-none"
+                                : "bg-primary text-primary-foreground rounded-tr-none"
                             )}>
                               {m.content}
                               <div className={cn(
                                 "text-[10px] mt-1 opacity-50",
-                                isAdmin ? "text-primary-foreground" : "text-muted-foreground"
+                                isArtisanSender ? "text-muted-foreground" : "text-primary-foreground"
                               )}>
                                 {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </div>
