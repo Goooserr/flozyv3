@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { FileText, Users, Calendar, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { FileText, Users, Calendar, ArrowRight, CheckCircle2, Zap } from 'lucide-react'
 
 const tools = [
   {
