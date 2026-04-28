@@ -78,6 +78,21 @@ export default function LandingPage() {
             Devis, facturation, stock et planning réunis dans l'interface la plus rapide du marché.
           </p>
           
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-5 animate-in fade-in slide-in-from-bottom-16 duration-1000 delay-500 w-full sm:w-auto mb-24">
+            <Link href="/register" className="w-full sm:w-auto bg-white text-black px-10 py-5 rounded-2xl font-black text-xl hover:bg-zinc-200 hover:scale-[1.03] transition-all flex items-center justify-center gap-3 group shadow-[0_0_50px_rgba(255,255,255,0.25)]">
+              Démarrer gratuitement
+              <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+            </Link>
+            <Link href="/demo" className="w-full sm:w-auto px-10 py-5 rounded-2xl font-bold text-xl border border-white/10 bg-white/5 backdrop-blur-md hover:bg-white/10 transition-all flex items-center justify-center gap-3">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Voir la démo
+            </Link>
+          </div>
+
+          {/* Dashboard Preview - Vraie vitrine des outils */}
+          <div className="relative w-full max-w-5xl mx-auto animate-in fade-in zoom-in-95 duration-1000 delay-700">
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10 h-40 bottom-0 top-auto" style={{background: 'linear-gradient(to top, black 0%, transparent 100%)'}} />
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 via-purple-500/30 to-blue-500/30 blur-2xl opacity-50 rounded-3xl" />
             
             <div className="rounded-2xl border border-white/10 bg-zinc-900/90 backdrop-blur-xl shadow-2xl relative z-10 overflow-hidden">
               {/* Window Chrome */}
