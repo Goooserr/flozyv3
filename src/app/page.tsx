@@ -45,55 +45,39 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative pt-40 pb-32 overflow-hidden flex flex-col items-center justify-center min-h-[90vh]">
+      <section className="relative pt-40 pb-32 overflow-hidden flex flex-col items-center justify-center min-h-[95vh]">
         {/* Dynamic Background Glows */}
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/20 blur-[120px] rounded-full mix-blend-screen animate-pulse duration-10000 pointer-events-none" />
-        <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] bg-purple-500/20 blur-[120px] rounded-full mix-blend-screen pointer-events-none" />
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-blue-500/10 blur-[100px] rounded-t-[100%] pointer-events-none" />
+        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-primary/10 blur-[140px] rounded-full mix-blend-screen animate-pulse duration-10000 pointer-events-none" />
+        <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-purple-500/10 blur-[140px] rounded-full mix-blend-screen pointer-events-none" />
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-blue-500/5 blur-[120px] rounded-t-[100%] pointer-events-none" />
         
         {/* Grid Pattern Overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none" />
         
         <div className="max-w-7xl mx-auto px-6 text-center relative z-10 flex flex-col items-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-zinc-300 text-xs font-bold tracking-wide mb-8 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-1000 hover:border-white/20 transition-colors cursor-default">
-            <span className="relative flex h-2 w-2 mr-1">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-zinc-300 text-xs font-bold tracking-wider mb-10 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
             </span>
-            La nouvelle norme pour les artisans
+            Utilisé par +500 artisans experts en France
           </div>
           
-          <h1 className="text-5xl md:text-7xl lg:text-[6rem] font-bold tracking-tighter mb-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200 leading-[1.1]">
+          <h1 className="text-5xl md:text-7xl lg:text-[7rem] font-black tracking-tighter mb-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200 leading-[0.95]">
             <span className="bg-gradient-to-b from-white via-white to-zinc-500 bg-clip-text text-transparent">
-              Gérez votre activité
+              L'excellence
             </span>
             <br />
-            <span className="bg-gradient-to-r from-zinc-500 via-zinc-400 to-zinc-600 bg-clip-text text-transparent">
-              avec une précision chirurgicale.
+            <span className="bg-gradient-to-r from-zinc-500 via-white to-zinc-500 bg-clip-text text-transparent">
+              opérationnelle.
             </span>
           </h1>
           
-          <p className="max-w-2xl mx-auto text-lg md:text-xl text-zinc-400 mb-12 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-300 font-medium leading-relaxed">
-            L'outil de gestion qui s'adapte à votre métier, pas l'inverse. 
-            Devis, facturation et suivi client dans une interface d'exception conçue pour la vitesse.
+          <p className="max-w-2xl mx-auto text-xl md:text-2xl text-zinc-400 mb-14 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-300 font-medium leading-relaxed">
+            Gagnez 10h par semaine sur votre administratif. 
+            Devis, facturation, stock et planning réunis dans l'interface la plus rapide du marché.
           </p>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-16 duration-1000 delay-500 w-full sm:w-auto">
-            <Link href="/register" className="w-full sm:w-auto bg-white text-black px-8 py-4 rounded-full font-bold text-lg hover:bg-zinc-200 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 group shadow-[0_0_40px_rgba(255,255,255,0.3)]">
-              Commencer maintenant
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <Link href="/demo" className="w-full sm:w-auto px-8 py-4 rounded-full font-bold text-lg border border-white/10 bg-white/5 backdrop-blur-md hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              Démo Interactive
-            </Link>
-          </div>
-
-          {/* Dashboard Preview - Vraie vitrine des outils */}
-          <div className="mt-24 relative w-full max-w-5xl mx-auto animate-in fade-in zoom-in-95 duration-1000 delay-700">
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10 h-40 bottom-0 top-auto" style={{background: 'linear-gradient(to top, black 0%, transparent 100%)'}} />
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 via-purple-500/30 to-blue-500/30 blur-2xl opacity-50 rounded-3xl" />
             
             <div className="rounded-2xl border border-white/10 bg-zinc-900/90 backdrop-blur-xl shadow-2xl relative z-10 overflow-hidden">
               {/* Window Chrome */}
@@ -207,76 +191,69 @@ export default function LandingPage() {
       </section>
 
       {/* Features - Bento Grid */}
-      <section id="features" className="py-32 bg-zinc-950 relative overflow-hidden">
-        {/* Background ambient light */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl h-[600px] bg-primary/5 blur-[150px] rounded-full pointer-events-none" />
+      <section id="features" className="py-40 bg-zinc-950 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-6xl h-[700px] bg-primary/5 blur-[180px] rounded-full pointer-events-none" />
         
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="mb-20 text-center md:text-left flex flex-col md:flex-row justify-between items-end gap-6">
-            <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-widest mb-6">
-                <Sparkles className="w-3 h-3" /> L'écosystème Flozy
-              </div>
-              <h2 className="text-4xl md:text-6xl font-bold mb-4 tracking-tight">Pensé pour le sur-mesure.</h2>
-              <p className="text-zinc-400 text-lg">Pourquoi s'adapter à un logiciel rigide ? Flozy devient VOTRE logiciel grâce à nos outils de personnalisation poussés.</p>
+          <div className="mb-24 text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-6">
+              <ShieldCheck className="w-3 h-3" /> Puissance & Flexibilité
             </div>
-            <Link href="/demo" className="hidden md:flex items-center gap-2 text-sm font-bold text-white hover:text-primary transition-colors group">
-              Voir la galerie de modules <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
+            <h2 className="text-4xl md:text-6xl font-black mb-6 tracking-tight">Le sur-mesure, de série.</h2>
+            <p className="text-zinc-400 text-xl max-w-2xl mx-auto">Flozy n'est pas qu'un logiciel, c'est le prolongement de votre savoir-faire.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
             {/* Custom Fields */}
-            <div className="md:col-span-4 bg-zinc-900/40 border border-white/5 p-10 rounded-[2.5rem] relative overflow-hidden group hover:bg-zinc-900/60 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/3 group-hover:bg-primary/30 transition-all duration-700" />
-              
-              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-8 border border-primary/20 group-hover:scale-110 transition-transform duration-500 shadow-[0_0_15px_rgba(var(--primary-rgb),0.3)]">
-                <Settings2 className="w-7 h-7 text-primary" />
-              </div>
-              <h3 className="text-3xl font-bold mb-4">Champs Personnalisés</h3>
-              <p className="text-zinc-400 text-lg leading-relaxed max-w-md relative z-10">
-                Ajoutez vos propres données métier (Digicodes, types de chaudières, codes chantiers). 
-                La base de données s'adapte à votre vocabulaire en un clic.
-              </p>
-              <div className="mt-12 flex gap-3 relative z-10">
-                <span className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-wide backdrop-blur-md">Flexible</span>
-                <span className="px-4 py-1.5 bg-primary/10 border border-primary/20 text-primary rounded-full text-[10px] font-bold uppercase tracking-wide backdrop-blur-md">No-Code</span>
+            <div className="md:col-span-8 bg-zinc-900/30 border border-white/5 p-12 rounded-[3rem] relative overflow-hidden group hover:bg-zinc-900/50 transition-all duration-700">
+              <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+              <div className="relative z-10">
+                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-10 border border-primary/20 shadow-2xl">
+                  <Settings2 className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="text-4xl font-black mb-6">Adaptabilité Totale</h3>
+                <p className="text-zinc-400 text-xl leading-relaxed max-w-xl">
+                  Digicodes, types de chaudières, accès chantiers... Ajoutez vos propres champs métier en un clic. Votre base de données parle votre langue.
+                </p>
+                <div className="mt-12 flex gap-4">
+                   <div className="px-5 py-2 bg-white/5 rounded-xl border border-white/10 text-xs font-bold uppercase tracking-widest">No-Code</div>
+                   <div className="px-5 py-2 bg-primary/10 text-primary rounded-xl border border-primary/20 text-xs font-bold uppercase tracking-widest">Temps Réel</div>
+                </div>
               </div>
             </div>
 
             {/* Modularity */}
-            <div className="md:col-span-2 bg-zinc-900/40 border border-white/5 p-10 rounded-[2.5rem] group hover:bg-zinc-900/60 transition-all duration-500 hover:-translate-y-1 hover:border-white/10">
-              <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center mb-8 border border-white/5 group-hover:scale-110 transition-transform duration-500">
-                <LayoutGrid className="w-7 h-7 text-zinc-300" />
+            <div className="md:col-span-4 bg-zinc-900/30 border border-white/5 p-12 rounded-[3rem] group hover:bg-zinc-900/50 transition-all duration-700">
+              <div className="w-16 h-16 bg-zinc-800 rounded-2xl flex items-center justify-center mb-10 border border-white/5">
+                <LayoutGrid className="w-8 h-8 text-zinc-400" />
               </div>
-              <h3 className="text-2xl font-bold mb-4">Architecture Modulaire</h3>
-              <p className="text-zinc-400 leading-relaxed">
-                Activez uniquement ce dont vous avez besoin : Facturation, Stock, ou Planning.
+              <h3 className="text-3xl font-black mb-6">Évolutif</h3>
+              <p className="text-zinc-400 text-lg leading-relaxed">
+                Activez uniquement les modules dont vous avez besoin. Flozy grandit avec votre entreprise.
               </p>
             </div>
 
-            {/* White Labeling */}
-            <div className="md:col-span-3 bg-zinc-900/40 border border-white/5 p-10 rounded-[2.5rem] group hover:bg-emerald-500/5 transition-all duration-500 hover:-translate-y-1 hover:border-emerald-500/30 overflow-hidden relative">
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full translate-y-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-              <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-8 border border-emerald-500/20 group-hover:scale-110 transition-transform duration-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                <Palette className="w-7 h-7 text-emerald-500" />
+            {/* Offline Mode */}
+            <div className="md:col-span-6 bg-zinc-900/30 border border-white/5 p-12 rounded-[3rem] group hover:bg-blue-500/5 transition-all duration-700 relative overflow-hidden">
+               <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full group-hover:bg-blue-500/20 transition-all" />
+               <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-10 border border-blue-500/20">
+                <Globe className="w-8 h-8 text-blue-500" />
               </div>
-              <h3 className="text-2xl font-bold mb-4">Marque Blanche</h3>
-              <p className="text-zinc-400 leading-relaxed relative z-10">
-                Couleurs de marque, logo, typographies. Flozy s'efface pour laisser place à VOTRE identité d'entreprise.
+              <h3 className="text-3xl font-black mb-6">Mode Terrain</h3>
+              <p className="text-zinc-400 text-lg leading-relaxed">
+                Pas de réseau ? Pas de problème. Saisissez vos rapports et photos, la synchronisation se fera automatiquement au retour.
               </p>
             </div>
 
-            {/* Stock / New Tool */}
-            <div className="md:col-span-3 bg-zinc-900/40 border border-white/5 p-10 rounded-[2.5rem] group hover:bg-blue-500/5 transition-all duration-500 hover:-translate-y-1 hover:border-blue-500/30 overflow-hidden relative">
-              <div className="absolute bottom-0 right-0 w-64 h-64 bg-blue-500/10 blur-[80px] rounded-full translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-              <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-8 border border-blue-500/20 group-hover:scale-110 transition-transform duration-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
-                <Zap className="w-7 h-7 text-blue-500" />
+            {/* Security */}
+            <div className="md:col-span-6 bg-zinc-900/30 border border-white/5 p-12 rounded-[3rem] group hover:bg-emerald-500/5 transition-all duration-700 relative overflow-hidden">
+               <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full group-hover:bg-emerald-500/20 transition-all" />
+               <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-10 border border-emerald-500/20">
+                <ShieldCheck className="w-8 h-8 text-emerald-500" />
               </div>
-              <h3 className="text-2xl font-bold mb-4">Stock & Terrain Connectés</h3>
-              <p className="text-zinc-400 leading-relaxed relative z-10">
-                Suivez vos matériaux et vos interventions avec une réactivité hors-norme. Mode "Anti-Coupure" inclus.
+              <h3 className="text-3xl font-black mb-6">Données Sécurisées</h3>
+              <p className="text-zinc-400 text-lg leading-relaxed">
+                Hébergement certifié en France. Vos données clients et vos tarifs sont protégés par un chiffrement de niveau bancaire.
               </p>
             </div>
           </div>
@@ -284,102 +261,105 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-32 relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-6xl h-[500px] bg-primary/10 blur-[150px] rounded-full pointer-events-none" />
-        <div className="absolute top-0 right-0 w-full max-w-lg h-96 bg-purple-500/10 blur-[120px] rounded-full pointer-events-none" />
+      <section id="pricing" className="py-40 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-7xl h-[600px] bg-primary/5 blur-[200px] rounded-full pointer-events-none" />
         
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="text-center mb-24">
-            <h2 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight">
-              Un prix juste, <br/>
-              <span className="bg-gradient-to-r from-primary via-purple-400 to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-[gradient_8s_linear_infinite]">pour une croissance infinie.</span>
+          <div className="text-center mb-32">
+            <h2 className="text-5xl md:text-7xl font-black mb-8 tracking-tighter">
+              Investissez dans <br/>
+              <span className="bg-gradient-to-r from-primary via-purple-400 to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-[gradient_8s_linear_infinite]">votre liberté.</span>
             </h2>
-            <p className="text-zinc-400 text-lg max-w-2xl mx-auto">Choisissez le plan qui correspond à l'étape actuelle de votre entreprise. Sans engagement, évoluez à votre rythme.</p>
+            <p className="text-zinc-400 text-xl max-w-2xl mx-auto">Pas de frais cachés. Sans engagement. Annulation en un clic.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch max-w-6xl mx-auto">
             {/* Starter */}
-            <div className="bg-zinc-900/40 border border-white/5 p-8 rounded-[2.5rem] flex flex-col hover:border-white/20 transition-all duration-300 hover:-translate-y-1 backdrop-blur-sm">
-              <div className="mb-8">
-                <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mb-6 border border-white/10">
-                  <div className="w-4 h-4 rounded-full bg-zinc-500" />
+            <div className="bg-zinc-900/30 border border-white/5 p-10 rounded-[3rem] flex flex-col hover:border-white/20 transition-all duration-500 backdrop-blur-xl">
+              <div className="mb-10">
+                <h4 className="text-zinc-500 font-black uppercase tracking-[0.2em] text-[10px] mb-4">Lancement</h4>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-5xl font-black text-white">0€</p>
+                  <span className="text-zinc-500 font-bold">/mois</span>
                 </div>
-                <h4 className="text-zinc-400 font-bold uppercase tracking-widest text-xs mb-2">Starter</h4>
-                <div className="flex items-end gap-1">
-                  <p className="text-4xl font-bold">Gratuit</p>
-                </div>
-                <p className="text-zinc-500 text-sm mt-3">Pour débuter sereinement</p>
+                <p className="text-zinc-400 text-sm mt-4">Pour tester la puissance Flozy</p>
               </div>
-              <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-8" />
-              <ul className="space-y-5 mb-10 flex-1">
-                <li className="flex items-start gap-4 text-sm text-zinc-300"><CheckCircle2 className="w-5 h-5 text-primary shrink-0 drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" /> <span className="leading-tight">Jusqu'à 5 clients</span></li>
-                <li className="flex items-start gap-4 text-sm text-zinc-300"><CheckCircle2 className="w-5 h-5 text-primary shrink-0 drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" /> <span className="leading-tight">Devis & Factures</span></li>
-                <li className="flex items-start gap-4 text-sm text-zinc-600"><X className="w-5 h-5 text-zinc-800 shrink-0" /> <span className="leading-tight">Branding personnalisé</span></li>
-                <li className="flex items-start gap-4 text-sm text-zinc-600"><X className="w-5 h-5 text-zinc-800 shrink-0" /> <span className="leading-tight">Gestion de stock</span></li>
-              </ul>
-              <Link href="/register?plan=starter" className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-center font-bold hover:bg-white/10 hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] transition-all relative z-20">
-                Commencer
+              <div className="space-y-5 mb-12 flex-1">
+                {[
+                  'Jusqu\'à 5 clients',
+                  'Devis & Factures de base',
+                  'Support par email',
+                  'Mode hors-ligne'
+                ].map(f => (
+                  <div key={f} className="flex items-center gap-3 text-sm text-zinc-300 font-medium">
+                    <CheckCircle2 className="w-5 h-5 text-zinc-600 shrink-0" /> {f}
+                  </div>
+                ))}
+              </div>
+              <Link href="/register?plan=starter" className="w-full py-5 rounded-2xl bg-white/5 border border-white/10 text-center font-black text-sm hover:bg-white/10 transition-all">
+                Démarrer
               </Link>
             </div>
 
-            {/* Pro - The Premium Card */}
+            {/* Pro */}
             <div className="relative group scale-105 z-10">
-              {/* Animated glowing border effect */}
-              <div className="absolute -inset-[2px] bg-gradient-to-r from-primary via-purple-500 to-emerald-500 rounded-[2.5rem] opacity-75 blur-sm group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
-              
-              <div className="relative bg-zinc-950 p-8 rounded-[2.5rem] flex flex-col shadow-2xl h-full border border-white/10">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[80px] rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none" />
-                
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-purple-500 text-white px-6 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-[0_0_20px_rgba(var(--primary-rgb),0.5)] whitespace-nowrap z-20">
-                  Recommandé
+              <div className="absolute -inset-[2px] bg-gradient-to-r from-primary via-purple-500 to-blue-500 rounded-[3rem] opacity-70 blur-md group-hover:opacity-100 transition-opacity duration-700 animate-pulse" />
+              <div className="relative bg-black p-10 rounded-[3rem] flex flex-col h-full border border-white/10 shadow-2xl">
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-purple-500 text-white px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-2xl whitespace-nowrap">
+                  POPULAIRE
                 </div>
-                
-                <div className="mb-8 mt-4 relative z-10">
-                  <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 border border-primary/20 shadow-[0_0_15px_rgba(var(--primary-rgb),0.3)]">
-                    <Sparkles className="w-5 h-5 text-primary" />
+                <div className="mb-10">
+                  <h4 className="text-primary font-black uppercase tracking-[0.2em] text-[10px] mb-4">Croissance</h4>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-6xl font-black text-white">29€</p>
+                    <span className="text-zinc-500 font-bold">/mois</span>
                   </div>
-                  <h4 className="text-primary font-bold uppercase tracking-widest text-xs mb-2">Professionnel</h4>
-                  <div className="flex items-end gap-1">
-                    <p className="text-5xl font-bold bg-gradient-to-br from-white to-zinc-400 bg-clip-text text-transparent">29€</p>
-                    <span className="text-lg text-zinc-500 mb-1">/mois</span>
-                  </div>
-                  <p className="text-zinc-400 text-sm mt-3">Pour les artisans établis</p>
+                  <p className="text-zinc-300 text-sm mt-4 font-medium">Pour les artisans établis</p>
                 </div>
-                <div className="w-full h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent mb-8" />
-                <ul className="space-y-5 mb-10 flex-1 relative z-10">
-                  <li className="flex items-start gap-4 text-sm font-medium text-white"><CheckCircle2 className="w-5 h-5 text-primary shrink-0 drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" /> <span className="leading-tight">Clients illimités</span></li>
-                  <li className="flex items-start gap-4 text-sm font-medium text-white"><CheckCircle2 className="w-5 h-5 text-primary shrink-0 drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" /> <span className="leading-tight">Branding complet (Logo & Couleurs)</span></li>
-                  <li className="flex items-start gap-4 text-sm font-medium text-white"><CheckCircle2 className="w-5 h-5 text-primary shrink-0 drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" /> <span className="leading-tight break-words">Champs personnalisés illimités</span></li>
-                  <li className="flex items-start gap-4 text-sm font-medium text-white"><CheckCircle2 className="w-5 h-5 text-primary shrink-0 drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" /> <span className="leading-tight">Support prioritaire inclus</span></li>
-                </ul>
-                <Link href="/register?plan=pro" className="w-full py-4 rounded-2xl bg-white text-black text-center font-bold hover:scale-[1.02] shadow-[0_0_30_rgba(255,255,255,0.2)] transition-all relative z-20">
-                  Passer en Pro
+                <div className="space-y-5 mb-12 flex-1">
+                  {[
+                    'Clients illimités',
+                    'Factures & Devis illimités',
+                    'Branding complet (Logo/Couleurs)',
+                    'Champs personnalisés illimités',
+                    'Support prioritaire'
+                  ].map(f => (
+                    <div key={f} className="flex items-center gap-3 text-sm text-white font-bold">
+                      <CheckCircle2 className="w-5 h-5 text-primary shrink-0 drop-shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" /> {f}
+                    </div>
+                  ))}
+                </div>
+                <Link href="/register?plan=pro" className="w-full py-5 rounded-2xl bg-white text-black text-center font-black text-lg hover:scale-[1.02] shadow-2xl transition-all">
+                  Choisir Pro
                 </Link>
               </div>
             </div>
 
             {/* Expert */}
-            <div className="bg-zinc-900/40 border border-white/5 p-8 rounded-[2.5rem] flex flex-col hover:border-white/20 transition-all duration-300 hover:-translate-y-1 backdrop-blur-sm">
-              <div className="mb-8">
-                <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mb-6 border border-white/10">
-                  <div className="w-4 h-4 rounded-full bg-blue-500" />
+            <div className="bg-zinc-900/30 border border-white/5 p-10 rounded-[3rem] flex flex-col hover:border-white/20 transition-all duration-500 backdrop-blur-xl">
+              <div className="mb-10">
+                <h4 className="text-amber-500 font-black uppercase tracking-[0.2em] text-[10px] mb-4">Puissance</h4>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-5xl font-black text-white">49€</p>
+                  <span className="text-zinc-500 font-bold">/mois</span>
                 </div>
-                <h4 className="text-zinc-400 font-bold uppercase tracking-widest text-xs mb-2">Expert</h4>
-                <div className="flex items-end gap-1">
-                  <p className="text-4xl font-bold">49€</p>
-                  <span className="text-lg text-zinc-500 mb-1">/mois</span>
-                </div>
-                <p className="text-zinc-500 text-sm mt-3">Le contrôle total sur le terrain</p>
+                <p className="text-zinc-400 text-sm mt-4">Le contrôle total sur le terrain</p>
               </div>
-              <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-8" />
-              <ul className="space-y-5 mb-10 flex-1">
-                <li className="flex items-start gap-4 text-sm text-zinc-300"><CheckCircle2 className="w-5 h-5 text-primary shrink-0 drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" /> <span className="leading-tight">Tout le plan Pro inclus</span></li>
-                <li className="flex items-start gap-4 text-sm text-zinc-300"><CheckCircle2 className="w-5 h-5 text-primary shrink-0 drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" /> <span className="leading-tight">Gestion de Stock avancée</span></li>
-                <li className="flex items-start gap-4 text-sm text-zinc-300"><CheckCircle2 className="w-5 h-5 text-primary shrink-0 drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" /> <span className="leading-tight">Planning & Interventions</span></li>
-                <li className="flex items-start gap-4 text-sm text-zinc-300"><CheckCircle2 className="w-5 h-5 text-primary shrink-0 drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" /> <span className="leading-tight">Multi-utilisateurs (Équipes)</span></li>
-              </ul>
-              <Link href="/register?plan=expert" className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-center font-bold hover:bg-white/10 hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] transition-all relative z-20">
-                Contacter l'équipe
+              <div className="space-y-5 mb-12 flex-1">
+                {[
+                  'Tout le plan Pro inclus',
+                  'Gestion de Stock avancée',
+                  'Planning & Interventions d\'équipe',
+                  'Multi-utilisateurs (Collaborateurs)',
+                  'Marque Blanche Totale'
+                ].map(f => (
+                  <div key={f} className="flex items-center gap-3 text-sm text-zinc-300 font-medium">
+                    <CheckCircle2 className="w-5 h-5 text-amber-500 shrink-0" /> {f}
+                  </div>
+                ))}
+              </div>
+              <Link href="/register?plan=expert" className="w-full py-5 rounded-2xl bg-white/5 border border-white/10 text-center font-black text-sm hover:bg-white/10 transition-all">
+                Choisir Expert
               </Link>
             </div>
           </div>

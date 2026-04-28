@@ -12,84 +12,131 @@ const tools = [
     bgColor: 'bg-blue-500/10',
     borderColor: 'border-blue-500/20',
     activeBorder: 'border-blue-500',
-    description: 'Créez des devis et factures professionnels en quelques clics. Transformez un devis signé en facture automatiquement.',
-    features: ['Transformation en 1 clic', 'Paiement en ligne', 'Relances automatiques'],
+    description: 'Émettez des documents conformes en 30 secondes. Transformez vos devis en factures et suivez les paiements en temps réel.',
+    features: ['Modèles personnalisables', 'Signature électronique', 'Paiement Stripe'],
     mock: (
       <div className="space-y-4">
         <div className="flex justify-between items-center pb-4 border-b border-white/5">
            <div>
-             <div className="text-xl font-bold">Devis DEV-2024-08</div>
-             <div className="text-sm text-zinc-500">Mme. Dubois • Rénovation</div>
+             <div className="text-xl font-bold">Facture #2024-012</div>
+             <div className="text-xs text-zinc-500">SARL Menuiserie • Cuisine</div>
            </div>
-           <div className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-xs font-bold uppercase rounded-full">Signé</div>
+           <div className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-xs font-bold uppercase rounded-full">Payée</div>
         </div>
         <div className="space-y-2">
-           <div className="flex justify-between text-sm"><span className="text-zinc-400">Pose Carrelage</span><span>1 200 €</span></div>
-           <div className="flex justify-between text-sm"><span className="text-zinc-400">Matériaux</span><span>850 €</span></div>
-           <div className="flex justify-between font-bold pt-2 border-t border-white/5"><span>Total TTC</span><span className="text-blue-400">2 460 €</span></div>
+           <div className="flex justify-between text-sm"><span className="text-zinc-400">Main d'œuvre</span><span>1 850 €</span></div>
+           <div className="flex justify-between text-sm"><span className="text-zinc-400">Fournitures</span><span>2 400 €</span></div>
+           <div className="flex justify-between font-bold pt-2 border-t border-white/5"><span>Total Net</span><span className="text-blue-400">4 250 €</span></div>
         </div>
-        <button className="w-full mt-4 py-2 bg-blue-500 text-white rounded-lg font-bold text-sm">Générer la facture</button>
-      </div>
-    )
-  },
-  {
-    id: 'crm',
-    name: 'CRM Clients',
-    icon: Users,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-500/10',
-    borderColor: 'border-purple-500/20',
-    activeBorder: 'border-purple-500',
-    description: 'Un répertoire client intelligent. Retrouvez instantanément l\'historique des chantiers et les coordonnées de vos contacts.',
-    features: ['Historique complet', 'Synchronisation mobile', 'Tags personnalisés'],
-    mock: (
-      <div className="space-y-4">
-         <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
-            <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center font-bold text-purple-400 text-xl">JD</div>
-            <div>
-               <div className="font-bold">Jean Dupont</div>
-               <div className="text-xs text-zinc-500">12 Rue des Lilas, Chambéry</div>
-            </div>
-         </div>
-         <div className="grid grid-cols-2 gap-4 mt-4">
-            <div className="p-3 bg-black/50 rounded-lg border border-white/5">
-               <div className="text-xs text-zinc-500">Chiffre d'Affaires</div>
-               <div className="font-bold text-lg">14 500 €</div>
-            </div>
-            <div className="p-3 bg-black/50 rounded-lg border border-white/5">
-               <div className="text-xs text-zinc-500">Dernier Chantier</div>
-               <div className="font-bold text-sm">Il y a 2 mois</div>
-            </div>
-         </div>
+        <div className="flex gap-2">
+          <button className="flex-1 py-2 bg-white/5 border border-white/10 text-white rounded-lg font-bold text-xs">Télécharger PDF</button>
+          <button className="flex-1 py-2 bg-blue-500 text-white rounded-lg font-bold text-xs">Relancer client</button>
+        </div>
       </div>
     )
   },
   {
     id: 'planning',
-    name: 'Planning & Terrain',
+    name: 'Planning & Équipes',
     icon: Calendar,
     color: 'text-amber-500',
     bgColor: 'bg-amber-500/10',
     borderColor: 'border-amber-500/20',
     activeBorder: 'border-amber-500',
-    description: 'Pilotez vos interventions de la semaine. Joignez des photos de chantier directement depuis votre smartphone.',
-    features: ['Vue Kanban', 'Upload de photos', 'Assignation d\'équipes'],
+    description: 'Une vue d\'ensemble sur vos chantiers. Gérez vos équipes, assignez des tâches et suivez l\'avancement sur le terrain.',
+    features: ['Multi-intervenants', 'Géolocalisation', 'Rapports photos'],
     mock: (
-      <div className="space-y-4 flex flex-col h-full">
-         <div className="flex gap-2 mb-2">
-            <div className="px-3 py-1 bg-amber-500/20 text-amber-500 text-xs font-bold rounded-lg border border-amber-500/30">En cours</div>
-            <div className="px-3 py-1 bg-white/5 text-zinc-400 text-xs font-bold rounded-lg border border-white/10">À venir</div>
-         </div>
-         <div className="p-4 bg-white/5 rounded-xl border border-white/10 border-l-2 border-l-amber-500">
-            <div className="text-xs font-bold text-amber-500 mb-1">Aujourd'hui, 09:00</div>
-            <div className="font-bold mb-2">Réparation Fuite Toiture</div>
-            <div className="text-xs text-zinc-400 flex items-center gap-2">
-               <Users className="w-3 h-3" /> M. Renard
+      <div className="space-y-4">
+         <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Semaine 18</span>
+            <div className="flex -space-x-2">
+               {[1,2,3].map(i => <div key={i} className={`w-6 h-6 rounded-full border-2 border-black bg-zinc-700 flex items-center justify-center text-[8px]`}>T{i}</div>)}
             </div>
          </div>
-         <div className="p-4 bg-white/5 rounded-xl border border-white/5 opacity-50">
-            <div className="text-xs font-bold text-zinc-500 mb-1">Demain, 14:00</div>
-            <div className="font-bold mb-2">Devis Installation Pompe</div>
+         <div className="p-4 bg-amber-500/5 rounded-xl border border-amber-500/20 border-l-4 border-l-amber-500">
+            <div className="flex justify-between items-start mb-2">
+               <span className="text-[10px] font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded">EN COURS</span>
+               <span className="text-[10px] text-zinc-500">09:00 - 17:00</span>
+            </div>
+            <div className="font-bold text-sm">Installation Solaire</div>
+            <div className="text-[10px] text-zinc-400 mt-1">Chantier : Résidence les Pins</div>
+         </div>
+         <div className="grid grid-cols-2 gap-2 mt-4">
+            <div className="aspect-square rounded-lg bg-zinc-800 border border-white/5 flex items-center justify-center overflow-hidden">
+               <div className="text-[8px] text-zinc-500 text-center px-2 italic">Photo avant intervention</div>
+            </div>
+            <div className="aspect-square rounded-lg bg-zinc-800 border border-white/5 flex items-center justify-center overflow-hidden">
+               <div className="text-[8px] text-zinc-500 text-center px-2 italic">Photo après (signée)</div>
+            </div>
+         </div>
+      </div>
+    )
+  },
+  {
+    id: 'stock',
+    name: 'Gestion de Stock',
+    icon: Zap,
+    color: 'text-emerald-500',
+    bgColor: 'bg-emerald-500/10',
+    borderColor: 'border-emerald-500/20',
+    activeBorder: 'border-emerald-500',
+    description: 'Ne soyez jamais à court de matériel. Suivez vos stocks, recevez des alertes de niveau bas et gérez vos fournisseurs.',
+    features: ['Inventaire QR Code', 'Alertes stock bas', 'Historique sorties'],
+    mock: (
+      <div className="space-y-4">
+         <div className="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/20">
+            <div className="flex justify-between items-center mb-4">
+               <div className="font-bold text-sm">Câble R2V 3G2.5</div>
+               <span className="text-xs font-black text-emerald-500">12 couronnes</span>
+            </div>
+            <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden">
+               <div className="h-full bg-emerald-500 w-[40%]" />
+            </div>
+            <p className="text-[10px] text-amber-500 mt-2 font-bold flex items-center gap-1 italic">
+              ⚠ Seuil d'alerte atteint (Min: 15)
+            </p>
+         </div>
+         <div className="space-y-2">
+            {[
+               { item: 'Prises RJ45', qty: '45', status: 'OK' },
+               { item: 'Tableau 3 rangées', qty: '3', status: 'OK' }
+            ].map((s, i) => (
+               <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5 text-[10px]">
+                  <span>{s.item}</span>
+                  <span className="font-bold text-zinc-400">{s.qty}</span>
+               </div>
+            ))}
+         </div>
+      </div>
+    )
+  },
+  {
+    id: 'branding',
+    name: 'Marque Blanche',
+    icon: Users,
+    color: 'text-purple-500',
+    bgColor: 'bg-purple-500/10',
+    borderColor: 'border-purple-500/20',
+    activeBorder: 'border-purple-500',
+    description: 'Renforcez votre image de marque. Personnalisez chaque aspect de l\'interface et des documents aux couleurs de votre entreprise.',
+    features: ['Logo & Couleurs', 'Domaine personnalisé', 'Espace client dédié'],
+    mock: (
+      <div className="space-y-6 text-center py-4">
+         <div className="inline-block p-3 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30">
+            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center mx-auto shadow-lg shadow-purple-500/20">
+               <div className="w-6 h-6 bg-black rotate-45" />
+            </div>
+            <p className="text-[8px] font-bold mt-2 text-white">VOTRE LOGO</p>
+         </div>
+         <div className="space-y-2">
+            <div className="h-1.5 w-3/4 bg-zinc-800 rounded-full mx-auto" />
+            <div className="h-1.5 w-1/2 bg-zinc-800 rounded-full mx-auto" />
+         </div>
+         <div className="p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20 border-dashed">
+            <p className="text-[10px] text-purple-400 font-bold italic">https://votre-entreprise.flozy.fr</p>
+         </div>
+         <div className="flex justify-center gap-2">
+            {[1,2,3,4].map(i => <div key={i} className="w-4 h-4 rounded-full bg-purple-500/40" />)}
          </div>
       </div>
     )
