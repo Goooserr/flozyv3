@@ -10,6 +10,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    console.log('Attempting to send email to:', email);
     const { data, error } = await resend.emails.send({
       from: 'Flozy <bienvenue@flozy.fr>',
       to: [email],
@@ -18,11 +19,14 @@ export async function POST(req: Request) {
     });
 
     if (error) {
+      console.error('RESEND API ERROR:', error);
       return NextResponse.json({ error }, { status: 500 });
     }
 
+    console.log('RESEND SUCCESS:', data);
     return NextResponse.json({ data });
   } catch (err: any) {
+    console.error('ONBOARDING CATCH ERROR:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
