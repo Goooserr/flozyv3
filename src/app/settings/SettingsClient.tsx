@@ -148,7 +148,7 @@ export default function SettingsPage() {
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64 = event.target?.result as string;
-      setProfile(prev => ({ ...prev, logo_url: base64 }));
+      setProfile((prev: any) => ({ ...prev, logo_url: base64 }));
       // On met à jour le preview mais l'enregistrement définitif se fait au Save
       extractDominantColor(base64);
     };
@@ -187,7 +187,7 @@ export default function SettingsPage() {
         b = Math.floor(b / count);
         
         const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
-        setProfile(prev => ({ ...prev, primary_color: hex }));
+        setProfile((prev: any) => ({ ...prev, primary_color: hex }));
         setMagicColor(true);
         setTimeout(() => setMagicColor(false), 5000);
       }
