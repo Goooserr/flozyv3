@@ -377,45 +377,56 @@ export default function NewInvoicePage() {
                       </button>
                     </div>
                   )}
-                  <div className="grid grid-cols-12 gap-4 items-end">
-                    <div className="col-span-2 space-y-1.5">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Qté</label>
-                      <input type="number"
-                        placeholder="1"
-                        className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 font-bold"
-                        value={item.quantity || ''}
-                        onChange={e => { const newItems = [...items]; newItems[index].quantity = e.target.value === '' ? 0 : Number(e.target.value); setItems(newItems) }}
-                      />
+                  <div className="grid grid-cols-12 gap-6 items-start">
+                    <div className="col-span-12 md:col-span-2 space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Quantité</label>
+                      <div className="relative group">
+                        <input type="number"
+                          placeholder="1"
+                          className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl px-4 py-4 text-sm outline-none focus:ring-2 focus:ring-primary/20 font-bold transition-all"
+                          value={item.quantity || ''}
+                          onChange={e => { const newItems = [...items]; newItems[index].quantity = e.target.value === '' ? 0 : Number(e.target.value); setItems(newItems) }}
+                        />
+                      </div>
                     </div>
-                    <div className="col-span-3 space-y-1.5">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Vente HT (€)</label>
-                      <input type="number"
-                        placeholder="0.00"
-                        className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 font-black text-emerald-500"
-                        value={item.price || ''}
-                        onChange={e => { const newItems = [...items]; newItems[index].price = e.target.value === '' ? undefined as any : Number(e.target.value); setItems(newItems) }}
-                      />
+                    
+                    <div className="col-span-12 md:col-span-3 space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Prix de Vente (€)</label>
+                      <div className="relative group">
+                        <input type="number"
+                          placeholder="0.00"
+                          className="w-full bg-emerald-500/5 border border-emerald-500/10 rounded-2xl px-4 py-4 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 font-black text-emerald-500 transition-all placeholder:text-emerald-500/30"
+                          value={item.price || ''}
+                          onChange={e => { const newItems = [...items]; newItems[index].price = e.target.value === '' ? undefined as any : Number(e.target.value); setItems(newItems) }}
+                        />
+                      </div>
                     </div>
-                    <div className="col-span-3 space-y-1.5">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">Achat HT (€)</label>
-                      <input type="number"
-                        placeholder="0.00"
-                        className="w-full bg-primary/5 border border-primary/20 rounded-xl px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 font-black"
-                        value={item.purchasePrice || ''}
-                        onChange={e => { const newItems = [...items]; newItems[index].purchasePrice = e.target.value === '' ? undefined as any : Number(e.target.value); setItems(newItems) }}
-                      />
+
+                    <div className="col-span-12 md:col-span-3 space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Prix d'Achat (€)</label>
+                      <div className="relative group">
+                        <input type="number"
+                          placeholder="0.00"
+                          className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl px-4 py-4 text-sm outline-none focus:ring-2 focus:ring-primary/20 font-black text-white/70 transition-all"
+                          value={item.purchasePrice || ''}
+                          onChange={e => { const newItems = [...items]; newItems[index].purchasePrice = e.target.value === '' ? undefined as any : Number(e.target.value); setItems(newItems) }}
+                        />
+                      </div>
                     </div>
-                    <div className="col-span-4 flex items-center gap-2">
+
+                    <div className="col-span-12 md:col-span-4 space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Gestion Stock</label>
                       <button type="button"
                         onClick={() => { const newItems = [...items]; newItems[index].syncStock = !newItems[index].syncStock; setItems(newItems) }}
                         className={cn(
-                          "flex-1 flex items-center justify-center gap-2 h-[50px] rounded-xl transition-all text-[10px] font-black uppercase tracking-tighter border", 
+                          "w-full flex items-center justify-center gap-3 h-[54px] rounded-2xl transition-all text-[10px] font-black uppercase tracking-widest border", 
                           item.syncStock 
-                            ? "text-primary bg-primary/10 border-primary/30 shadow-sm" 
-                            : "text-muted-foreground bg-secondary/50 border-border hover:border-muted-foreground/30"
+                            ? "text-primary bg-primary/10 border-primary/30 shadow-[0_0_15px_rgba(var(--primary-rgb),0.1)]" 
+                            : "text-zinc-500 bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 hover:text-zinc-400"
                         )}
                       >
-                        <Box className="w-4 h-4" /> {item.syncStock ? 'Lié au Stock' : 'Lier Stock'}
+                        <Box className={cn("w-4 h-4 transition-transform", item.syncStock && "scale-110")} />
+                        {item.syncStock ? 'Article Lié' : 'Lier au Stock'}
                       </button>
                     </div>
                   </div>
