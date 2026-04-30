@@ -18,11 +18,14 @@ export async function POST(req: Request) {
     });
 
     if (error) {
+      console.error('Resend Error:', error);
       return NextResponse.json({ error }, { status: 500 });
     }
 
+    console.log('Email sent successfully:', data);
     return NextResponse.json({ data });
   } catch (err: any) {
+    console.error('Onboarding API Catch Error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
