@@ -638,3 +638,5 @@ function ReviewForm({ profile }: { profile: any }) {
         )}
       </div>
     </section>
+  );
+}
