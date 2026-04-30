@@ -35,11 +35,25 @@ export default function Dashboard() {
   const { subscriptionPlan, userRole, isAdmin } = useTheme()
   const [stats, setStats] = useState<any[]>([])
   const [recentInvoices, setRecentInvoices] = useState<any[]>([])
-  const [interventions, setInterventions] = useState<any[]>([])
+  const [activities, setActivities] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isClientModalOpen, setIsClientModalOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [newClient, setNewClient] = useState({ full_name: '', email: '', phone: '', address: '' })
+
+  // Helper pour le temps relatif
+  const getRelativeTime = (date: string) => {
+    const now = new Date();
+    const then = new Date(date);
+    const diffInMs = now.getTime() - then.getTime();
+    const diffInMins = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+    if (diffInMins < 60) return `Il y a ${diffInMins} min`;
+    if (diffInHours < 24) return `Il y a ${diffInHours} h`;
+    return `Il y a ${diffInDays} j`;
+  };
 
   async function loadData() {
     const [docs, clients, inters] = await Promise.all([
@@ -48,49 +62,63 @@ export default function Dashboard() {
       getInterventions()
     ])
 
+    // Calcul des statistiques
     const totalRevenue = docs?.reduce((acc: number, curr: any) => acc + (curr.amount || 0), 0) || 0
     const pendingCount = docs?.filter((d: any) => d.status === 'pending').length || 0
     const activeClients = clients?.length || 0
     const intersCount = inters?.filter((i: any) => i.status === 'scheduled').length || 0
 
     const newStats = []
-
     if (userRole === 'employee') {
-      newStats.push({ 
-        label: 'Chantiers prévus', 
-        value: `${intersCount} intervention(s)`, 
-        trend: 'Planning', 
-        icon: CalendarDays,
-        color: 'text-purple-500'
-      })
+      newStats.push({ label: 'Chantiers prévus', value: `${intersCount} intervention(s)`, trend: 'Planning', icon: CalendarDays, color: 'text-purple-500' })
     } else {
-      newStats.push({ 
-        label: 'Chiffre d\'affaires', 
-        value: `${totalRevenue.toLocaleString()} €`, 
-        trend: 'À jour', 
-        icon: TrendingUp,
-        color: 'text-emerald-500'
-      })
+      newStats.push({ label: 'Chiffre d\'affaires', value: `${totalRevenue.toLocaleString()} €`, trend: 'À jour', icon: TrendingUp, color: 'text-emerald-500' })
     }
-
     newStats.push(
-      { 
-        label: 'En attente', 
-        value: `${pendingCount} doc(s)`, 
-        trend: 'À relancer', 
-        icon: Clock,
-        color: 'text-amber-500'
-      },
-      { 
-        label: 'Clients actifs', 
-        value: activeClients.toString(), 
-        trend: 'Base de données', 
-        icon: Users,
-        color: 'text-blue-500'
-      }
+      { label: 'En attente', value: `${pendingCount} doc(s)`, trend: 'À relancer', icon: Clock, color: 'text-amber-500' },
+      { label: 'Clients actifs', value: activeClients.toString(), trend: 'Base de données', icon: Users, color: 'text-blue-500' }
     )
-
     setStats(newStats)
+
+    // Génération de l'activité réactive
+    const allEvents: any[] = [];
+    
+    clients?.slice(0, 3).forEach((c: any) => {
+      allEvents.push({
+        id: `client-${c.id}`,
+        title: `Client ajouté : ${c.full_name}`,
+        date: c.created_at,
+        color: 'bg-emerald-500',
+        icon: Users
+      });
+    });
+
+    docs?.slice(0, 3).forEach((d: any) => {
+      allEvents.push({
+        id: `doc-${d.id}`,
+        title: `${d.type === 'invoice' ? 'Facture' : 'Devis'} créé (#${d.document_number})`,
+        date: d.created_at,
+        color: 'bg-blue-500',
+        icon: Send
+      });
+    });
+
+    inters?.slice(0, 3).forEach((i: any) => {
+      allEvents.push({
+        id: `inter-${i.id}`,
+        title: `Intervention planifiée : ${i.title}`,
+        date: i.created_at,
+        color: 'bg-purple-500',
+        icon: CalendarDays
+      });
+    });
+
+    // Tri par date décroissante
+    const sortedEvents = allEvents
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 4);
+
+    setActivities(sortedEvents);
     setRecentInvoices(docs?.slice(0, 5) || [])
     setInterventions(inters || [])
     setLoading(false)
@@ -342,21 +370,19 @@ export default function Dashboard() {
           {userRole !== 'employee' && (
             <div className="bg-secondary/30 border border-border rounded-[2.5rem] p-6">
                <h4 className="font-bold text-xs uppercase tracking-widest mb-4 flex items-center gap-2"><Send className="w-3 h-3 text-primary" /> Dernière activité</h4>
-               <div className="space-y-4">
-                  <div className="flex gap-3 items-start">
-                     <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5" />
-                     <div>
-                        <p className="text-xs font-bold">Client ajouté</p>
-                        <p className="text-[10px] text-muted-foreground">Il y a 2 heures</p>
-                     </div>
-                  </div>
-                  <div className="flex gap-3 items-start opacity-50">
-                     <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
-                     <div>
-                        <p className="text-xs font-bold">Devis envoyé</p>
-                        <p className="text-[10px] text-muted-foreground">Hier à 18:30</p>
-                     </div>
-                  </div>
+               <div className="space-y-5">
+                  {activities.length === 0 ? (
+                    <p className="text-[10px] text-muted-foreground italic text-center py-4">Aucune activité récente.</p>
+                  ) : activities.map((activity) => (
+                    <div key={activity.id} className="flex gap-3 items-start animate-in fade-in slide-in-from-left-2 duration-500">
+                       <div className={cn("w-2 h-2 rounded-full mt-1.5 shrink-0", activity.color)} />
+                       <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold truncate text-foreground/90">{activity.title}</p>
+                          <p className="text-[10px] text-muted-foreground font-medium">{getRelativeTime(activity.date)}</p>
+                       </div>
+                       <activity.icon className="w-3 h-3 text-muted-foreground/30 mt-1" />
+                    </div>
+                  ))}
                </div>
             </div>
           )}
