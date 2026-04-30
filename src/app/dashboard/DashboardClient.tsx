@@ -35,6 +35,7 @@ export default function Dashboard() {
   const { subscriptionPlan, userRole, isAdmin } = useTheme()
   const [stats, setStats] = useState<any[]>([])
   const [recentInvoices, setRecentInvoices] = useState<any[]>([])
+  const [interventions, setInterventions] = useState<any[]>([])
   const [activities, setActivities] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isClientModalOpen, setIsClientModalOpen] = useState(false)
