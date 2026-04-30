@@ -40,11 +40,14 @@ export default function SettingsPage() {
   const { setPrimaryColor, setCompanyName, setLogoUrl } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<any>({
     full_name: '',
     company_name: '',
+    business_name: '',
+    siret: '',
     phone: '',
     address: '',
+    website: '',
     logo_url: '',
     primary_color: '#000000',
     subscription_plan: 'starter',
