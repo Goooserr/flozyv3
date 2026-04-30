@@ -372,7 +372,7 @@ function UIOffer() {
       {[
         { name: 'Starter', price: 'Gratuit', features: ['5 devis/mois', 'Facturation basique'], cta: 'Continuer gratuitement', highlight: false },
         { name: 'Pro', price: '29€/mois', features: ['Devis illimités', 'Planning + Photos', 'Catalogue stock', 'Marque blanche'], cta: 'Démarrer — 14j gratuits', highlight: true },
-        { name: 'Expert', price: '59€/mois', features: ['Tout Pro +', 'Multi-utilisateurs', 'Statistiques avancées', 'Support prioritaire'], cta: 'Contacter', highlight: false },
+        { name: 'Expert', price: '49€/mois', features: ['Tout Pro +', 'Multi-utilisateurs', 'Statistiques avancées', 'Support prioritaire'], cta: 'Contacter', highlight: false },
       ].map((plan) => (
         <div key={plan.name} className={cn(
           "rounded-2xl border p-6 relative transition-all duration-500", 
