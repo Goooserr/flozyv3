@@ -7,6 +7,8 @@ import { usePathname } from "next/navigation";
 import SupportChat from "@/components/SupportChat";
 import { PostHogProvider } from "./PostHogProvider";
 import PostHogPageView from "./PostHogPageView";
+import { MetaPixel } from "./analytics/MetaPixel";
+import { GoogleTag } from "./analytics/GoogleTag";
 
 export default function AppWrapper({
   children,
@@ -19,6 +21,8 @@ export default function AppWrapper({
   return (
     <PostHogProvider>
       <PostHogPageView />
+      <MetaPixel />
+      <GoogleTag />
       <DynamicThemeProvider>
         {isPublicPage ? (
         <main className="min-h-screen">
