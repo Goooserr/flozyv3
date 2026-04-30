@@ -84,9 +84,9 @@ export default function SupportChat() {
 
   return (
     <div className={cn(
-      "fixed z-[9999] transition-all duration-300",
+      "fixed z-[9999] transition-all duration-500",
       isOpen 
-        ? "inset-0 md:inset-auto md:bottom-8 md:right-8" 
+        ? "inset-0 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm" 
         : "bottom-6 right-6 md:bottom-8 md:right-8 max-md:bottom-24"
     )}>
       {!isOpen ? (
@@ -107,14 +107,16 @@ export default function SupportChat() {
         </button>
       ) : (
         <div className={cn(
-          "bg-card border border-border shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200",
-          "w-full h-full md:w-[380px] md:h-[600px] md:rounded-3xl",
-          "max-md:pt-12"
+          "bg-zinc-900 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 duration-300",
+          "w-full h-[80vh] max-h-[700px] md:w-[400px] md:h-[600px] rounded-[32px]"
         )}>
           {/* Header */}
-          <div style={{ backgroundColor: primaryColor }} className="p-5 md:p-6 flex items-center justify-between text-white shrink-0 shadow-lg relative z-20">
+          <div className="p-6 flex items-center justify-between text-white shrink-0 border-b border-white/5 bg-zinc-800/50 backdrop-blur-xl">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center font-black text-sm border border-white/20 shadow-inner">
+              <div 
+                style={{ backgroundColor: primaryColor }}
+                className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shadow-lg rotate-3"
+              >
                 F
               </div>
               <div>
