@@ -51,7 +51,7 @@ export default function NewInvoicePage() {
   function handleEmailSend() {
     const clientEmail = clients.find(c => c.id === client.id)?.email || ''
     const subject = encodeURIComponent(`${docType === 'quote' ? 'Votre Devis' : 'Votre Facture'} — ${companyName || 'Flozy'}`)
-    const body = encodeURIComponent(`Bonjour ${client.name},\n\nVeuillez trouver ci-joint votre ${docType === 'quote' ? 'devis' : 'facture'} pour un montant de ${totalTTC.toLocaleString()} € TTC.\n\nCordialement,\n${companyName || 'Votre prestataire'}`)
+    const body = encodeURIComponent(`Bonjour ${client.name},\n\nVeuillez trouver ci-joint votre ${docType === 'quote' ? 'devis' : 'facture'} pour un montant de ${(totalTTC || 0).toLocaleString()} € TTC.\n\nCordialement,\n${companyName || 'Votre prestataire'}`)
     window.open(`mailto:${clientEmail}?subject=${subject}&body=${body}`, '_blank')
   }
 
@@ -153,12 +153,12 @@ export default function NewInvoicePage() {
            <div className="flex gap-12 items-center relative z-10">
               <div>
                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Coût Matériel Estimé</p>
-                 <p className="text-2xl font-black text-white">{totalCost.toLocaleString()} €</p>
+                 <p className="text-2xl font-black text-white">{(totalCost || 0).toLocaleString()} €</p>
               </div>
               <div className="h-10 w-px bg-zinc-800" />
               <div>
                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Marge Brute HT</p>
-                 <p className="text-2xl font-black text-emerald-400">+{margin.toLocaleString()} €</p>
+                 <p className="text-2xl font-black text-emerald-400">+{(margin || 0).toLocaleString()} €</p>
               </div>
               <div className="h-10 w-px bg-zinc-800" />
               <div>
@@ -472,8 +472,8 @@ export default function NewInvoicePage() {
                   <tr key={i} className="text-sm">
                     <td className="py-4 font-medium">{item.description || 'Prestation sans nom'}</td>
                     <td className="py-4 text-center">{item.quantity}</td>
-                    <td className="py-4 text-right">{item.price.toLocaleString()} €</td>
-                    <td className="py-4 text-right font-bold">{(item.quantity * item.price).toLocaleString()} €</td>
+                    <td className="py-4 text-right">{(item.price || 0).toLocaleString()} €</td>
+                    <td className="py-4 text-right font-bold">{((item.quantity || 0) * (item.price || 0)).toLocaleString()} €</td>
                   </tr>
                 ))}
               </tbody>
@@ -494,15 +494,15 @@ export default function NewInvoicePage() {
                <div className="w-64 space-y-2">
                  <div className="flex justify-between text-xs text-zinc-500">
                    <span>Total HT</span>
-                   <span className="font-bold">{totalHT.toLocaleString()} €</span>
+                   <span className="font-bold">{(totalHT || 0).toLocaleString()} €</span>
                  </div>
                  <div className="flex justify-between text-xs text-zinc-500">
                    <span>TVA (20%)</span>
-                   <span className="font-bold">{tva.toLocaleString()} €</span>
+                   <span className="font-bold">{(tva || 0).toLocaleString()} €</span>
                  </div>
                  <div className="flex justify-between text-xl font-black border-t-2 border-zinc-900 pt-4 mt-4">
                    <span>TOTAL TTC</span>
-                   <span style={{ color: primaryColor }}>{totalTTC.toLocaleString()} €</span>
+                   <span style={{ color: primaryColor }}>{(totalTTC || 0).toLocaleString()} €</span>
                  </div>
                </div>
             </div>
