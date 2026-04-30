@@ -14,7 +14,7 @@ export async function POST(req: Request) {
       from: 'Flozy <bienvenue@flozy.fr>',
       to: [email],
       subject: 'Bienvenue sur Flozy ! 🚀',
-      react: WelcomeEmail({ fullName, companyName }),
+      react: <WelcomeEmail fullName={fullName} companyName={companyName} />,
     });
 
     if (error) {
