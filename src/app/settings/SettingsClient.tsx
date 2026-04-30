@@ -244,14 +244,14 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center gap-2"> Nom complet </label>
                   <input 
                     disabled={profile.role === 'employee'}
                     value={profile.full_name}
                     onChange={e => setProfile({...profile, full_name: e.target.value})}
-                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
                   />
                 </div>
                 <div className="space-y-2">
@@ -260,25 +260,25 @@ export default function SettingsPage() {
                     disabled={profile.role === 'employee'}
                     value={profile.company_name}
                     onChange={e => setProfile({...profile, company_name: e.target.value})}
-                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center gap-2"> Couleur de marque </label>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-4 bg-secondary/30 p-2 rounded-xl border border-border">
                     <input 
                       disabled={profile.role === 'employee'}
                       type="color"
                       value={profile.primary_color || '#000000'}
                       onChange={e => setProfile({...profile, primary_color: e.target.value})}
-                      className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-none p-0 disabled:opacity-50"
+                      className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-none p-0 disabled:opacity-50 shrink-0"
                     />
                     <input 
                       disabled={profile.role === 'employee'}
                       type="text"
                       value={profile.primary_color || '#000000'}
                       onChange={e => setProfile({...profile, primary_color: e.target.value})}
-                      className="flex-1 bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/50 uppercase font-mono disabled:opacity-50"
+                      className="w-full bg-transparent border-none px-2 py-1 text-sm outline-none focus:ring-0 uppercase font-mono disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -288,21 +288,29 @@ export default function SettingsPage() {
                     disabled={profile.role === 'employee'}
                     value={profile.address}
                     onChange={e => setProfile({...profile, address: e.target.value})}
-                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
                   />
                 </div>
               </div>
 
               {profile.role !== 'employee' && (
-                <div className="pt-4 flex items-center justify-between border-t border-border mt-4">
-                  {success ? (
-                    <p className="text-emerald-500 text-sm flex items-center gap-2 animate-in slide-in-from-left-2">
-                      <CheckCircle2 className="w-4 h-4" /> Enregistré ! L'interface a été mise à jour.
-                    </p>
-                  ) : <div />}
+                <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/5 mt-6">
+                  <div className="order-2 sm:order-1">
+                    {success ? (
+                      <p className="text-emerald-500 text-sm flex items-center gap-2 animate-in slide-in-from-left-2">
+                        <CheckCircle2 className="w-4 h-4" /> Enregistré ! L'interface a été mise à jour.
+                      </p>
+                    ) : (
+                      <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest">
+                        Modifications appliquées en temps réel sur l'aperçu
+                      </p>
+                    )}
+                  </div>
+                  
                   <button 
+                    type="submit"
                     disabled={saving}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 disabled:opacity-50 transition-all shadow-sm"
+                    className="w-full sm:w-auto px-10 py-4 bg-white text-black rounded-2xl font-black text-sm hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 shadow-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 order-1 sm:order-2"
                   >
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     Sauvegarder
