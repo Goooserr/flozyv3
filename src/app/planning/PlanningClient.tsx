@@ -67,22 +67,38 @@ export default function PlanningPage() {
         ? JSON.stringify({ catalog_lines: selectedCatalogLines, total_sell: totalSell, total_cost: totalCost })
         : newIntervention.notes
 
-      // Calcul auto de l'heure de fin (1h plus tard)
+      if (!newIntervention.start_time) {
+        alert("Veuillez sélectionner une date et une heure.")
+        setSaving(false)
+        return
+      }
+
+      // Calcul auto de l'heure de fin (1h plus tard) sécurisé
       const start = new Date(newIntervention.start_time)
+      if (isNaN(start.getTime())) {
+        alert("Date invalide.")
+        setSaving(false)
+        return
+      }
+      
       const end = new Date(start.getTime() + (60 * 60 * 1000))
       
-      await createIntervention({ 
+      const result = await createIntervention({ 
         ...newIntervention, 
         notes: notesPayload,
+        start_time: start.toISOString(), // On s'assure du format ISO pour Supabase
         end_time: end.toISOString()
       })
+
+      if (result?.error) throw new Error(result.error)
+
       setIsModalOpen(false)
       setNewIntervention({ title: '', client_id: '', status: 'scheduled', start_time: '', address: '', notes: '' })
       setSelectedCatalogLines([])
       await loadData()
-    } catch (err) {
-      console.error(err)
-      alert("Erreur lors de la création")
+    } catch (err: any) {
+      console.error("Détails de l'erreur creation planning:", err)
+      alert("Erreur lors de la création : " + (err?.message || "Vérifiez les champs"))
     } finally {
       setSaving(false)
     }
