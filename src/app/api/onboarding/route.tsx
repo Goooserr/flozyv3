@@ -11,21 +11,18 @@ export async function POST(req: Request) {
     }
 
     const { data, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'Flozy <bienvenue@flozy.fr>',
       to: [email],
       subject: 'Bienvenue sur Flozy ! 🚀',
       react: <WelcomeEmail fullName={fullName} companyName={companyName} />,
     });
 
     if (error) {
-      console.error('Resend Error:', error);
       return NextResponse.json({ error }, { status: 500 });
     }
 
-    console.log('Email sent successfully:', data);
     return NextResponse.json({ data });
   } catch (err: any) {
-    console.error('Onboarding API Catch Error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
