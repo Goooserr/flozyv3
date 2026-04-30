@@ -247,14 +247,23 @@ export async function getInterventions() {
 }
 
 export async function createIntervention(inter: any) {
-  const supabase = await getServerSupabase()
-  const artisanId = await getArtisanId()
-  const { data, error } = await supabase
-    .from('interventions')
-    .insert([{ ...inter, artisan_id: artisanId }])
-    .select()
-  if (error) throw error
-  return data[0]
+  try {
+    const supabase = await getServerSupabase()
+    const artisanId = await getArtisanId()
+    const { data, error } = await supabase
+      .from('interventions')
+      .insert([{ ...inter, artisan_id: artisanId }])
+      .select()
+    
+    if (error) {
+      console.error("Supabase error creating intervention:", error)
+      return { error: error.message }
+    }
+    return { data: data[0] }
+  } catch (err: any) {
+    console.error("Server action crash (createIntervention):", err)
+    return { error: err.message || "Une erreur interne est survenue" }
+  }
 }
 
 export async function updateIntervention(id: string, updates: any) {
