@@ -36,7 +36,7 @@ export default function PlanningPage() {
     status: 'scheduled',
     start_time: '',
     address: '',
-    notes: ''
+    description: ''
   })
 
   async function loadData() {
@@ -63,9 +63,9 @@ export default function PlanningPage() {
     setSaving(true)
     try {
       const { createIntervention } = await import('@/lib/actions')
-      const notesPayload = selectedCatalogLines.length > 0
+      const descriptionPayload = selectedCatalogLines.length > 0
         ? JSON.stringify({ catalog_lines: selectedCatalogLines, total_sell: totalSell, total_cost: totalCost })
-        : newIntervention.notes
+        : newIntervention.description
 
       if (!newIntervention.start_time) {
         alert("Veuillez sélectionner une date et une heure.")
@@ -85,7 +85,7 @@ export default function PlanningPage() {
       
       const result = await createIntervention({ 
         ...newIntervention, 
-        notes: notesPayload,
+        description: descriptionPayload,
         start_time: start.toISOString(), // On s'assure du format ISO pour Supabase
         end_time: end.toISOString()
       })
@@ -93,7 +93,7 @@ export default function PlanningPage() {
       if (result?.error) throw new Error(result.error)
 
       setIsModalOpen(false)
-      setNewIntervention({ title: '', client_id: '', status: 'scheduled', start_time: '', address: '', notes: '' })
+      setNewIntervention({ title: '', client_id: '', status: 'scheduled', start_time: '', address: '', description: '' })
       setSelectedCatalogLines([])
       await loadData()
     } catch (err: any) {
@@ -386,7 +386,7 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
   let catalogTotalSell = 0
   let catalogTotalCost = 0
   try {
-    const parsed = JSON.parse(data.notes || '{}')
+    const parsed = JSON.parse(data.description || '{}')
     if (parsed.catalog_lines) {
       catalogLines = parsed.catalog_lines
       catalogTotalSell = parsed.total_sell || 0

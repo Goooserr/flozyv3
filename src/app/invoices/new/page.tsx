@@ -25,7 +25,7 @@ import { SignaturePad } from '@/components/SignaturePad'
 export default function NewInvoicePage() {
   const router = useRouter()
   const { primaryColor, companyName, logoUrl } = useTheme()
-  const [items, setItems] = useState([{ description: '', quantity: 1, price: 0, purchasePrice: 0, syncStock: false, mode: 'manual' as 'manual'|'catalog' }])
+  const [items, setItems] = useState([{ description: '', quantity: 1, price: undefined as any, purchasePrice: undefined as any, syncStock: false, mode: 'manual' as 'manual'|'catalog' }])
   const [client, setClient] = useState({ id: '', name: '', address: '', email: '' })
   const [clients, setClients] = useState<any[]>([])
   const [catalogItems, setCatalogItems] = useState<any[]>([])
@@ -63,7 +63,7 @@ export default function NewInvoicePage() {
 
     setIsSaving(true)
     try {
-      const totalHT = items.reduce((acc, item) => acc + (item.quantity * item.price), 0)
+      const totalHT = items.reduce((acc, item) => acc + (item.quantity * (item.price || 0)), 0)
       const totalTTC = totalHT * 1.2
       const prefix = docType === 'invoice' ? 'FAC' : 'DEV'
       
@@ -77,7 +77,7 @@ export default function NewInvoicePage() {
         client_id: client.id || null,
         metadata: {
           client_info: { name: client.name, address: client.address },
-          items: items,
+          items: items.map(i => ({ ...i, price: i.price || 0, purchasePrice: i.purchasePrice || 0 })),
           signature: signature,
           subtotal: totalHT,
           tax: totalHT * 0.2,
@@ -121,14 +121,6 @@ export default function NewInvoicePage() {
     localStorage.setItem('invoice_draft', JSON.stringify({ items, client }))
   }, [items, client])
   
-  // Catalogue factice pour la démo
-  const catalog = [
-    { name: 'Main d\'œuvre Standard', description: 'Une heure de travail qualifié', price: 65, purchasePrice: 20 },
-    { name: 'Forfait Diagnostic', description: 'Déplacement + 1h de recherche de panne', price: 120, purchasePrice: 30 },
-    { name: 'Prise Legrand Dooxie', description: 'Prise de courant complète blanche', price: 15, purchasePrice: 8.5 },
-    { name: 'Câble RO2V 3G2.5', description: 'Prix au mètre linéaire', price: 2.50, purchasePrice: 1.10 },
-  ]
-
   const selectFromCatalog = (catalogItem: any) => {
     setItems([...items, { 
       description: catalogItem.name, 
@@ -141,7 +133,7 @@ export default function NewInvoicePage() {
     setShowCatalog(false)
   }
 
-  const totalHT = items.reduce((acc, item) => acc + (item.quantity * item.price), 0)
+  const totalHT = items.reduce((acc, item) => acc + (item.quantity * (item.price || 0)), 0)
   const totalCost = items.reduce((acc, item) => acc + (item.quantity * (item.purchasePrice || 0)), 0)
   const margin = totalHT - totalCost
   const marginPercent = totalHT > 0 ? (margin / totalHT) * 100 : 0
@@ -319,8 +311,6 @@ export default function NewInvoicePage() {
               </div>
             </div>
 
-            {/* Pas de modal séparé — chaque ligne catalogue a ses propres dropdowns */}
-
             <div className="space-y-4">
               {items.map((item, index) => (
                 <div key={index} className="space-y-3 p-4 bg-secondary/20 rounded-2xl border border-border/50 animate-in slide-in-from-left-4 duration-300">
@@ -387,37 +377,45 @@ export default function NewInvoicePage() {
                       </button>
                     </div>
                   )}
-                  <div className="grid grid-cols-4 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground ml-1">Qté</label>
+                  <div className="grid grid-cols-12 gap-4 items-end">
+                    <div className="col-span-2 space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Qté</label>
                       <input type="number"
-                        className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                        value={item.quantity}
-                        onChange={e => { const newItems = [...items]; newItems[index].quantity = Number(e.target.value); setItems(newItems) }}
+                        placeholder="1"
+                        className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                        value={item.quantity || ''}
+                        onChange={e => { const newItems = [...items]; newItems[index].quantity = e.target.value === '' ? 0 : Number(e.target.value); setItems(newItems) }}
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground ml-1">Prix Vente HT</label>
+                    <div className="col-span-3 space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Vente HT (€)</label>
                       <input type="number"
-                        className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                        value={item.price}
-                        onChange={e => { const newItems = [...items]; newItems[index].price = Number(e.target.value); setItems(newItems) }}
+                        placeholder="0.00"
+                        className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 font-black text-emerald-500"
+                        value={item.price || ''}
+                        onChange={e => { const newItems = [...items]; newItems[index].price = e.target.value === '' ? undefined as any : Number(e.target.value); setItems(newItems) }}
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[8px] font-black uppercase tracking-widest text-primary ml-1">Prix Achat HT</label>
+                    <div className="col-span-3 space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">Achat HT (€)</label>
                       <input type="number"
-                        className="w-full bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 font-bold"
-                        value={item.purchasePrice}
-                        onChange={e => { const newItems = [...items]; newItems[index].purchasePrice = Number(e.target.value); setItems(newItems) }}
+                        placeholder="0.00"
+                        className="w-full bg-primary/5 border border-primary/20 rounded-xl px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 font-black"
+                        value={item.purchasePrice || ''}
+                        onChange={e => { const newItems = [...items]; newItems[index].purchasePrice = e.target.value === '' ? undefined as any : Number(e.target.value); setItems(newItems) }}
                       />
                     </div>
-                    <div className="flex items-center justify-center pt-5">
-                      <button type="button" title="Lier au stock"
+                    <div className="col-span-4 flex items-center gap-2">
+                      <button type="button"
                         onClick={() => { const newItems = [...items]; newItems[index].syncStock = !newItems[index].syncStock; setItems(newItems) }}
-                        className={cn("flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all text-[10px] font-bold uppercase", item.syncStock ? "text-primary bg-primary/10 border border-primary/20" : "text-muted-foreground bg-secondary/50 border border-border")}
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-2 h-[50px] rounded-xl transition-all text-[10px] font-black uppercase tracking-tighter border", 
+                          item.syncStock 
+                            ? "text-primary bg-primary/10 border-primary/30 shadow-sm" 
+                            : "text-muted-foreground bg-secondary/50 border-border hover:border-muted-foreground/30"
+                        )}
                       >
-                        <Box className="w-3 h-3" /> {item.syncStock ? 'Lié' : 'Stock'}
+                        <Box className="w-4 h-4" /> {item.syncStock ? 'Lié au Stock' : 'Lier Stock'}
                       </button>
                     </div>
                   </div>
