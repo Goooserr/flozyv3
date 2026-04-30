@@ -276,34 +276,46 @@ export async function updateIntervention(id: string, updates: any) {
 }
 
 export async function uploadInterventionPhoto(interventionId: string, file: File) {
-  const supabase = await getServerSupabase()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error("Non authentifié")
+  try {
+    const supabase = await getServerSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Non authentifié")
 
-  const fileName = `${user.id}/${interventionId}/${Date.now()}-${file.name}`
-  const { data: uploadData, error: uploadError } = await supabase.storage
-    .from('photos')
-    .upload(fileName, file)
+    const fileName = `${user.id}/${interventionId}/${Date.now()}-${file.name}`
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('photos')
+      .upload(fileName, file)
 
-  if (uploadError) throw uploadError
+    if (uploadError) {
+      console.error("Supabase Storage Error:", uploadError)
+      return { error: `Erreur Storage: ${uploadError.message}. Vérifiez que le bucket 'photos' existe et est public.` }
+    }
 
-  const { data: { publicUrl } } = supabase.storage
-    .from('photos')
-    .getPublicUrl(fileName)
+    const { data: { publicUrl } } = supabase.storage
+      .from('photos')
+      .getPublicUrl(fileName)
 
-  const { data, error } = await supabase
-    .from('intervention_photos')
-    .insert([{
-      intervention_id: interventionId,
-      artisan_id: user.id,
-      url: publicUrl,
-      file_name: fileName
-    }])
-    .select()
-    .single()
+    const { data, error } = await supabase
+      .from('intervention_photos')
+      .insert([{
+        intervention_id: interventionId,
+        url: publicUrl,
+        // On garde artisan_id et file_name en optionnel au cas où les colonnes manquent
+        artisan_id: user.id,
+        file_name: fileName
+      }])
+      .select()
+      .single()
 
-  if (error) throw error
-  return data
+    if (error) {
+      console.error("Database Error (Photos):", error)
+      return { error: `Erreur Base de données: ${error.message}` }
+    }
+    return data
+  } catch (err: any) {
+    console.error("Action Crash (Photos):", err)
+    return { error: err.message || "Erreur interne lors de l'envoi" }
+  }
 }
 
 export async function deleteInterventionPhoto(photoId: string, fileName: string) {
