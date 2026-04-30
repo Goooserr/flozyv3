@@ -111,24 +111,25 @@ export default function SupportChat() {
           "w-full h-full md:w-[380px] md:h-[600px] md:rounded-3xl"
         )}>
           {/* Header */}
-          <div style={{ backgroundColor: primaryColor }} className="p-4 md:p-5 flex items-center justify-between text-white shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-black text-xs border border-white/10">
+          <div style={{ backgroundColor: primaryColor }} className="p-5 md:p-6 flex items-center justify-between text-white shrink-0 shadow-lg relative z-20">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center font-black text-sm border border-white/20 shadow-inner">
                 F
               </div>
               <div>
-                <p className="text-sm md:text-base font-bold">Support Flozy</p>
-                <p className="text-[10px] opacity-80 uppercase tracking-widest font-bold flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                <p className="text-base md:text-lg font-black tracking-tight">Support Flozy</p>
+                <p className="text-[10px] opacity-90 uppercase tracking-[0.2em] font-black flex items-center gap-2">
+                  <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
                   En ligne
                 </p>
               </div>
             </div>
             <button 
               onClick={() => setIsOpen(false)}
-              className="p-2.5 hover:bg-white/10 rounded-2xl transition-colors active:scale-90"
+              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all active:scale-90 border border-white/10 group"
             >
-              <X className="w-5 h-5 md:w-4 md:h-4" />
+              <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block">Fermer</span>
+              <X className="w-6 h-6 md:w-5 md:h-5 group-hover:rotate-90 transition-transform" />
             </button>
           </div>
 
