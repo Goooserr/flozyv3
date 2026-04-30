@@ -96,7 +96,20 @@ export default function SettingsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        await updateArtisanProfile(user.id, profile);
+        // On ne filtre que les champs qu'on a le droit de modifier pour éviter les erreurs de base de données
+        const brandingUpdates = {
+          full_name: profile.full_name,
+          company_name: profile.company_name,
+          primary_color: profile.primary_color,
+          logo_url: profile.logo_url,
+          address: profile.address,
+          phone: profile.phone,
+          website: profile.website,
+          business_name: profile.business_name,
+          siret: profile.siret
+        };
+
+        await updateArtisanProfile(user.id, brandingUpdates);
         setSuccess(true);
         setPrimaryColor(profile.primary_color || '#000000');
         setCompanyName(profile.company_name || '');
