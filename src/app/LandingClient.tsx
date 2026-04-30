@@ -463,10 +463,10 @@ export default function LandingPage() {
             <div>
               <h4 className="text-white font-bold mb-6">Ressources</h4>
               <ul className="space-y-4 text-zinc-400 text-sm">
+                <li><Link href="/guide" className="hover:text-primary transition-colors">Guide Démarrage</Link></li>
+                <li><Link href="/sales" className="hover:text-primary transition-colors font-bold text-primary/80">Kit Commercial</Link></li>
                 <li><a href="#" className="hover:text-primary transition-colors">Documentation</a></li>
                 <li><a href="#" className="hover:text-primary transition-colors">Blog Artisan</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Tutoriels</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">API</a></li>
               </ul>
             </div>
             <div>
