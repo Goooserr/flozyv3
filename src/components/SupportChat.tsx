@@ -108,7 +108,8 @@ export default function SupportChat() {
       ) : (
         <div className={cn(
           "bg-card border border-border shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200",
-          "w-full h-full md:w-[380px] md:h-[600px] md:rounded-3xl"
+          "w-full h-full md:w-[380px] md:h-[600px] md:rounded-3xl",
+          "max-md:pt-12"
         )}>
           {/* Header */}
           <div style={{ backgroundColor: primaryColor }} className="p-5 md:p-6 flex items-center justify-between text-white shrink-0 shadow-lg relative z-20">

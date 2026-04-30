@@ -294,6 +294,36 @@ export default function SettingsPage() {
                     className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
                   />
                 </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2"> Téléphone </label>
+                  <input 
+                    disabled={profile.role === 'employee'}
+                    value={profile.phone}
+                    onChange={e => setProfile({...profile, phone: e.target.value})}
+                    placeholder="06 00 00 00 00"
+                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2"> Numéro SIRET </label>
+                  <input 
+                    disabled={profile.role === 'employee'}
+                    value={profile.siret}
+                    onChange={e => setProfile({...profile, siret: e.target.value})}
+                    placeholder="123 456 789 00012"
+                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2"> Site Web </label>
+                  <input 
+                    disabled={profile.role === 'employee'}
+                    value={profile.website}
+                    onChange={e => setProfile({...profile, website: e.target.value})}
+                    placeholder="https://votre-site.fr"
+                    className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                  />
+                </div>
               </div>
 
               {profile.role !== 'employee' && (
@@ -327,10 +357,12 @@ export default function SettingsPage() {
           <div className="bg-secondary/30 border border-border rounded-3xl p-6 lg:p-8 flex flex-col justify-center items-center relative overflow-hidden">
              <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-10 blur-3xl" style={{ backgroundColor: profile.primary_color || '#000000' }} />
              
-             <div className="w-full max-w-sm bg-card border border-border rounded-2xl shadow-xl overflow-hidden relative z-10 transition-all duration-300">
-                {/* Header Facture Simulé */}
-                <div className="h-2 w-full transition-colors duration-500" style={{ backgroundColor: profile.primary_color || '#000000' }} />
-                <div className="p-6">
+              <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-10 blur-3xl" style={{ backgroundColor: profile.primary_color || '#000000' }} />
+              
+              <div className="w-full max-w-sm bg-card border border-border rounded-2xl shadow-xl overflow-hidden relative z-10 transition-all duration-300">
+                 {/* Header Facture Simulé */}
+                 <div className="h-2 w-full transition-colors duration-500" style={{ backgroundColor: profile.primary_color || '#000000' }} />
+                 <div className="p-6">
                    <div className="flex justify-between items-start mb-6">
                       <div className="flex flex-col gap-3">
                          {profile.logo_url ? (
