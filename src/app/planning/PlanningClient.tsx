@@ -14,7 +14,6 @@ import {
   Package,
   Euro,
   TrendingUp,
-  TrendingUp,
   ChevronDown,
   Archive
 } from 'lucide-react'
