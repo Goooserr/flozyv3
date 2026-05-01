@@ -31,7 +31,7 @@ export default function ArchivesClient() {
       
       // On ne garde que ce qui est finalisé pour les archives
       setInvoices(docs?.filter((d: any) => d.status === 'paid' || d.status === 'accepted') || [])
-      setInterventions(inters?.filter((i: any) => i.status === 'completed') || [])
+      setInterventions(inters?.filter((i: any) => i.status === 'completed' || i.status === 'archived') || [])
       setLoading(false)
     }
     loadData()
@@ -139,7 +139,7 @@ export default function ArchivesClient() {
                     <p className="text-xs text-zinc-500 mb-3">{inter.clients?.full_name} — {new Date(inter.start_time).toLocaleDateString()}</p>
                     <div className="flex items-center gap-4">
                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-bold">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Succès
+                          <CheckCircle2 className={cn("w-3 h-3", inter.status === 'archived' ? "text-amber-500" : "text-emerald-500")} /> {inter.status === 'archived' ? 'Archivé' : 'Succès'}
                        </div>
                        <div className="h-3 w-px bg-zinc-800" />
                        <button className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">Voir détails</button>

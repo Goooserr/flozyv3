@@ -14,7 +14,9 @@ import {
   Package,
   Euro,
   TrendingUp,
-  ChevronDown
+  TrendingUp,
+  ChevronDown,
+  Archive
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
@@ -340,10 +342,12 @@ function NavigationMenu({ address }: { address: string }) {
 }
 
 function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
-  const { userRole } = useTheme()
+  const { userRole, subscriptionPlan } = useTheme()
   const [uploading, setUploading] = useState(false)
   const [showGallery, setShowGallery] = useState(false)
   const [photos, setPhotos] = useState<string[]>([])
+  const [hours, setHours] = useState<string>('')
+  const [isEditingHours, setIsEditingHours] = useState(false)
 
   useEffect(() => {
     async function loadPhotos() {
@@ -385,14 +389,30 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
   let catalogLines: any[] = []
   let catalogTotalSell = 0
   let catalogTotalCost = 0
+  let hoursWorked = 0
+  let parsedDesc: any = {}
   try {
-    const parsed = JSON.parse(data.description || '{}')
-    if (parsed.catalog_lines) {
-      catalogLines = parsed.catalog_lines
-      catalogTotalSell = parsed.total_sell || 0
-      catalogTotalCost = parsed.total_cost || 0
+    parsedDesc = JSON.parse(data.description || '{}')
+    if (parsedDesc.catalog_lines) {
+      catalogLines = parsedDesc.catalog_lines
+      catalogTotalSell = parsedDesc.total_sell || 0
+      catalogTotalCost = parsedDesc.total_cost || 0
     }
+    hoursWorked = parsedDesc.hours_worked || 0
   } catch {}
+
+  const handleSaveHours = async () => {
+    const { updateIntervention } = await import('@/lib/actions')
+    await updateIntervention(data.id, { 
+      description: JSON.stringify({ ...parsedDesc, hours_worked: Number(hours) }) 
+    })
+    setIsEditingHours(false)
+    reload()
+  }
+
+  const hourlyRate = typeof window !== 'undefined' ? Number(localStorage.getItem('flozy_hourly_rate') || 50) : 50
+  const realCost = catalogTotalCost + (hoursWorked * hourlyRate)
+  const netMargin = catalogTotalSell - realCost
 
   const statusLabels: any = { scheduled: 'À faire', in_progress: 'En cours', completed: 'Terminé' }
   const statusColors: any = {
@@ -442,13 +462,48 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
 
       {/* Résumé chiffrage catalogue — CACHÉ POUR LES EMPLOYÉS */}
       {userRole !== 'employee' && catalogLines.length > 0 && (
-        <div className="flex items-center gap-3 mb-3 bg-secondary/30 rounded-xl px-3 py-2">
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <Euro className="w-3 h-3" /> Coût : <span className="font-black text-foreground ml-0.5">{catalogTotalCost.toFixed(0)} €</span>
+        <div className="flex flex-col gap-2 mb-3 bg-secondary/30 rounded-xl px-3 py-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <Euro className="w-3 h-3" /> Matériel : <span className="font-black text-foreground ml-0.5">{catalogTotalCost.toFixed(0)} €</span>
+            </div>
+            <div className="flex items-center gap-1 text-[10px] text-emerald-500 font-bold">
+              <TrendingUp className="w-3 h-3" /> Vente : {catalogTotalSell.toFixed(0)} €
+            </div>
           </div>
-          <div className="flex items-center gap-1 text-[10px] text-emerald-500 font-bold">
-            <TrendingUp className="w-3 h-3" /> Vente : {catalogTotalSell.toFixed(0)} €
-          </div>
+          
+          {/* MODULE BONUS : Time & Margin AI (Expert) */}
+          {subscriptionPlan === 'expert' && (
+             <div className="mt-2 pt-2 border-t border-border/50 flex flex-col gap-2">
+               <div className="flex items-center justify-between">
+                 <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                   <Clock className="w-3 h-3 text-primary" /> Temps : 
+                   {isEditingHours ? (
+                     <div className="flex items-center gap-1">
+                       <input 
+                         type="number" 
+                         value={hours} 
+                         onChange={e => setHours(e.target.value)} 
+                         className="w-12 bg-card border border-border rounded px-1 py-0.5 text-foreground text-xs" 
+                         placeholder="h"
+                       />
+                       <button onClick={handleSaveHours} className="text-emerald-500 hover:text-emerald-600"><CheckCircle2 className="w-3 h-3" /></button>
+                     </div>
+                   ) : (
+                     <span 
+                       className="font-black text-foreground ml-0.5 cursor-pointer hover:text-primary transition-colors border-b border-dashed border-primary/50"
+                       onClick={() => { setHours(hoursWorked.toString()); setIsEditingHours(true); }}
+                     >
+                       {hoursWorked} h
+                     </span>
+                   )}
+                 </div>
+                 <div className={cn("text-[10px] font-black tracking-widest px-1.5 py-0.5 rounded", netMargin >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500")}>
+                   Marge Nette : {netMargin.toFixed(0)} €
+                 </div>
+               </div>
+             </div>
+          )}
         </div>
       )}
 
@@ -481,9 +536,14 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
           {data.address && <NavigationMenu address={data.address} />}
         </div>
         {data.status === 'completed' && userRole !== 'employee' && (
-          <Link href="/invoices/new" className="flex items-center gap-1 px-2 py-1 bg-primary text-primary-foreground rounded-md text-[10px] font-bold hover:opacity-90 shadow-sm shadow-primary/20 transition-all hover:scale-105">
-            <FileText className="w-3 h-3" /> Facturer
-          </Link>
+          <div className="flex gap-2">
+            <button onClick={() => updateStatus('archived')} className="flex items-center gap-1 px-2 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-md text-[10px] font-bold hover:bg-amber-500/20 transition-all hover:scale-105">
+              <Archive className="w-3 h-3" /> Archiver
+            </button>
+            <Link href="/invoices/new" className="flex items-center gap-1 px-2 py-1 bg-primary text-primary-foreground rounded-md text-[10px] font-bold hover:opacity-90 shadow-sm shadow-primary/20 transition-all hover:scale-105">
+              <FileText className="w-3 h-3" /> Facturer
+            </Link>
+          </div>
         )}
       </div>
 

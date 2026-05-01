@@ -2,7 +2,7 @@ import React from 'react';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { Building2, Clock, Check } from 'lucide-react';
+import { Building2, Clock, Check, Camera, Image as ImageIcon } from 'lucide-react';
 import { Metadata } from 'next';
 import { PublicActions } from '@/components/PublicActions';
 import { PrintButton } from '@/components/PrintButton';
@@ -44,6 +44,23 @@ export default async function ClientPortalPage({ params }: { params: { id: strin
   const items = document.metadata?.items || [];
   
   const isQuote = document.type === 'quote';
+
+  // Récupération des photos (Module Bonus : Expert)
+  let photos: string[] = [];
+  if (client?.id && artisan?.subscription_plan === 'expert') {
+    const supabaseAdmin = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY!,
+      { cookies: { getAll: () => [], setAll: () => {} } }
+    );
+    
+    const { data: inters } = await supabaseAdmin.from('interventions').select('id').eq('client_id', client.id);
+    if (inters && inters.length > 0) {
+      const interIds = inters.map(i => i.id);
+      const { data: p } = await supabaseAdmin.from('intervention_photos').select('url').in('intervention_id', interIds).order('created_at', { ascending: false }).limit(8);
+      if (p) photos = p.map(x => x.url);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#fafafa] text-zinc-900 font-sans selection:bg-primary/20">
@@ -116,6 +133,32 @@ export default async function ClientPortalPage({ params }: { params: { id: strin
               </table>
            </div>
         </div>
+
+        {/* MODULE BONUS : Photos du chantier (Expert) */}
+        {photos.length > 0 && (
+          <div className="bg-white rounded-3xl shadow-sm border border-zinc-100 overflow-hidden mb-8 p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-zinc-100 rounded-xl flex items-center justify-center text-zinc-500">
+                <Camera className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold">Suivi de Chantier</h3>
+                <p className="text-sm text-zinc-500">Photos de l'intervention partagées par votre artisan.</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {photos.map((url, idx) => (
+                <div key={idx} className="aspect-square rounded-2xl overflow-hidden bg-zinc-100 border border-zinc-200 group relative">
+                  <img src={url} alt={`Chantier ${idx}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                  <a href={url} target="_blank" className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[10px] text-white font-bold uppercase tracking-widest bg-black/60 px-3 py-1 rounded-full flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Agrandir</span>
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
          {/* Action Panel */}
          <div className="bg-zinc-900 text-white rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl">

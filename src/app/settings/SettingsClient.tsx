@@ -25,13 +25,15 @@ import {
   Sparkles,
   Lock,
   ArrowRight,
-  Star
+  Star,
+  MessageSquare
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { CustomFieldsSettings } from '@/components/CustomFieldsSettings';
 import { ModuleSettings } from '@/components/ModuleSettings';
+import SupportChat from '@/components/SupportChat';
 import { useTheme } from '@/components/DynamicThemeProvider';
 
 export default function SettingsPage() {
@@ -58,6 +60,7 @@ export default function SettingsPage() {
   const [employees, setEmployees] = useState<any[]>([]);
   const [inviteLink, setInviteLink] = useState('');
   const [copied, setCopied] = useState(false);
+  const [hourlyRate, setHourlyRate] = useState('50');
 
   const [magicColor, setMagicColor] = useState(false);
 
@@ -84,6 +87,10 @@ export default function SettingsPage() {
           .eq('employer_id', user.id);
         if (empData) setEmployees(empData);
       }
+      
+      const storedRate = localStorage.getItem('flozy_hourly_rate');
+      if (storedRate) setHourlyRate(storedRate);
+      
       setLoading(false);
     }
     loadProfile();
@@ -117,6 +124,7 @@ export default function SettingsPage() {
         setPrimaryColor(profile.primary_color || '#000000');
         setCompanyName(profile.company_name || '');
         setLogoUrl(profile.logo_url || '');
+        localStorage.setItem('flozy_hourly_rate', hourlyRate);
         setTimeout(() => setSuccess(false), 3000);
       }
     } catch (err: any) {
@@ -324,6 +332,20 @@ export default function SettingsPage() {
                     className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
                   />
                 </div>
+                
+                {/* MODULE BONUS : Rentabilité (Expert) */}
+                {profile.subscription_plan === 'expert' && profile.role !== 'employee' && (
+                  <div className="space-y-2 lg:col-span-2 mt-4 pt-4 border-t border-border">
+                    <label className="text-sm font-medium flex items-center gap-2 text-primary"> Taux Horaire Moyen (€/h) <Sparkles className="w-4 h-4" /> </label>
+                    <p className="text-xs text-muted-foreground mb-2">Utilisé pour calculer la rentabilité nette de vos chantiers (Module Time & Margin AI).</p>
+                    <input 
+                      type="number"
+                      value={hourlyRate}
+                      onChange={e => setHourlyRate(e.target.value)}
+                      className="w-full max-w-[200px] bg-secondary/50 border border-border rounded-xl px-4 py-3 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-primary/50"
+                    />
+                  </div>
+                )}
               </div>
 
               {profile.role !== 'employee' && (
@@ -565,6 +587,17 @@ export default function SettingsPage() {
               </div>
               <p className="text-xs text-muted-foreground">Votre abonnement actuel chez Flozy.</p>
            </div>
+        </div>
+      </section>
+
+      {/* Support Section */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-2 border-b border-border pb-2">
+          <MessageSquare className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-bold">Support & Assistance</h3>
+        </div>
+        <div className="max-w-2xl">
+          <SupportChat />
         </div>
       </section>
 

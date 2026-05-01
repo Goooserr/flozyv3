@@ -4,7 +4,6 @@ import { Sidebar, Header } from "@/components/layout";
 import { DynamicThemeProvider } from "@/components/DynamicThemeProvider";
 import { QuickActionFAB } from "@/components/QuickActionFAB";
 import { usePathname } from "next/navigation";
-import SupportChat from "@/components/SupportChat";
 import { PostHogProvider } from "./PostHogProvider";
 import PostHogPageView from "./PostHogPageView";
 import { MetaPixel } from "./analytics/MetaPixel";
@@ -37,7 +36,6 @@ export default function AppWrapper({
               {children}
             </main>
             <QuickActionFAB />
-            <SupportChat />
           </div>
         </div>
       )}

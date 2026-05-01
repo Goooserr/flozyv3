@@ -64,21 +64,30 @@ export default function Dashboard() {
     ])
 
     // Calcul des statistiques
-    const totalRevenue = docs?.reduce((acc: number, curr: any) => acc + (curr.amount || 0), 0) || 0
-    const pendingCount = docs?.filter((d: any) => d.status === 'pending').length || 0
-    const activeClients = clients?.length || 0
-    const intersCount = inters?.filter((i: any) => i.status === 'scheduled').length || 0
+    const currentMonth = new Date().getMonth()
+    const currentYear = new Date().getFullYear()
+
+    const monthlyRevenue = docs?.reduce((acc: number, curr: any) => {
+      const docDate = new Date(curr.created_at)
+      if (docDate.getMonth() === currentMonth && docDate.getFullYear() === currentYear && (curr.status === 'paid' || curr.status === 'accepted')) {
+        return acc + (curr.amount || 0)
+      }
+      return acc
+    }, 0) || 0
+
+    const activeProjectsCount = inters?.filter((i: any) => i.status === 'scheduled' || i.status === 'in_progress').length || 0
+    const overdueInvoicesCount = docs?.filter((d: any) => d.status === 'overdue').length || 0
 
     const newStats = []
     if (userRole === 'employee') {
-      newStats.push({ label: 'Chantiers prévus', value: `${intersCount} intervention(s)`, trend: 'Planning', icon: CalendarDays, color: 'text-purple-500' })
+      newStats.push({ label: 'Chantiers prévus', value: `${activeProjectsCount} chantier(s)`, trend: 'Planning', icon: CalendarDays, color: 'text-purple-500' })
     } else {
-      newStats.push({ label: 'Chiffre d\'affaires', value: `${totalRevenue.toLocaleString()} €`, trend: 'À jour', icon: TrendingUp, color: 'text-emerald-500' })
+      newStats.push({ label: 'CA du mois', value: `${monthlyRevenue.toLocaleString()} €`, trend: 'Mensuel', icon: TrendingUp, color: 'text-emerald-500' })
+      newStats.push(
+        { label: 'Chantiers actifs', value: `${activeProjectsCount}`, trend: 'Sur le terrain', icon: Users, color: 'text-blue-500' },
+        { label: 'Urgences / Retards', value: `${overdueInvoicesCount} alerte(s)`, trend: 'À traiter', icon: AlertCircle, color: 'text-rose-500' }
+      )
     }
-    newStats.push(
-      { label: 'En attente', value: `${pendingCount} doc(s)`, trend: 'À relancer', icon: Clock, color: 'text-amber-500' },
-      { label: 'Clients actifs', value: activeClients.toString(), trend: 'Base de données', icon: Users, color: 'text-blue-500' }
-    )
     setStats(newStats)
 
     // Génération de l'activité réactive

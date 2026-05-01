@@ -40,12 +40,14 @@ export default function StockPage() {
     unit: 'unité', 
     min_stock: 5,
     category: 'Matériaux',
+    supplier: '',
     purchase_price: 0,
     selling_price: 0
   })
   const [saving, setSaving] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filter, setFilter] = useState('all')
+  const [showOrderModal, setShowOrderModal] = useState(false)
   const supabase = createClient()
 
   async function load() {
@@ -115,6 +117,7 @@ export default function StockPage() {
           unit: 'unité', 
           min_stock: 5,
           category: 'Matériaux',
+          supplier: '',
           purchase_price: 0,
           selling_price: 0
         })
@@ -153,6 +156,7 @@ export default function StockPage() {
         const normalized = rows.map(r => ({
           name: r.name || r['désignation'] || r['designation'] || '',
           category: r.category || r['catégorie'] || r['categorie'] || 'Matériaux',
+          supplier: r.supplier || r['fournisseur'] || 'Non défini',
           unit: r.unit || r['unité'] || r['unite'] || 'unité',
           purchase_price: parseFloat(r.purchase_price || r["prix d'achat"] || r['prix_achat'] || '0') || 0,
           selling_price: parseFloat(r.selling_price || r['prix de vente'] || r['prix_vente'] || '0') || 0,
@@ -191,6 +195,27 @@ export default function StockPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a'); a.href = url; a.download = 'modele_catalogue.csv'; a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const generateOrderText = () => {
+    const missingStock = stock.filter(item => Number(item.quantity) <= Number(item.min_stock))
+    const bySupplier = missingStock.reduce((acc: any, item) => {
+      const sup = item.supplier || 'Fournisseur Inconnu'
+      if (!acc[sup]) acc[sup] = []
+      acc[sup].push(item)
+      return acc
+    }, {})
+
+    let text = "BON DE COMMANDE - RÉAPPROVISIONNEMENT\n\n"
+    for (const [sup, items] of Object.entries(bySupplier)) {
+      text += `--- FOURNISSEUR : ${sup} ---\n`
+      ;(items as any[]).forEach(item => {
+        const toOrder = Math.max(1, Number(item.min_stock) - Number(item.quantity) + 5) // Ex: order enough to be +5 above min
+        text += `- ${item.name} (${item.category}) : ${toOrder} ${item.unit}\n`
+      })
+      text += "\n"
+    }
+    return text
   }
 
   return (
@@ -273,6 +298,14 @@ export default function StockPage() {
             Alerte Rupture
           </button>
         </div>
+        {filter === 'low' && subscriptionPlan === 'expert' && stock.filter(s => s.quantity <= s.min_stock).length > 0 && (
+          <button
+            onClick={() => setShowOrderModal(true)}
+            className="flex items-center gap-2 px-6 py-2.5 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+          >
+            <Download className="w-3.5 h-3.5" /> Générer Commande
+          </button>
+        )}
       </div>
 
       {/* Stock List */}
@@ -296,7 +329,7 @@ export default function StockPage() {
                       <Box className="w-8 h-8" />
                     </div>
                     <div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-primary mb-1 block">{item.category || 'Général'}</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-primary mb-1 block">{item.category || 'Général'} {item.supplier ? `• ${item.supplier}` : ''}</span>
                       <h4 className="font-bold text-xl leading-tight">{item.name}</h4>
                       <div className="flex items-center gap-4 mt-2">
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -450,6 +483,16 @@ export default function StockPage() {
 
                <div className="grid grid-cols-2 gap-6">
                  <div className="space-y-2">
+                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Fournisseur</label>
+                   <input 
+                     required
+                     value={newItem.supplier}
+                     onChange={e => setNewItem({...newItem, supplier: e.target.value})}
+                     placeholder="ex: Leroy Merlin, Rexel..."
+                     className="w-full bg-secondary/50 border border-border rounded-2xl px-5 py-4 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                   />
+                 </div>
+                 <div className="space-y-2">
                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Catégorie</label>
                    <input 
                      value={newItem.category}
@@ -457,6 +500,12 @@ export default function StockPage() {
                      placeholder="ex: Électricité"
                      className="w-full bg-secondary/50 border border-border rounded-2xl px-5 py-4 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
                    />
+                 </div>
+               </div>
+               
+               <div className="grid grid-cols-2 gap-6">
+                 <div className="space-y-2 text-transparent hidden">
+                   {/* Dummy flex element removed */}
                  </div>
                  <div className="space-y-2">
                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Unité</label>
@@ -524,6 +573,36 @@ export default function StockPage() {
                  </button>
                </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL BON DE COMMANDE (Auto-approvisionnement) */}
+      {showOrderModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl bg-card border border-border rounded-[2rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-black mb-2 flex items-center gap-2"><Package className="w-5 h-5 text-primary" /> Auto-approvisionnement</h3>
+            <p className="text-sm text-muted-foreground mb-6">Voici la liste des articles en rupture, triés par fournisseur. Envoyez ceci à vos contacts commerciaux.</p>
+            
+            <textarea
+              readOnly
+              value={generateOrderText()}
+              className="w-full h-64 bg-secondary/50 border border-border/50 rounded-xl px-4 py-3 text-sm font-mono text-foreground outline-none resize-none custom-scrollbar"
+            />
+
+            <div className="flex gap-4 mt-8">
+              <button onClick={() => setShowOrderModal(false)} className="flex-1 py-3 bg-secondary rounded-xl font-bold hover:bg-secondary/80 transition-colors">Fermer</button>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(generateOrderText());
+                  alert("Bon de commande copié dans le presse-papier !");
+                  setShowOrderModal(false);
+                }} 
+                className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 transition-opacity shadow-lg shadow-primary/20"
+              >
+                Copier pour e-mail/SMS
+              </button>
+            </div>
           </div>
         </div>
       )}

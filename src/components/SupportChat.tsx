@@ -10,7 +10,6 @@ import { cn } from '@/lib/utils'
 import { useTheme } from './DynamicThemeProvider'
 
 export default function SupportChat() {
-  const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(false)
@@ -35,19 +34,18 @@ export default function SupportChat() {
     return () => clearInterval(interval)
   }, [])
 
-  // Mark as read when opening
   useEffect(() => {
-    if (isOpen && messages.some(m => !m.is_read && m.is_from_admin)) {
+    if (messages.some(m => !m.is_read && m.is_from_admin)) {
       markMessagesAsRead(ADMIN_ID, false).catch(console.error)
       setMessages(prev => prev.map(m => ({ ...m, is_read: true })))
     }
-  }, [isOpen, messages])
+  }, [messages])
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [messages, isOpen])
+  }, [messages])
 
   async function loadMessages() {
     try {
@@ -84,57 +82,27 @@ export default function SupportChat() {
 
   return (
     <div className={cn(
-      "fixed z-[9999] transition-all duration-500",
-      isOpen 
-        ? "inset-0 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm" 
-        : "bottom-6 right-6 md:bottom-8 md:right-8 max-md:bottom-24"
+      "bg-zinc-900 border border-white/10 shadow-sm flex flex-col overflow-hidden",
+      "w-full h-[600px] rounded-[32px]"
     )}>
-      {!isOpen ? (
-        <button
-          onClick={() => setIsOpen(true)}
-          style={{ backgroundColor: primaryColor }}
-          className="w-14 h-14 md:w-16 md:h-16 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all relative group"
-        >
-          <MessageSquare className="w-6 h-6 md:w-7 md:h-7 fill-white/10" />
-          {hasUnread && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 border-2 border-white rounded-full flex items-center justify-center animate-bounce">
-              <span className="w-2 h-2 bg-white rounded-full" />
-            </span>
-          )}
-          <div className="absolute right-full mr-4 px-3 py-1.5 bg-zinc-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl border border-white/10">
-            Aide & Support
+      {/* Header */}
+      <div className="p-6 flex items-center justify-between text-white shrink-0 border-b border-white/5 bg-zinc-800/50">
+        <div className="flex items-center gap-4">
+          <div 
+            style={{ backgroundColor: primaryColor }}
+            className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shadow-lg rotate-3"
+          >
+            F
           </div>
-        </button>
-      ) : (
-        <div className={cn(
-          "bg-zinc-900 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 duration-300",
-          "w-full h-[80vh] max-h-[700px] md:w-[400px] md:h-[600px] rounded-[32px]"
-        )}>
-          {/* Header */}
-          <div className="p-6 flex items-center justify-between text-white shrink-0 border-b border-white/5 bg-zinc-800/50 backdrop-blur-xl">
-            <div className="flex items-center gap-4">
-              <div 
-                style={{ backgroundColor: primaryColor }}
-                className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shadow-lg rotate-3"
-              >
-                F
-              </div>
-              <div>
-                <p className="text-base md:text-lg font-black tracking-tight">Support Flozy</p>
-                <p className="text-[10px] opacity-90 uppercase tracking-[0.2em] font-black flex items-center gap-2">
-                  <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
-                  En ligne
-                </p>
-              </div>
-            </div>
-            <button 
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all active:scale-90 border border-white/10 group"
-            >
-              <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block">Fermer</span>
-              <X className="w-6 h-6 md:w-5 md:h-5 group-hover:rotate-90 transition-transform" />
-            </button>
+          <div>
+            <p className="text-base md:text-lg font-black tracking-tight">Support Flozy</p>
+            <p className="text-[10px] opacity-90 uppercase tracking-[0.2em] font-black flex items-center gap-2">
+              <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
+              En ligne
+            </p>
           </div>
+        </div>
+      </div>
 
           {/* Messages List */}
           <div 
@@ -208,8 +176,6 @@ export default function SupportChat() {
               {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             </button>
           </form>
-        </div>
-      )}
     </div>
   )
 }

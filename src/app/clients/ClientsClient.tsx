@@ -44,7 +44,7 @@ export default function ClientsPage() {
 
     const [docsRes, interventionsRes] = await Promise.all([
       supabase.from('documents').select('*').eq('client_id', client.id).order('created_at', { ascending: false }).limit(5),
-      supabase.from('interventions').select('*').eq('client_id', client.id).order('start_time', { ascending: false }).limit(5)
+      supabase.from('interventions').select('*').eq('client_id', client.id).order('start_time', { ascending: false })
     ])
 
     setClientDocs(docsRes.data || [])
@@ -109,9 +109,9 @@ export default function ClientsPage() {
       id: i.id,
       type: 'intervention',
       label: i.title || 'Intervention',
-      sublabel: i.status === 'completed' ? 'Terminé' : i.status === 'scheduled' ? 'Planifié' : i.status,
+      sublabel: i.status === 'completed' ? 'Terminé' : i.status === 'scheduled' ? 'Planifié' : i.status === 'archived' ? 'Archivé' : i.status,
       date: i.start_time,
-      color: i.status === 'completed' ? 'text-emerald-500' : 'text-primary',
+      color: i.status === 'completed' || i.status === 'archived' ? 'text-emerald-500' : 'text-primary',
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
@@ -249,10 +249,10 @@ export default function ClientsPage() {
                 <div className="grid grid-cols-2 gap-6 relative z-10">
                   {/* Interventions réelles */}
                   <div className="space-y-4">
-                    <h4 className="font-bold flex items-center gap-2 text-sm"><Clock className="w-4 h-4 text-primary" /> Chantiers</h4>
-                    <div className="space-y-3">
+                    <h4 className="font-bold flex items-center gap-2 text-sm"><Clock className="w-4 h-4 text-primary" /> Projets associés</h4>
+                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                       {clientInterventions.length === 0 ? (
-                        <p className="text-xs text-muted-foreground p-3 bg-secondary/20 rounded-xl">Aucun chantier enregistré.</p>
+                        <p className="text-xs text-muted-foreground p-3 bg-secondary/20 rounded-xl">Aucun projet enregistré.</p>
                       ) : clientInterventions.map(i => (
                         <div key={i.id} className="p-3 bg-secondary/30 border border-border/50 rounded-xl text-xs flex justify-between items-center group cursor-pointer hover:border-primary/30">
                           <div>
@@ -260,8 +260,8 @@ export default function ClientsPage() {
                             <p className="text-muted-foreground">{formatDate(i.start_time)}</p>
                           </div>
                           <span className={cn("text-[10px] font-black uppercase px-2 py-0.5 rounded-full",
-                            i.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-primary/10 text-primary')}>
-                            {i.status === 'completed' ? 'Terminé' : 'Planifié'}
+                            i.status === 'archived' ? 'bg-amber-500/10 text-amber-500' : i.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-primary/10 text-primary')}>
+                            {i.status === 'archived' ? 'Archivé' : i.status === 'completed' ? 'Terminé' : 'En cours'}
                           </span>
                         </div>
                       ))}

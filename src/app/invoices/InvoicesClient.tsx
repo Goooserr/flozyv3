@@ -19,12 +19,15 @@ import {
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { getDocuments, convertQuoteToInvoice } from '@/lib/actions'
+import { useTheme } from '@/components/DynamicThemeProvider'
 
 export default function InvoicesPage() {
+  const { subscriptionPlan } = useTheme()
   const [invoices, setInvoices] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilter, setShowFilter] = useState(false)
+  const [followUpModal, setFollowUpModal] = useState<any>(null)
 
   async function load() {
     const data = await getDocuments()
@@ -59,6 +62,13 @@ export default function InvoicesPage() {
   const totalAttente = invoices.filter(i => i.status === 'pending').reduce((acc, curr) => acc + (curr.amount || 0), 0)
   const totalRetard = invoices.filter(i => i.status === 'overdue').reduce((acc, curr) => acc + (curr.amount || 0), 0)
 
+  const pendingOver7Days = invoices.filter(i => {
+    if (i.status !== 'pending') return false
+    const diffTime = Math.abs(new Date().getTime() - new Date(i.created_at).getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays > 7
+  })
+
   if (loading) return (
     <div className="flex items-center justify-center h-[60vh]">
       <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -83,6 +93,39 @@ export default function InvoicesPage() {
          <StatCard label="En attente" value={`${totalAttente.toLocaleString()} €`} color="text-amber-500" />
          <StatCard label="Retard" value={`${totalRetard.toLocaleString()} €`} color="text-rose-500" />
       </div>
+
+      {/* MODULE BONUS : Smart Follow-Up (Expert) */}
+      {subscriptionPlan === 'expert' && pendingOver7Days.length > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-[2rem] p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-500/20 text-amber-500 rounded-xl">
+                <BellRing className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-amber-600 dark:text-amber-500">Smart Follow-Up (Relances intelligentes)</h3>
+                <p className="text-sm text-amber-600/80 dark:text-amber-500/80">Ces devis sont en attente depuis plus de 7 jours. Une relance peut débloquer la vente.</p>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {pendingOver7Days.map(inv => (
+              <div key={inv.id} className="bg-card border border-amber-500/20 p-4 rounded-2xl flex flex-col justify-between">
+                <div>
+                  <p className="font-bold text-sm truncate">{inv.clients?.full_name || inv.metadata?.client_info?.name || 'Client'}</p>
+                  <p className="text-xs text-muted-foreground">{inv.document_number} — {(inv.amount || 0).toLocaleString()} €</p>
+                </div>
+                <button 
+                  onClick={() => setFollowUpModal(inv)}
+                  className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-amber-500 text-amber-950 font-black text-xs uppercase tracking-widest rounded-xl hover:opacity-90 transition-all"
+                >
+                  Générer Relance
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-card border border-border rounded-[2rem] overflow-hidden shadow-sm">
         <div className="p-6 border-b border-border flex items-center gap-4">
@@ -170,6 +213,42 @@ export default function InvoicesPage() {
           </table>
         </div>
       </div>
+
+      {/* MODAL RELANCE SMART FOLLOW-UP */}
+      {followUpModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-card border border-border rounded-[2rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-black mb-2">Relance : {followUpModal.clients?.full_name || followUpModal.metadata?.client_info?.name || 'Client'}</h3>
+            <p className="text-sm text-muted-foreground mb-6">Copiez ce message pour l'envoyer rapidement à votre client par SMS ou Email.</p>
+            
+            <div className="bg-secondary/50 p-4 rounded-xl border border-border/50 text-sm font-medium whitespace-pre-wrap">
+              Bonjour {followUpModal.clients?.full_name?.split(' ')[0] || ''},
+
+Avez-vous pu consulter mon devis ({followUpModal.document_number}) envoyé il y a quelques jours ?
+
+Je reste à votre disposition si vous avez des questions ou si vous souhaitez en discuter de vive voix.
+
+Cordialement,
+Votre Artisan
+            </div>
+
+            <div className="flex gap-4 mt-8">
+              <button onClick={() => setFollowUpModal(null)} className="flex-1 py-3 bg-secondary rounded-xl font-bold hover:bg-secondary/80 transition-colors">Fermer</button>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(`Bonjour ${followUpModal.clients?.full_name?.split(' ')[0] || ''},\n\nAvez-vous pu consulter mon devis (${followUpModal.document_number}) envoyé il y a quelques jours ?\n\nJe reste à votre disposition si vous avez des questions.\n\nCordialement,`);
+                  alert("Message copié dans le presse-papier !");
+                  setFollowUpModal(null);
+                  sendReminder(followUpModal.id);
+                }} 
+                className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 transition-opacity shadow-lg shadow-primary/20"
+              >
+                Copier & Marquer Relancé
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
