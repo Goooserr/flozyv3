@@ -360,7 +360,10 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
   }, [data.id])
 
   const formattedDate = new Date(data.date || data.start_time).toLocaleDateString('fr-FR', {
-    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+    day: 'numeric', month: 'short'
+  })
+  const formattedTime = new Date(data.date || data.start_time).toLocaleTimeString('fr-FR', {
+    hour: '2-digit', minute: '2-digit'
   })
 
   const updateStatus = async (newStatus: string) => {
@@ -384,7 +387,6 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
     }
   }
 
-  // Parse catalog lines if stored in notes as JSON
   let catalogLines: any[] = []
   let catalogTotalSell = 0
   let catalogTotalCost = 0
@@ -413,154 +415,147 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
   const realCost = catalogTotalCost + (hoursWorked * hourlyRate)
   const netMargin = catalogTotalSell - realCost
 
-  const statusLabels: any = { scheduled: 'À faire', in_progress: 'En cours', completed: 'Terminé' }
   const statusColors: any = {
-    scheduled: 'border-amber-500/40 text-amber-600 bg-amber-50 dark:bg-amber-500/10',
-    in_progress: 'border-blue-500/40 text-blue-600 bg-blue-50 dark:bg-blue-500/10',
-    completed: 'border-emerald-500/40 text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10',
+    scheduled: 'bg-amber-500 text-white',
+    in_progress: 'bg-blue-500 text-white',
+    completed: 'bg-emerald-500 text-white',
   }
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group relative overflow-hidden">
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-      
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{formattedDate}</p>
-          <h4 className="font-bold leading-tight group-hover:text-primary transition-colors">{data.title}</h4>
-        </div>
-        {/* Statut dropdown — toujours visible, même sur mobile */}
-        <select
-          value={data.status}
-          onChange={e => updateStatus(e.target.value)}
-          className={cn(
-            "text-[10px] font-black uppercase tracking-widest border rounded-lg px-2 py-1.5 outline-none cursor-pointer transition-all min-h-[32px]",
-            statusColors[data.status] || statusColors.scheduled
-          )}
-        >
-          <option value="scheduled">À faire</option>
-          <option value="in_progress">En cours</option>
-          <option value="completed">Terminé</option>
-        </select>
-      </div>
-
-      <div className="space-y-2 mb-3">
-        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded-full bg-secondary flex items-center justify-center font-bold text-[8px]">
-            {data.clients?.full_name?.substring(0, 1) || 'C'}
+    <div className="bg-card border border-border rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group">
+      {/* Top Info Bar */}
+      <div className="p-5 space-y-4">
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-2">
+            <div className="bg-secondary/50 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter">
+              {formattedDate} • {formattedTime}
+            </div>
+            {subscriptionPlan === 'expert' && netMargin !== 0 && (
+              <div className={cn(
+                "px-2 py-1 rounded-full text-[9px] font-black uppercase",
+                netMargin > 0 ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600"
+              )}>
+                {netMargin > 0 ? '+' : ''}{netMargin.toFixed(0)}€
+              </div>
+            )}
           </div>
-          <span className="truncate">{data.clients?.full_name || 'Client Direct'}</span>
-        </p>
-        {data.address && (
-          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <MapPin className="w-3 h-3 shrink-0" />
-            <span className="truncate">{data.address}</span>
-          </p>
+          <select
+            value={data.status}
+            onChange={e => updateStatus(e.target.value)}
+            className={cn(
+              "text-[10px] font-black uppercase tracking-widest rounded-full px-3 py-1 outline-none cursor-pointer transition-all appearance-none text-center min-w-[90px]",
+              statusColors[data.status] || statusColors.scheduled
+            )}
+          >
+            <option value="scheduled">À faire</option>
+            <option value="in_progress">En cours</option>
+            <option value="completed">Terminé</option>
+          </select>
+        </div>
+
+        <div>
+          <h4 className="text-lg font-bold leading-tight mb-1 group-hover:text-primary transition-colors">{data.title}</h4>
+          <div className="flex flex-col gap-1.5 bg-secondary/20 p-3 rounded-2xl border border-border/40">
+            <p className="text-xs font-semibold flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-black">
+                {data.clients?.full_name?.substring(0, 1) || 'C'}
+              </span>
+              {data.clients?.full_name || 'Client Direct'}
+            </p>
+            {data.address && (
+              <p className="text-[11px] text-muted-foreground flex items-center gap-2 pl-1">
+                <MapPin className="w-3.5 h-3.5 text-primary/60" />
+                <span className="truncate">{data.address}</span>
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Expert Stats Row */}
+        {subscriptionPlan === 'expert' && userRole !== 'employee' && (
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <div className="flex items-center gap-3">
+               <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
+                 <Clock className="w-3.5 h-3.5 text-primary" />
+                 {isEditingHours ? (
+                   <div className="flex items-center gap-1">
+                     <input type="number" value={hours} onChange={e => setHours(e.target.value)} className="w-10 bg-secondary border-none rounded px-1 text-[10px]" />
+                     <button onClick={handleSaveHours} className="text-emerald-500"><CheckCircle2 className="w-3 h-3" /></button>
+                   </div>
+                 ) : (
+                   <span onClick={() => {setHours(hoursWorked.toString()); setIsEditingHours(true)}} className="cursor-pointer border-b border-dotted border-primary/50">{hoursWorked}h</span>
+                 )}
+               </div>
+               {catalogLines.length > 0 && (
+                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
+                   <Package className="w-3.5 h-3.5 text-primary" />
+                   {catalogTotalSell.toFixed(0)}€
+                 </div>
+               )}
+            </div>
+            {netMargin !== 0 && (
+              <div className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">
+                Rentabilité: {((netMargin / (catalogTotalSell || 1)) * 100).toFixed(0)}%
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      {/* Résumé chiffrage catalogue — CACHÉ POUR LES EMPLOYÉS */}
-      {userRole !== 'employee' && catalogLines.length > 0 && (
-        <div className="flex flex-col gap-2 mb-3 bg-secondary/30 rounded-xl px-3 py-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <Euro className="w-3 h-3" /> Matériel : <span className="font-black text-foreground ml-0.5">{catalogTotalCost.toFixed(0)} €</span>
-            </div>
-            <div className="flex items-center gap-1 text-[10px] text-emerald-500 font-bold">
-              <TrendingUp className="w-3 h-3" /> Vente : {catalogTotalSell.toFixed(0)} €
-            </div>
-          </div>
-          
-          {/* MODULE BONUS : Time & Margin AI (Expert) */}
-          {subscriptionPlan === 'expert' && (
-             <div className="mt-2 pt-2 border-t border-border/50 flex flex-col gap-2">
-               <div className="flex items-center justify-between">
-                 <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                   <Clock className="w-3 h-3 text-primary" /> Temps : 
-                   {isEditingHours ? (
-                     <div className="flex items-center gap-1">
-                       <input 
-                         type="number" 
-                         value={hours} 
-                         onChange={e => setHours(e.target.value)} 
-                         className="w-12 bg-card border border-border rounded px-1 py-0.5 text-foreground text-xs" 
-                         placeholder="h"
-                       />
-                       <button onClick={handleSaveHours} className="text-emerald-500 hover:text-emerald-600"><CheckCircle2 className="w-3 h-3" /></button>
-                     </div>
-                   ) : (
-                     <span 
-                       className="font-black text-foreground ml-0.5 cursor-pointer hover:text-primary transition-colors border-b border-dashed border-primary/50"
-                       onClick={() => { setHours(hoursWorked.toString()); setIsEditingHours(true); }}
-                     >
-                       {hoursWorked} h
-                     </span>
-                   )}
-                 </div>
-                 <div className={cn("text-[10px] font-black tracking-widest px-1.5 py-0.5 rounded", netMargin >= 0 ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500")}>
-                   Marge Nette : {netMargin.toFixed(0)} €
-                 </div>
-               </div>
-             </div>
-          )}
-        </div>
-      )}
-
-      {/* Photo thumbnails */}
-      {photos.length > 0 && (
-        <div className="flex gap-2 mb-3 flex-wrap">
-          {photos.slice(0, 4).map((url, idx) => (
-            <button key={idx} onClick={() => setShowGallery(true)}
-              className="w-14 h-14 rounded-xl overflow-hidden border-2 border-border hover:border-primary transition-all group relative shrink-0">
-              <img src={url} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-              {idx === 3 && photos.length > 4 && (
-                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                  <span className="text-white text-[10px] font-black">+{photos.length - 4}</span>
-                </div>
-              )}
+      {/* Photo Strip (Horizontal Scroll) */}
+      <div className="relative group/photos">
+        <div className="flex gap-2 overflow-x-auto px-5 pb-4 no-scrollbar scroll-smooth">
+          {photos.map((url, idx) => (
+            <button key={idx} onClick={() => setShowGallery(true)} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border/50 shrink-0 hover:scale-105 transition-transform duration-300">
+              <img src={url} alt="" className="w-full h-full object-cover" />
             </button>
           ))}
-        </div>
-      )}
-
-      <div className="flex items-center justify-between pt-3 border-t border-border/50">
-        <div className="flex items-center gap-2">
-          <label className="cursor-pointer">
+          <label className="w-24 h-24 rounded-2xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-secondary/30 transition-all shrink-0">
             <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
-            <div className={cn("flex items-center gap-1 px-2 py-1 bg-secondary text-muted-foreground rounded-md text-[10px] font-medium hover:bg-secondary/80 hover:text-foreground transition-colors", uploading && "opacity-50")}>
-              {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3" />}
-              <span>{uploading ? 'Envoi...' : photos.length > 0 ? `Photo (${photos.length})` : 'Photo'}</span>
-            </div>
+            {uploading ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <Camera className="w-5 h-5 text-muted-foreground" />}
+            <span className="text-[8px] font-black uppercase text-muted-foreground">{uploading ? '...' : 'Ajouter'}</span>
           </label>
-          {data.address && <NavigationMenu address={data.address} />}
         </div>
-        {data.status === 'completed' && userRole !== 'employee' && (
-          <div className="flex gap-2">
-            <button onClick={() => updateStatus('archived')} className="flex items-center gap-1 px-2 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-md text-[10px] font-bold hover:bg-amber-500/20 transition-all hover:scale-105">
-              <Archive className="w-3 h-3" /> Archiver
-            </button>
-            <Link href="/invoices/new" className="flex items-center gap-1 px-2 py-1 bg-primary text-primary-foreground rounded-md text-[10px] font-bold hover:opacity-90 shadow-sm shadow-primary/20 transition-all hover:scale-105">
-              <FileText className="w-3 h-3" /> Facturer
-            </Link>
-          </div>
-        )}
       </div>
 
-      {/* Galerie Lightbox */}
+      {/* Action Footer */}
+      <div className="p-5 bg-secondary/10 border-t border-border/30 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {data.address && <NavigationMenu address={data.address} />}
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {data.status === 'completed' && userRole !== 'employee' && (
+            <>
+              <button onClick={() => updateStatus('archived')} className="p-2.5 bg-amber-500/10 text-amber-600 rounded-xl hover:bg-amber-500/20 transition-all" title="Archiver">
+                <Archive className="w-4 h-4" />
+              </button>
+              <Link href="/invoices/new" className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-[11px] shadow-lg shadow-primary/20 hover:scale-105 transition-all">
+                <FileText className="w-4 h-4" /> Facturer
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Gallery Overlay */}
       {showGallery && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex flex-col p-6 animate-in fade-in duration-300">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-white font-bold">{data.title} — Photos</h3>
-            <button onClick={() => setShowGallery(false)} className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors">
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] flex flex-col p-6 animate-in fade-in duration-300">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h3 className="text-white font-bold text-xl">{data.title}</h3>
+              <p className="text-white/40 text-sm">{photos.length} photos enregistrées</p>
+            </div>
+            <button onClick={() => setShowGallery(false)} className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all">
               <XIcon className="w-6 h-6" />
             </button>
           </div>
-          <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 overflow-y-auto">
-            {photos.map((url: string, idx: number) => (
-              <div key={idx} className="aspect-square rounded-2xl overflow-hidden bg-white/5 border border-white/10 group relative">
-                <img src={url} alt={`Chantier ${idx}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                <a href={url} target="_blank" className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-[10px] text-white font-bold uppercase tracking-widest bg-black/60 px-3 py-1 rounded-full">Voir HD</span>
+          <div className="flex-1 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 overflow-y-auto custom-scrollbar pb-10">
+            {photos.map((url, idx) => (
+              <div key={idx} className="aspect-square rounded-3xl overflow-hidden border border-white/10 relative group">
+                <img src={url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                <a href={url} target="_blank" className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                   <span className="text-[10px] text-white font-black uppercase tracking-widest border border-white/20 px-3 py-1.5 rounded-full">HD</span>
                 </a>
               </div>
             ))}
