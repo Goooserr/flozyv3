@@ -152,14 +152,15 @@ export default async function ClientPortalPage({ params }: { params: { id: strin
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {photos.map((url, idx) => (
-                <div key={idx} className="aspect-square rounded-2xl overflow-hidden bg-zinc-100 border border-zinc-200 group relative">
-                  <img src={url} alt={`Chantier ${idx}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                  <a href={url} target="_blank" className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span className="text-[10px] text-white font-bold uppercase tracking-widest bg-black/60 px-3 py-1 rounded-full flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Agrandir</span>
-                  </a>
-                </div>
-              ))}
+                {photos.map((url, idx) => (
+                  <div key={idx} className="aspect-square rounded-2xl overflow-hidden bg-zinc-100 border border-zinc-200 group relative">
+                    <img src={url} alt={`Chantier ${idx}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                    <a href={url} target="_blank" className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-[10px] text-white font-bold uppercase tracking-widest bg-black/60 px-3 py-1 rounded-full flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Agrandir</span>
+                    </a>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
