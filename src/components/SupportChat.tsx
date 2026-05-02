@@ -58,7 +58,7 @@ export default function SupportChat() {
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault()
-    if (!newMessage.trim() || sending || !currentUser) return
+    if (!newMessage.trim() || sending) return
 
     setSending(true)
     try {
