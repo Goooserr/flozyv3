@@ -522,7 +522,11 @@ function ClotureTab({ data, parsedDesc, updateDesc, onArchive }: any) {
       email: data.clients?.email || ''
     }
 
-    localStorage.setItem('invoice_draft', JSON.stringify({ items: invoiceItems, client: invoiceClient }))
+    localStorage.setItem('invoice_draft', JSON.stringify({ 
+      items: invoiceItems, 
+      client: invoiceClient,
+      intervention_id: data.id 
+    }))
     window.location.href = '/invoices/new'
   }
 

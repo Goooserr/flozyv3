@@ -35,6 +35,7 @@ export default function NewInvoicePage() {
   const [signature, setSignature] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [docType, setDocType] = useState<'invoice' | 'quote'>('invoice')
+  const [interventionId, setInterventionId] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadClients() {
@@ -65,9 +66,7 @@ export default function NewInvoicePage() {
     try {
       const totalHT = items.reduce((acc, item) => acc + (item.quantity * (item.price || 0)), 0)
       const totalTTC = totalHT * 1.2
-      const prefix = docType === 'invoice' ? 'FAC' : 'DEV'
-      
-      const { createDocument, updateStockQuantity, getStock } = await import('@/lib/actions')
+      const { createDocument, updateStockQuantity, getStock, updateIntervention } = await import('@/lib/actions')
       
       await createDocument({
         type: docType,
@@ -81,9 +80,15 @@ export default function NewInvoicePage() {
           signature: signature,
           subtotal: totalHT,
           tax: totalHT * 0.2,
-          total_cost: items.reduce((acc, item) => acc + (item.quantity * (item.purchasePrice || 0)), 0)
+          total_cost: items.reduce((acc, item) => acc + (item.quantity * (item.purchasePrice || 0)), 0),
+          intervention_id: interventionId
         }
       })
+
+      // Workflow : Archiver l'intervention liée
+      if (interventionId) {
+        await updateIntervention(interventionId, { status: 'archived' })
+      }
 
       // Sync Stock Logic
       for (const item of items) {
@@ -110,16 +115,17 @@ export default function NewInvoicePage() {
   useEffect(() => {
     const draft = localStorage.getItem('invoice_draft')
     if (draft) {
-      const { items: dItems, client: dClient } = JSON.parse(draft)
+      const { items: dItems, client: dClient, intervention_id } = JSON.parse(draft)
       setItems(dItems)
       setClient(dClient)
+      if (intervention_id) setInterventionId(intervention_id)
     }
   }, [])
 
   // Effet pour sauvegarder le brouillon (Anti-Coupure)
   useEffect(() => {
-    localStorage.setItem('invoice_draft', JSON.stringify({ items, client }))
-  }, [items, client])
+    localStorage.setItem('invoice_draft', JSON.stringify({ items, client, intervention_id: interventionId }))
+  }, [items, client, interventionId])
   
   const selectFromCatalog = (catalogItem: any) => {
     setItems([...items, { 
