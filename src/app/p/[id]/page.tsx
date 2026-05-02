@@ -105,7 +105,7 @@ export default async function ClientPortalPage({ params }: { params: { id: strin
                  <p className="text-4xl font-black">{Number(document.amount).toLocaleString()} €</p>
                  <p className="text-sm text-zinc-500 font-medium">TTC</p>
               </div>
-           </div>
+            </div>
 
            <div className="p-8">
               <table className="w-full text-left">
@@ -136,18 +136,22 @@ export default async function ClientPortalPage({ params }: { params: { id: strin
 
         {/* MODULE BONUS : Photos du chantier (Expert) */}
         {photos.length > 0 && (
-          <div className="bg-white rounded-3xl shadow-sm border border-zinc-100 overflow-hidden mb-8 p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-zinc-100 rounded-xl flex items-center justify-center text-zinc-500">
-                <Camera className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold">Suivi de Chantier</h3>
-                <p className="text-sm text-zinc-500">Photos de l'intervention partagées par votre artisan.</p>
-              </div>
+          <div className="bg-zinc-900 text-white rounded-3xl shadow-xl overflow-hidden mb-8 p-8 relative">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <Camera className="w-48 h-48 rotate-12" />
             </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-white backdrop-blur-md">
+                  <Camera className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black">Carnet d'Ouvrage</h3>
+                  <p className="text-sm text-zinc-400">Transparence totale : Voici les photos de l'intervention.</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {photos.map((url, idx) => (
                 <div key={idx} className="aspect-square rounded-2xl overflow-hidden bg-zinc-100 border border-zinc-200 group relative">
                   <img src={url} alt={`Chantier ${idx}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" />

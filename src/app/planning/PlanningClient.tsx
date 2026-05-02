@@ -481,6 +481,42 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
     return `${h > 0 ? h + 'h ' : ''}${m}m ${s}s`
   }
 
+  const handleGenerateInvoice = () => {
+    // 1. Préparer les articles (Catalogue)
+    const invoiceItems = catalogLines.map((line: any) => ({
+      description: line.name || line.description,
+      quantity: 1,
+      price: line.selling_price || 0,
+      purchasePrice: line.purchase_price || 0,
+      syncStock: true,
+      mode: 'catalog'
+    }))
+
+    // 2. Ajouter la Main d'Oeuvre si applicable
+    if (hoursWorked > 0) {
+      invoiceItems.push({
+        description: `Main d'œuvre (${hoursWorked}h)`,
+        quantity: hoursWorked,
+        price: hourlyRate,
+        purchasePrice: 0,
+        syncStock: false,
+        mode: 'manual'
+      })
+    }
+
+    // 3. Préparer le client
+    const invoiceClient = {
+      id: data.client_id || '',
+      name: data.clients?.full_name || '',
+      address: data.address || '',
+      email: data.clients?.email || ''
+    }
+
+    // 4. Sauvegarder en brouillon et rediriger
+    localStorage.setItem('invoice_draft', JSON.stringify({ items: invoiceItems, client: invoiceClient }))
+    window.location.href = '/invoices/new'
+  }
+
   const statusColors: any = {
     scheduled: 'bg-amber-500 text-white',
     in_progress: 'bg-blue-500 text-white',
@@ -620,9 +656,9 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
               <button onClick={() => updateStatus('archived')} className="p-2.5 bg-amber-500/10 text-amber-600 rounded-xl hover:bg-amber-500/20 transition-all" title="Archiver">
                 <Archive className="w-4 h-4" />
               </button>
-              <Link href="/invoices/new" className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-[11px] shadow-lg shadow-primary/20 hover:scale-105 transition-all">
-                <FileText className="w-4 h-4" /> Facturer
-              </Link>
+              <button onClick={handleGenerateInvoice} className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-[11px] shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)] hover:scale-105 transition-all">
+                <FileText className="w-4 h-4" /> Facturer (Auto)
+              </button>
             </>
           )}
         </div>

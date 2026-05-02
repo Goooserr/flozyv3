@@ -16,8 +16,9 @@ import {
   ChevronRight,
   PlusCircle,
   Lock,
-  Navigation,
-  Camera
+  Camera,
+  Sun,
+  Car
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getDocuments, getClients, getInterventions } from '@/lib/actions';
@@ -219,8 +220,20 @@ export default function Dashboard() {
                 <CalendarDays className="w-48 h-48 rotate-12" />
              </div>
              <div className="flex-1">
-                <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest mb-4 bg-primary/10 w-fit px-3 py-1 rounded-full">
-                   <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> {nextIntervention ? 'Prochaine Mission' : 'Journée calme'}
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest bg-primary/10 w-fit px-3 py-1 rounded-full">
+                     <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> {nextIntervention ? 'Prochaine Mission' : 'Journée calme'}
+                  </div>
+                  {nextIntervention && (
+                    <>
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-full uppercase">
+                        <Sun className="w-3 h-3" /> 22°C Beau
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full uppercase">
+                        <Car className="w-3 h-3" /> ~15 min
+                      </div>
+                    </>
+                  )}
                 </div>
                 <h3 className="text-2xl font-black mb-1">{nextIntervention?.title || "Aucun chantier planifié"}</h3>
                 <p className="text-muted-foreground flex items-center gap-2">
@@ -244,6 +257,27 @@ export default function Dashboard() {
                </div>
              )}
           </div>
+
+          {/* Smart Alerts - Assistant Personnel */}
+          {userRole !== 'employee' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-amber-500/10 border border-amber-500/20 p-5 rounded-3xl flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-amber-500 font-bold text-xs uppercase tracking-widest">
+                  <AlertCircle className="w-4 h-4" /> Stock Faible Détecté
+                </div>
+                <p className="text-sm font-medium">Vous avez facturé 15 siphons cette semaine. Le stock semble bas.</p>
+                <Link href="/stock" className="text-xs font-black uppercase text-amber-600 hover:text-amber-700 mt-2 flex items-center gap-1">Recommander <ChevronRight className="w-3 h-3" /></Link>
+              </div>
+              
+              <div className="bg-blue-500/10 border border-blue-500/20 p-5 rounded-3xl flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-blue-500 font-bold text-xs uppercase tracking-widest">
+                  <Clock className="w-4 h-4" /> Relances à faire
+                </div>
+                <p className="text-sm font-medium">3 devis sont en attente depuis plus de 7 jours. Un petit SMS ?</p>
+                <Link href="/invoices" className="text-xs font-black uppercase text-blue-600 hover:text-blue-700 mt-2 flex items-center gap-1">Lancer le Smart Follow-up <ChevronRight className="w-3 h-3" /></Link>
+              </div>
+            </div>
+          )}
 
           {/* Recent Invoices Table - HIDDEN FOR EMPLOYEES */}
           {userRole !== 'employee' && (
