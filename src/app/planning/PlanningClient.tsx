@@ -15,8 +15,13 @@ import {
   Euro,
   TrendingUp,
   ChevronDown,
-  Archive
+  Archive,
+  Play,
+  Square,
+  PenTool,
+  Check
 } from 'lucide-react'
+import { SignaturePad } from '@/components/SignaturePad'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { useTheme } from '@/components/DynamicThemeProvider'
@@ -347,6 +352,26 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
   const [photos, setPhotos] = useState<string[]>([])
   const [hours, setHours] = useState<string>('')
   const [isEditingHours, setIsEditingHours] = useState(false)
+  const [isSigning, setIsSigning] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
+
+  // Chrono Tick
+  useEffect(() => {
+    let interval: any;
+    try {
+      const parsed = JSON.parse(data.description || '{}')
+      if (parsed.timer_start) {
+        interval = setInterval(() => {
+          const start = new Date(parsed.timer_start).getTime()
+          const now = new Date().getTime()
+          setElapsed(Math.floor((now - start) / 1000))
+        }, 1000)
+      } else {
+        setElapsed(0)
+      }
+    } catch {}
+    return () => clearInterval(interval)
+  }, [data.description])
 
   useEffect(() => {
     async function loadPhotos() {
@@ -415,6 +440,47 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
   const realCost = catalogTotalCost + (hoursWorked * hourlyRate)
   const netMargin = catalogTotalSell - realCost
 
+  const handleToggleTimer = async () => {
+    const { updateIntervention } = await import('@/lib/actions')
+    const now = new Date().toISOString()
+    
+    if (parsedDesc.timer_start) {
+      // STOP TIMER
+      const start = new Date(parsedDesc.timer_start).getTime()
+      const end = new Date().getTime()
+      const diffHours = (end - start) / (1000 * 60 * 60)
+      const newTotalHours = Number((hoursWorked + diffHours).toFixed(2))
+      
+      const newDesc = { ...parsedDesc }
+      delete newDesc.timer_start
+      await updateIntervention(data.id, { 
+        description: JSON.stringify({ ...newDesc, hours_worked: newTotalHours }) 
+      })
+    } else {
+      // START TIMER
+      await updateIntervention(data.id, { 
+        description: JSON.stringify({ ...parsedDesc, timer_start: now }) 
+      })
+    }
+    reload()
+  }
+
+  const handleSaveSignature = async (signatureUrl: string) => {
+    const { updateIntervention } = await import('@/lib/actions')
+    await updateIntervention(data.id, { 
+      description: JSON.stringify({ ...parsedDesc, signature_url: signatureUrl }) 
+    })
+    setIsSigning(false)
+    reload()
+  }
+
+  const formatElapsed = (seconds: number) => {
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = seconds % 60
+    return `${h > 0 ? h + 'h ' : ''}${m}m ${s}s`
+  }
+
   const statusColors: any = {
     scheduled: 'bg-amber-500 text-white',
     in_progress: 'bg-blue-500 text-white',
@@ -476,14 +542,21 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
           <div className="flex items-center justify-between gap-2 pt-1">
             <div className="flex items-center gap-3">
                <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
-                 <Clock className="w-3.5 h-3.5 text-primary" />
+                 <Clock className={cn("w-3.5 h-3.5", parsedDesc.timer_start ? "text-blue-500 animate-pulse" : "text-primary")} />
                  {isEditingHours ? (
                    <div className="flex items-center gap-1">
                      <input type="number" value={hours} onChange={e => setHours(e.target.value)} className="w-10 bg-secondary border-none rounded px-1 text-[10px]" />
                      <button onClick={handleSaveHours} className="text-emerald-500"><CheckCircle2 className="w-3 h-3" /></button>
                    </div>
                  ) : (
-                   <span onClick={() => {setHours(hoursWorked.toString()); setIsEditingHours(true)}} className="cursor-pointer border-b border-dotted border-primary/50">{hoursWorked}h</span>
+                   <div className="flex items-center gap-2">
+                     <span onClick={() => {setHours(hoursWorked.toString()); setIsEditingHours(true)}} className="cursor-pointer border-b border-dotted border-primary/50">
+                       {hoursWorked > 0 ? hoursWorked + 'h' : '0h'}
+                     </span>
+                     {parsedDesc.timer_start && (
+                       <span className="text-blue-500 font-mono">({formatElapsed(elapsed)})</span>
+                     )}
+                   </div>
                  )}
                </div>
                {catalogLines.length > 0 && (
@@ -493,11 +566,16 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
                  </div>
                )}
             </div>
-            {netMargin !== 0 && (
-              <div className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">
-                Rentabilité: {((netMargin / (catalogTotalSell || 1)) * 100).toFixed(0)}%
-              </div>
-            )}
+            
+            <button 
+              onClick={handleToggleTimer}
+              className={cn(
+                "p-2 rounded-full transition-all shadow-sm",
+                parsedDesc.timer_start ? "bg-rose-500 text-white animate-pulse" : "bg-secondary text-primary hover:bg-primary/10"
+              )}
+            >
+              {parsedDesc.timer_start ? <Square className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+            </button>
           </div>
         )}
       </div>
@@ -520,8 +598,20 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
 
       {/* Action Footer */}
       <div className="p-5 bg-secondary/10 border-t border-border/30 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {data.address && <NavigationMenu address={data.address} />}
+          {userRole !== 'employee' && (
+            <button 
+              onClick={() => setIsSigning(true)}
+              className={cn(
+                "p-2.5 rounded-xl transition-all flex items-center gap-2 text-[10px] font-bold",
+                parsedDesc.signature_url ? "bg-emerald-500/10 text-emerald-600" : "bg-secondary text-muted-foreground hover:text-primary"
+              )}
+            >
+              <PenTool className="w-4 h-4" />
+              {parsedDesc.signature_url ? "Signé" : "Signature"}
+            </button>
+          )}
         </div>
         
         <div className="flex items-center gap-2">
@@ -560,7 +650,21 @@ function InterventionCard({ data, reload }: { data: any, reload: () => void }) {
               </div>
             ))}
           </div>
+          {parsedDesc.signature_url && (
+            <div className="mt-6 p-4 bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center">
+               <p className="text-[10px] text-white/40 uppercase font-black tracking-widest mb-2">Signature du client</p>
+               <img src={parsedDesc.signature_url} alt="Signature" className="h-20 invert grayscale contrast-200" />
+            </div>
+          )}
         </div>
+      )}
+
+      {/* Signature Pad Overlay */}
+      {isSigning && (
+        <SignaturePad 
+          onCancel={() => setIsSigning(false)}
+          onSave={handleSaveSignature}
+        />
       )}
     </div>
   )

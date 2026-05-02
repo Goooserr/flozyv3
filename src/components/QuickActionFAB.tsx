@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { useTheme } from './DynamicThemeProvider'
 
-export function QuickActionFAB() {
+export function QuickActionFAB({ className }: { className?: string }) {
   const [isOpen, setIsOpen] = useState(false)
   const { enabledModules, userRole } = useTheme()
 
@@ -23,7 +23,7 @@ export function QuickActionFAB() {
   }
 
   return (
-    <div className="fixed bottom-6 right-4 md:hidden z-50">
+    <div className={cn("fixed right-4 md:hidden z-[150]", className || "bottom-6")}>
       {/* Backdrop */}
       {isOpen && (
         <div

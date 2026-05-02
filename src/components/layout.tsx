@@ -296,12 +296,11 @@ export function MobileDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   );
 }
 
-export function Header() {
+export function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const router = useRouter();
   const supabase = createClient();
   const pathname = usePathname();
   const [profile, setProfile] = useState<any>(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { primaryColor, companyName, logoUrl, subscriptionPlan } = useTheme();
   
   const isAdminView = pathname.startsWith('/admin') || (typeof document !== 'undefined' && document.cookie.includes('flozy_admin_access=true') && pathname.startsWith('/admin'));
@@ -332,20 +331,10 @@ export function Header() {
 
   return (
     <>
-      <MobileDrawer isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
-
       <header className="h-16 border-b border-border bg-background/50 backdrop-blur-xl sticky top-0 z-10 px-4 flex items-center justify-between">
-        {/* Hamburger + Logo — Mobile */}
+        {/* Logo — Mobile (Only) */}
         <div className="flex items-center gap-3 md:hidden">
-          <button
-            id="mobile-menu-toggle"
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="p-2.5 hover:bg-secondary rounded-xl text-foreground transition-colors border border-border"
-            aria-label="Ouvrir le menu"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <span className="font-bold truncate max-w-[120px]">{isAdminView ? 'Nexus Admin' : (companyName || 'Mon Espace')}</span>
+          <span className="font-bold truncate max-w-[150px]">{isAdminView ? 'Nexus Admin' : (companyName || 'Mon Espace')}</span>
         </div>
 
         <div className="flex-1 flex justify-end items-center gap-4">
@@ -393,5 +382,52 @@ export function Header() {
         </div>
       </header>
     </>
+  );
+}
+
+export function BottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
+  const pathname = usePathname();
+  const { enabledModules } = useTheme();
+  
+  const bottomItems = [
+    { name: 'Tableau', icon: LayoutDashboard, href: '/dashboard', module: null },
+    { name: 'Planning', icon: Calendar, href: '/planning', module: 'planning' },
+    { name: 'Stock', icon: Box, href: '/stock', module: 'stock' },
+    { name: 'Factures', icon: FileText, href: '/invoices', module: 'documents' },
+  ];
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-[100] pb-safe md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+      <div className="flex items-center justify-around px-2 py-2">
+        {bottomItems.map((item) => {
+          const isEnabled = !item.module || enabledModules.includes(item.module);
+          const isActive = pathname.startsWith(item.href) && item.href !== '/' || pathname === item.href;
+          
+          if (!isEnabled) return null;
+          
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={cn(
+                "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 min-w-[64px]",
+                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+              )}
+            >
+              <item.icon className={cn("w-5 h-5 transition-transform duration-300", isActive && "scale-110")} strokeWidth={isActive ? 2.5 : 2} />
+              <span className="text-[10px] font-semibold">{item.name}</span>
+            </Link>
+          );
+        })}
+        
+        <button
+          onClick={onOpenMenu}
+          className="flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 text-muted-foreground hover:text-foreground hover:bg-secondary/50 min-w-[64px]"
+        >
+          <Menu className="w-5 h-5" strokeWidth={2} />
+          <span className="text-[10px] font-semibold">Menu</span>
+        </button>
+      </div>
+    </nav>
   );
 }
