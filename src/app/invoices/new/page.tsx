@@ -66,6 +66,7 @@ export default function NewInvoicePage() {
     try {
       const totalHT = items.reduce((acc, item) => acc + (item.quantity * (item.price || 0)), 0)
       const totalTTC = totalHT * 1.2
+      const prefix = docType === 'invoice' ? 'FAC' : 'DEV'
       const { createDocument, updateStockQuantity, getStock, updateIntervention } = await import('@/lib/actions')
       
       await createDocument({
