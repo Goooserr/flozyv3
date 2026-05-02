@@ -18,7 +18,8 @@ import {
   Lock,
   Camera,
   Sun,
-  Car
+  Car,
+  Navigation
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getDocuments, getClients, getInterventions } from '@/lib/actions';
