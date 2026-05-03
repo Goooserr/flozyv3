@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import InvoicesPage from "./InvoicesClient";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Factures & Devis",
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <InvoicesPage />;
+  return (
+    <Suspense fallback={null}>
+      <InvoicesPage />
+    </Suspense>
+  );
 }

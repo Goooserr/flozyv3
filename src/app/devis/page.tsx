@@ -65,10 +65,6 @@ export default function QuoteInstantPage() {
     load()
   }, [])
 
-  function showToast(msg: string) {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3000)
-  }
 
   const totalHT = items.reduce((a, i) => a + i.quantity * i.price, 0)
   const totalTTC = totalHT * 1.2
@@ -101,13 +97,14 @@ export default function QuoteInstantPage() {
   }
 
   async function handleSave(sendEmail = false) {
-    if (!client.name) { showToast('⚠️ Sélectionnez un client'); return }
-    if (items.some(i => !i.description)) { showToast('⚠️ Complétez toutes les lignes'); return }
+    if (!client.name) { toast('⚠️ Sélectionnez un client', 'warning'); return }
+    if (items.some(i => !i.description)) { toast('⚠️ Complétez toutes les lignes', 'warning'); return }
 
     setIsSaving(true)
     try {
-      const { createDocument } = await import('@/lib/actions')
-      const docNum = `DEV-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`
+      const { createDocument, updateStockQuantity, getStock } = await import('@/lib/actions')
+      const ts = Date.now().toString().slice(-6)
+      const docNum = `DEV-${new Date().getFullYear()}-${ts}`
       const doc = await createDocument({
         type: 'quote',
         document_number: docNum,
@@ -297,7 +294,7 @@ export default function QuoteInstantPage() {
           </div>
 
           <button
-            onClick={() => { if (!client.name) { showToast('⚠️ Nom requis'); return } setStep(2) }}
+            onClick={() => { if (!client.name) { toast('⚠️ Nom requis', 'warning'); return } setStep(2) }}
             className="w-full bg-primary text-primary-foreground font-black py-5 rounded-2xl flex items-center justify-center gap-3 hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-[1.01] text-sm"
           >
             Suivant — Ajouter les prestations <ArrowRight className="w-5 h-5" />

@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import RegisterPage from "./RegisterClient";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Inscription",
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <RegisterPage />;
+  return (
+    <Suspense fallback={null}>
+      <RegisterPage />
+    </Suspense>
+  );
 }

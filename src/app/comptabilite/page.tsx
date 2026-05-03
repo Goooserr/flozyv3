@@ -14,12 +14,13 @@ import {
   BookOpen
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/components/ToastProvider'
 
 export default function ExportComptablePage() {
   const [docs, setDocs] = useState<any[]>([])
+  const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
   const [year, setYear] = useState(new Date().getFullYear())
   const [docType, setDocType] = useState<'all' | 'invoice' | 'quote'>('invoice')
   const [status, setStatus] = useState<'all' | 'paid' | 'pending'>('all')
@@ -33,10 +34,6 @@ export default function ExportComptablePage() {
 
   useEffect(() => { loadDocs() }, [])
 
-  function showToast(msg: string) {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3500)
-  }
 
   const filtered = docs.filter(d => {
     const docYear = new Date(d.created_at).getFullYear()
@@ -78,7 +75,7 @@ export default function ExportComptablePage() {
     a.click()
     URL.revokeObjectURL(url)
     setExporting(false)
-    showToast(`✅ Export CSV prêt — ${filtered.length} documents`)
+    toast(`✅ Export CSV prêt — ${filtered.length} documents`, 'success')
   }
 
   function exportFEC() {
@@ -134,7 +131,7 @@ export default function ExportComptablePage() {
     a.click()
     URL.revokeObjectURL(url)
     setExporting(false)
-    showToast(`✅ FEC exporté — Compatible Pennylane, Sage, QuickBooks`)
+    toast(`✅ FEC exporté — Compatible Pennylane, Sage, QuickBooks`, 'success')
   }
 
   if (loading) return (
@@ -148,12 +145,7 @@ export default function ExportComptablePage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700 pb-20 max-w-4xl mx-auto">
-      {toast && (
-        <div className="fixed top-6 right-6 z-[200] bg-zinc-900 text-white text-sm font-bold px-6 py-3 rounded-2xl shadow-2xl animate-in slide-in-from-top-4 flex items-center gap-3">
-          {toast}
-          <button onClick={() => setToast(null)}><XIcon className="w-4 h-4 opacity-60" /></button>
-        </div>
-      )}
+      {/* Toast removed — now global */}
 
       {/* Header */}
       <div>

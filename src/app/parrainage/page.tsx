@@ -15,9 +15,11 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/components/DynamicThemeProvider'
+import { useToast } from '@/components/ToastProvider'
 
 export default function ParrainagePage() {
   const { primaryColor, companyName } = useTheme()
+  const { toast } = useToast()
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -42,6 +44,7 @@ export default function ParrainagePage() {
   function copyLink() {
     navigator.clipboard.writeText(referralLink)
     setCopied(true)
+    toast('✅ Lien copié !', 'success')
     setTimeout(() => setCopied(false), 2000)
   }
 
@@ -240,7 +243,7 @@ export default function ParrainagePage() {
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">{template.label}</p>
               <p className="text-sm text-foreground/80 leading-relaxed mb-3">{template.text}</p>
               <button
-                onClick={() => { navigator.clipboard.writeText(template.text); showToast && showToast('Copié !') }}
+                onClick={() => { navigator.clipboard.writeText(template.text); toast('✅ Message copié !', 'success') }}
                 className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
               >
                 <Copy className="w-3 h-3" /> Copier ce message
@@ -251,6 +254,4 @@ export default function ParrainagePage() {
       </div>
     </div>
   )
-
-  function showToast(msg: string) {}
 }

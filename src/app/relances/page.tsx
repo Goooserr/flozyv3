@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
+import { useToast } from '@/components/ToastProvider'
 
 interface UnpaidDoc {
   id: string
@@ -36,9 +37,9 @@ interface UnpaidDoc {
 
 export default function RelancesPage() {
   const [docs, setDocs] = useState<UnpaidDoc[]>([])
+  const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState<string | null>(null)
-  const [toastMsg, setToastMsg] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'overdue' | 'upcoming'>('all')
 
   async function loadDocs() {
@@ -51,10 +52,6 @@ export default function RelancesPage() {
 
   useEffect(() => { loadDocs() }, [])
 
-  function showToast(msg: string) {
-    setToastMsg(msg)
-    setTimeout(() => setToastMsg(null), 3500)
-  }
 
   async function handleMarkPaid(docId: string) {
     const { updateDocument } = await import('@/lib/actions') as any
@@ -67,16 +64,16 @@ export default function RelancesPage() {
         const supabase = createClient()
         await supabase.from('documents').update({ status: 'paid' }).eq('id', docId)
       }
-      showToast('✅ Facture marquée comme payée !')
+      toast('✅ Facture marquée comme payée !', 'success')
       loadDocs()
     } catch (e) {
-      showToast('Erreur lors de la mise à jour')
+      toast('Erreur lors de la mise à jour', 'error')
     }
   }
 
   async function handleSendReminder(doc: UnpaidDoc) {
     if (!doc.clients?.email) {
-      showToast('⚠️ Aucun email trouvé pour ce client.')
+      toast('⚠️ Aucun email trouvé pour ce client.', 'warning')
       return
     }
     setSending(doc.id)
@@ -94,11 +91,11 @@ export default function RelancesPage() {
         })
       })
       if (res.ok) {
-        showToast(`📧 Relance envoyée à ${doc.clients.email}`)
+        toast(`📧 Relance envoyée à ${doc.clients.email}`, 'success')
         loadDocs()
       } else {
         const err = await res.json()
-        showToast(`Erreur: ${err.error || 'Envoi échoué'}`)
+        toast(`Erreur: ${err.error || 'Envoi échoué'}`, 'error')
       }
     } finally {
       setSending(null)
@@ -130,13 +127,7 @@ export default function RelancesPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700 pb-20 max-w-5xl mx-auto">
-      {/* Toast */}
-      {toastMsg && (
-        <div className="fixed top-6 right-6 z-[200] bg-zinc-900 text-white text-sm font-bold px-6 py-3 rounded-2xl shadow-2xl border border-white/10 animate-in slide-in-from-top-4 flex items-center gap-3">
-          {toastMsg}
-          <button onClick={() => setToastMsg(null)}><XIcon className="w-4 h-4 opacity-60" /></button>
-        </div>
-      )}
+      {/* Toast removed — now global */}
 
       {/* Header */}
       <div className="flex items-center justify-between">
