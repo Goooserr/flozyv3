@@ -19,7 +19,12 @@ import {
   ChevronRight,
   Archive,
   Activity,
-  History
+  History,
+  Bell,
+  Zap,
+  AlertTriangle,
+  BookOpen,
+  Gift
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase';
@@ -34,9 +39,14 @@ const navItems = [
   { name: 'Planning', icon: Calendar, href: '/planning', module: 'planning' },
   { name: 'Photos', icon: Camera, href: '/photos', module: 'planning' },
   { name: 'Stock', icon: Box, href: '/stock', module: 'stock' },
+  { name: 'Alertes Stock', icon: AlertTriangle, href: '/stock/alertes', module: 'stock' },
   { name: 'Factures', icon: FileText, href: '/invoices', module: 'documents' },
+  { name: 'Devis Instantané', icon: Zap, href: '/devis', module: 'documents' },
+  { name: 'Relances', icon: Bell, href: '/relances', module: 'documents', badge: 'unpaid' },
   { name: 'Archives', icon: History, href: '/archives', module: null },
   { name: 'Clients', icon: Users, href: '/clients', module: 'clients' },
+  { name: 'Comptabilité', icon: BookOpen, href: '/comptabilite', module: 'documents' },
+  { name: 'Parrainage', icon: Gift, href: '/parrainage', module: null },
   { name: 'Abonnement', icon: CreditCard, href: '/billing', module: null },
   { name: 'Paramètres', icon: Settings, href: '/settings', module: null },
 ];

@@ -19,7 +19,10 @@ import {
   Camera,
   Sun,
   Car,
-  Navigation
+  Navigation,
+  Bell,
+  Zap,
+  Euro
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getDocuments, getClients, getInterventions } from '@/lib/actions';
@@ -168,12 +171,57 @@ export default function Dashboard() {
 
   const nextIntervention = interventions.find(i => i.status === 'scheduled' || i.status === 'in_progress')
 
+  const unpaidInvoices = recentInvoices.filter((d: any) => d.type === 'invoice' && d.status === 'pending')
+  const unpaidTotal = unpaidInvoices.reduce((a: number, d: any) => a + Number(d.amount || 0), 0)
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bonne après-midi' : 'Bonsoir'
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
+      {/* Morning Briefing Header */}
       <div className="flex flex-col gap-1">
-        <h2 className="text-2xl font-bold tracking-tight">Tableau de bord</h2>
-        <p className="text-muted-foreground text-sm">Simplifiez votre gestion quotidienne. Voici l'état de votre activité.</p>
+        <div className="flex items-center gap-2 text-primary font-bold text-sm uppercase tracking-widest mb-1">
+          <Sun className="w-4 h-4" /> Morning Briefing
+        </div>
+        <h2 className="text-2xl font-bold tracking-tight">{greeting} 👋 Voici votre journée</h2>
+        <p className="text-muted-foreground text-sm">
+          {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+        </p>
       </div>
+
+      {/* Impayés alert bar */}
+      {unpaidInvoices.length > 0 && userRole !== 'employee' && (
+        <Link href="/relances" className="flex items-center justify-between bg-rose-500/10 border border-rose-500/30 rounded-2xl px-6 py-4 hover:bg-rose-500/15 transition-all group animate-in slide-in-from-top">
+          <div className="flex items-center gap-3">
+            <Bell className="w-5 h-5 text-rose-500" />
+            <div>
+              <p className="font-black text-sm text-rose-500">{unpaidInvoices.length} facture{unpaidInvoices.length > 1 ? 's' : ''} impayée{unpaidInvoices.length > 1 ? 's' : ''}</p>
+              <p className="text-xs text-rose-400/80">{unpaidTotal.toLocaleString('fr-FR')} € en attente de paiement</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-rose-500 font-bold text-xs group-hover:gap-3 transition-all">
+            Voir les relances <ChevronRight className="w-4 h-4" />
+          </div>
+        </Link>
+      )}
+
+      {/* Devis Instantané CTA */}
+      {userRole !== 'employee' && (
+        <Link href="/devis" className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-2xl px-6 py-4 hover:bg-primary/10 transition-all group animate-in slide-in-from-top">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/15 rounded-xl flex items-center justify-center">
+              <Zap className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="font-black text-sm">Devis Instantané Terrain</p>
+              <p className="text-xs text-muted-foreground">Créez un devis en 60 secondes depuis votre téléphone</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-primary font-bold text-xs bg-primary/10 px-3 py-2 rounded-xl group-hover:bg-primary/20 transition-colors">
+            Créer <ChevronRight className="w-3 h-3" />
+          </div>
+        </Link>
+      )}
 
       {subscriptionPlan === 'starter' && userRole !== 'employee' && (
         <div className="bg-primary/10 border border-primary/20 p-6 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6 animate-in slide-in-from-top duration-500">

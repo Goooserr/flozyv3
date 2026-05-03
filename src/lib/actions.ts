@@ -213,6 +213,18 @@ export async function createDocument(doc: any) {
   return data[0]
 }
 
+export async function updateDocument(id: string, updates: any) {
+  const supabase = await getServerSupabase()
+  const { error } = await supabase
+    .from('documents')
+    .update(updates)
+    .eq('id', id)
+  if (error) throw error
+  return true
+}
+
+
+
 // --- STOCK ---
 export async function getStock() {
   const supabase = await getServerSupabase()

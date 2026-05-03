@@ -21,7 +21,9 @@ import {
   Phone,
   ChevronRight,
   X as XIcon,
-  Check
+  Check,
+  List,
+  ChevronLeft
 } from 'lucide-react'
 import { SignaturePad } from '@/components/SignaturePad'
 import { cn } from '@/lib/utils'
@@ -33,6 +35,8 @@ export default function PlanningPage() {
   const [clients, setClients] = useState<any[]>([])
   const [catalogItems, setCatalogItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
+  const [calendarMonth, setCalendarMonth] = useState(new Date())
   
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -72,33 +76,64 @@ export default function PlanningPage() {
           <h2 className="text-3xl font-bold tracking-tight">Programme du Jour</h2>
           <p className="text-muted-foreground">Une liste claire, un processus fluide.</p>
         </div>
-        {userRole !== 'employee' && (
-          <button 
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center justify-center w-12 h-12 md:w-auto md:px-6 md:py-2.5 bg-primary text-primary-foreground rounded-2xl md:rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-105"
-          >
-            <Plus className="w-5 h-5 md:w-4 md:h-4" />
-            <span className="hidden md:block ml-2">Nouvelle Mission</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* View Toggle */}
+          <div className="flex bg-secondary/50 p-1 rounded-xl border border-border">
+            <button
+              onClick={() => setViewMode('list')}
+              className={cn('p-2 rounded-lg transition-all', viewMode === 'list' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground')}
+              title="Vue Liste"
+            >
+              <List className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={cn('p-2 rounded-lg transition-all', viewMode === 'calendar' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground')}
+              title="Vue Calendrier"
+            >
+              <CalendarIcon className="w-4 h-4" />
+            </button>
+          </div>
+
+          {userRole !== 'employee' && (
+            <button 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center justify-center w-12 h-12 md:w-auto md:px-6 md:py-2.5 bg-primary text-primary-foreground rounded-2xl md:rounded-xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 hover:scale-105"
+            >
+              <Plus className="w-5 h-5 md:w-4 md:h-4" />
+              <span className="hidden md:block ml-2">Nouvelle Mission</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Timeline List */}
-      <div className="space-y-3">
-        {activeMissions.length === 0 ? (
-          <div className="bg-secondary/30 border border-border border-dashed rounded-3xl p-12 text-center text-muted-foreground italic">
-            Aucune mission prévue pour le moment.
-          </div>
-        ) : (
-          activeMissions.map(mission => (
-            <MissionListItem 
-              key={mission.id} 
-              data={mission} 
-              onClick={() => setSelectedMission(mission)} 
-            />
-          ))
-        )}
-      </div>
+      {/* Calendar or List view */}
+      {viewMode === 'calendar' ? (
+        <CalendarView 
+          missions={activeMissions} 
+          month={calendarMonth}
+          onPrev={() => setCalendarMonth(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
+          onNext={() => setCalendarMonth(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
+          onSelectMission={setSelectedMission}
+          primaryColor={primaryColor}
+        />
+      ) : (
+        <div className="space-y-3">
+          {activeMissions.length === 0 ? (
+            <div className="bg-secondary/30 border border-border border-dashed rounded-3xl p-12 text-center text-muted-foreground italic">
+              Aucune mission prévue pour le moment.
+            </div>
+          ) : (
+            activeMissions.map(mission => (
+              <MissionListItem 
+                key={mission.id} 
+                data={mission} 
+                onClick={() => setSelectedMission(mission)} 
+              />
+            ))
+          )}
+        </div>
+      )}
 
       {isCreateModalOpen && (
         <CreateMissionModal 
@@ -116,6 +151,118 @@ export default function PlanningPage() {
           reload={loadData} 
         />
       )}
+    </div>
+  )
+}
+
+// ==========================================
+// CALENDAR VIEW COMPONENT
+// ==========================================
+
+function CalendarView({ missions, month, onPrev, onNext, onSelectMission, primaryColor }: any) {
+  const year = month.getFullYear()
+  const monthNum = month.getMonth()
+  const monthName = month.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+
+  // First day of month (0=Sun...6=Sat), adjust to Mon=0
+  const firstDay = new Date(year, monthNum, 1).getDay()
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1
+  const daysInMonth = new Date(year, monthNum + 1, 0).getDate()
+
+  const getMissionsForDay = (day: number) => {
+    return missions.filter((m: any) => {
+      const d = new Date(m.start_time)
+      return d.getFullYear() === year && d.getMonth() === monthNum && d.getDate() === day
+    })
+  }
+
+  const today = new Date()
+  const isToday = (day: number) => today.getFullYear() === year && today.getMonth() === monthNum && today.getDate() === day
+
+  const statusColor: any = {
+    scheduled: 'bg-amber-500',
+    in_progress: 'bg-blue-500',
+    completed: 'bg-emerald-500',
+  }
+
+  return (
+    <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
+      {/* Header */}
+      <div className="p-6 border-b border-border flex items-center justify-between">
+        <button onClick={onPrev} className="p-2 bg-secondary rounded-xl hover:bg-secondary/80 transition-colors">
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <h3 className="font-black text-lg capitalize">{monthName}</h3>
+        <button onClick={onNext} className="p-2 bg-secondary rounded-xl hover:bg-secondary/80 transition-colors">
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Day names */}
+      <div className="grid grid-cols-7 border-b border-border">
+        {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(d => (
+          <div key={d} className="text-center py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* Days grid */}
+      <div className="grid grid-cols-7">
+        {/* Offset for first day */}
+        {Array.from({ length: startOffset }).map((_, i) => (
+          <div key={`empty-${i}`} className="min-h-[80px] border-b border-r border-border/50 bg-secondary/10 p-1" />
+        ))}
+
+        {Array.from({ length: daysInMonth }).map((_, i) => {
+          const day = i + 1
+          const dayMissions = getMissionsForDay(day)
+          const isWeekend = (startOffset + i) % 7 >= 5
+
+          return (
+            <div
+              key={day}
+              className={cn(
+                'min-h-[80px] border-b border-r border-border/50 p-1.5 transition-colors hover:bg-secondary/20',
+                isWeekend && 'bg-secondary/5',
+                isToday(day) && 'bg-primary/5'
+              )}
+            >
+              <div className={cn(
+                'w-6 h-6 rounded-full flex items-center justify-center text-xs font-black mb-1',
+                isToday(day) ? 'bg-primary text-primary-foreground' : 'text-foreground/70'
+              )}>
+                {day}
+              </div>
+
+              <div className="space-y-0.5">
+                {dayMissions.slice(0, 2).map((m: any) => (
+                  <button
+                    key={m.id}
+                    onClick={() => onSelectMission(m)}
+                    className={cn(
+                      'w-full text-left rounded px-1.5 py-0.5 text-[9px] font-bold truncate text-white transition-opacity hover:opacity-80',
+                      statusColor[m.status] || 'bg-zinc-500'
+                    )}
+                  >
+                    {new Date(m.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} {m.title}
+                  </button>
+                ))}
+                {dayMissions.length > 2 && (
+                  <p className="text-[8px] text-muted-foreground font-bold px-1">+{dayMissions.length - 2} autres</p>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="p-4 border-t border-border flex items-center gap-6 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-amber-500" /> À faire</div>
+        <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-500" /> En cours</div>
+        <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500" /> Terminé</div>
+      </div>
     </div>
   )
 }
