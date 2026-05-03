@@ -25,13 +25,18 @@ export default function OperationsClient() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [interventions, setInterventions] = useState<any[]>([])
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<any>({
     total: 0,
     completed: 0,
     inProgress: 0,
     scheduled: 0,
     totalValue: 0,
-    totalMargin: 0
+    totalMargin: 0,
+    caTotal: 0,
+    trendInter: '',
+    trendComp: '',
+    trendCA: '',
+    trendCAPos: true
   })
 
   useEffect(() => {
