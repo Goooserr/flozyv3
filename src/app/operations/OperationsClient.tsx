@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { 
   Activity, 
   TrendingUp, 
@@ -12,13 +13,16 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   LayoutGrid,
-  List
+  List,
+  ChevronRight,
+  TrendingDown
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/components/DynamicThemeProvider'
 
 export default function OperationsClient() {
   const { primaryColor } = useTheme()
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [interventions, setInterventions] = useState<any[]>([])
   const [stats, setStats] = useState({
@@ -32,26 +36,49 @@ export default function OperationsClient() {
 
   useEffect(() => {
     async function loadData() {
-      const { getInterventions } = await import('@/lib/actions')
-      const inters = await getInterventions()
-      setInterventions(inters || [])
-      
-      const newStats = (inters || []).reduce((acc: any, curr: any) => {
+      const { getInterventions, getDocuments } = await import('@/lib/actions')
+      const [iData, dData] = await Promise.all([getInterventions(), getDocuments()])
+      const inters = iData || []
+      const docs = dData || []
+      setInterventions(inters)
+
+      const now = Date.now()
+      const d7 = now - 7 * 86400000
+      const d14 = now - 14 * 86400000
+
+      const thisW = (arr: any[], field = 'created_at') => arr.filter(i => new Date(i[field]).getTime() >= d7).length
+      const lastW = (arr: any[], field = 'created_at') => arr.filter(i => { const t = new Date(i[field]).getTime(); return t >= d14 && t < d7 }).length
+      const trendStr = (diff: number) => diff >= 0 ? `+${diff} cette sem.` : `${diff} cette sem.`
+
+      const interDiff = thisW(inters) - lastW(inters)
+      const completed = inters.filter((i: any) => i.status === 'completed' || i.status === 'archived')
+      const compDiff = thisW(completed) - lastW(completed)
+
+      const paidDocs = docs.filter((d: any) => d.status === 'paid')
+      const caTotal = paidDocs.reduce((a: number, d: any) => a + (d.amount || 0), 0)
+      const caThis = paidDocs.filter((d: any) => new Date(d.created_at).getTime() >= d7).reduce((a: number, d: any) => a + (d.amount || 0), 0)
+      const caLast = paidDocs.filter((d: any) => { const t = new Date(d.created_at).getTime(); return t >= d14 && t < d7 }).reduce((a: number, d: any) => a + (d.amount || 0), 0)
+      const caDiff = caThis - caLast
+
+      // Value depuis les descriptions JSON (inchangé)
+      const newStats = inters.reduce((acc: any, curr: any) => {
         acc.total++
         if (curr.status === 'completed') acc.completed++
         else if (curr.status === 'in_progress') acc.inProgress++
         else acc.scheduled++
-
-        // Calculer la valeur via les notes/description JSON
         try {
-          const parsed = JSON.parse(curr.description || '{}')
-          if (parsed.total_sell) acc.totalValue += parsed.total_sell
-          if (parsed.total_sell && parsed.total_cost) acc.totalMargin += (parsed.total_sell - parsed.total_cost)
+          const p = JSON.parse(curr.description || '{}')
+          if (p.total_sell) acc.totalValue += p.total_sell
+          if (p.total_sell && p.total_cost) acc.totalMargin += (p.total_sell - p.total_cost)
         } catch {}
-        
         return acc
       }, { total: 0, completed: 0, inProgress: 0, scheduled: 0, totalValue: 0, totalMargin: 0 })
 
+      newStats.caTotal = caTotal
+      newStats.trendInter = trendStr(interDiff)
+      newStats.trendComp = trendStr(compDiff)
+      newStats.trendCA = (caDiff >= 0 ? '+' : '') + caDiff.toFixed(0) + ' €'
+      newStats.trendCAPos = caDiff >= 0
       setStats(newStats)
       setLoading(false)
     }
@@ -91,23 +118,23 @@ export default function OperationsClient() {
           label="Chantiers en cours" 
           value={stats.inProgress} 
           icon={Clock} 
-          trend="+2 cette semaine" 
+          trend={stats.trendInter || '+0 cette sem.'} 
           color="text-blue-500" 
           bgColor="bg-blue-500/10" 
         />
         <StatCard 
-          label="Chiffre d'Affaire Pipeline" 
-          value={`${stats.totalValue.toLocaleString()} €`} 
+          label="CA Encaissé" 
+          value={`${(stats.caTotal || stats.totalValue || 0).toLocaleString('fr-FR')} €`} 
           icon={TrendingUp} 
-          trend="Potentiel total" 
+          trend={stats.trendCA || '0 € cette sem.'} 
           color="text-emerald-500" 
           bgColor="bg-emerald-500/10" 
         />
         <StatCard 
-          label="Marge Brute Globale" 
+          label="Marge Brute" 
           value={`${stats.totalMargin.toLocaleString()} €`} 
           icon={Euro} 
-          trend={`${((stats.totalMargin / (stats.totalValue || 1)) * 100).toFixed(1)}% de rendement`} 
+          trend={`${((stats.totalMargin / (stats.totalValue || 1)) * 100).toFixed(1)}% rendement`} 
           color="text-primary" 
           bgColor="bg-primary/10" 
         />
@@ -140,13 +167,23 @@ export default function OperationsClient() {
                 else if (inter.status === 'scheduled') progress = 10
                 
                 return (
-                  <div key={inter.id} className="group cursor-pointer">
+                  <div 
+                    key={inter.id} 
+                    className="group cursor-pointer"
+                    onClick={() => {
+                      sessionStorage.setItem('planning_open_id', inter.id)
+                      router.push('/planning')
+                    }}
+                  >
                     <div className="flex justify-between items-end mb-2">
                       <div>
                         <h4 className="font-bold text-sm group-hover:text-primary transition-colors">{inter.title}</h4>
                         <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{inter.clients?.full_name}</p>
                       </div>
-                      <span className="text-xs font-black">{progress}%</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black">{progress}%</span>
+                        <ChevronRight className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors group-hover:translate-x-0.5" />
+                      </div>
                     </div>
                     <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
                       <div 

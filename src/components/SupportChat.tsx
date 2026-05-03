@@ -6,8 +6,8 @@ import { usePathname } from 'next/navigation'
 import { getMessages, sendMessage, markMessagesAsRead } from '@/lib/actions'
 import { ADMIN_ID } from '@/lib/constants'
 import { createClient } from '@/lib/supabase'
-import { cn } from '@/lib/utils'
 import { useTheme } from './DynamicThemeProvider'
+import { cn } from '@/lib/utils'
 
 export default function SupportChat() {
   const [messages, setMessages] = useState<any[]>([])
@@ -27,11 +27,28 @@ export default function SupportChat() {
     init()
   }, [])
 
-  // Poll for messages even when closed to show notification dot
+  // Real-time messages with Supabase Channels
   useEffect(() => {
     loadMessages()
-    const interval = setInterval(loadMessages, 5000)
-    return () => clearInterval(interval)
+    
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'support_messages'
+        },
+        () => {
+          loadMessages()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   useEffect(() => {

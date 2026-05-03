@@ -3,20 +3,24 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { getClients, addClient, updateClient, createIntervention } from '@/lib/actions'
 import { 
-  Users, Search, Plus, MapPin, Phone, Mail, ChevronRight,
-  FileText, Clock, Loader2, X, CalendarDays, Send, Activity, Check
+  Users, Search, Plus, MapPin, Phone, Mail, ChevronRight, ChevronLeft,
+  FileText, Clock, Loader2, X, CalendarDays, Send, Activity, Check, ExternalLink
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase'
 import { useTheme } from '@/components/DynamicThemeProvider'
+import { useToast } from '@/components/ToastProvider'
+import Link from 'next/link'
 
 export default function ClientsPage() {
   const { subscriptionPlan } = useTheme()
+  const { toast } = useToast()
   const supabase = createClient()
   const [clients, setClients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedClient, setSelectedClient] = useState<any>(null)
+  const [showDetail, setShowDetail] = useState(false) // UX #8 — mobile slide
   const [clientDocs, setClientDocs] = useState<any[]>([])
   const [clientInterventions, setClientInterventions] = useState<any[]>([])
   const [loadingDetails, setLoadingDetails] = useState(false)
@@ -56,6 +60,7 @@ export default function ClientsPage() {
 
   function selectClient(client: any) {
     setSelectedClient(client)
+    setShowDetail(true) // UX #8 — ouvrir la fiche sur mobile
     setNotesValue(client.notes || '')
     setNotesSaved(false)
     setEditingNotes(false)
@@ -79,7 +84,8 @@ export default function ClientsPage() {
       setIsModalOpen(false)
       setNewClient({ full_name: '', email: '', phone: '', address: '' })
       await load()
-    } catch { alert("Erreur lors de l'ajout") }
+      toast('✅ Client ajouté avec succès', 'success')
+    } catch { toast("Erreur lors de l'ajout", 'error') }
     finally { setSaving(false) }
   }
 
@@ -91,7 +97,8 @@ export default function ClientsPage() {
       setIsPlanningOpen(false)
       setNewIntervention({ title: '', description: '', start_time: '', status: 'scheduled' })
       loadClientDetails(selectedClient)
-    } catch { alert("Erreur lors de la planification") }
+      toast('📅 Chantier planifié !', 'success')
+    } catch { toast('Erreur lors de la planification', 'error') }
     finally { setSaving(false) }
   }
 
@@ -146,9 +153,10 @@ export default function ClientsPage() {
         </button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Left: Client List */}
-        <div className="w-full lg:w-1/3 space-y-4">
+      {/* UX #8 — Desktop : split view | Mobile : slide entre liste et fiche */}
+      <div className="flex flex-col lg:flex-row gap-8 relative">
+        {/* Liste — cachée sur mobile quand une fiche est ouverte */}
+        <div className={cn("w-full lg:w-1/3 space-y-4", showDetail && selectedClient ? 'hidden lg:block' : 'block')}>
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Rechercher un client..."
@@ -163,13 +171,14 @@ export default function ClientsPage() {
                   <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary text-xs font-black uppercase shrink-0">
                     {client.full_name.substring(0, 2)}
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <h3 className="font-bold text-sm truncate">{client.full_name}</h3>
                     <div className="flex flex-col gap-0.5 text-xs text-muted-foreground mt-0.5">
                       {client.email && <span className="truncate">{client.email}</span>}
                       {client.phone && <span>{client.phone}</span>}
                     </div>
                   </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto shrink-0 lg:hidden" />
                 </div>
               </div>
             ))}
@@ -179,13 +188,19 @@ export default function ClientsPage() {
           </div>
         </div>
 
-        {/* Right: Client Details */}
-        <div className="w-full lg:w-2/3">
+        {/* Fiche client — plein écran mobile quand ouverte */}
+        <div className={cn("w-full lg:w-2/3", showDetail && selectedClient ? 'block' : 'hidden lg:block')}>
           {selectedClient ? (
             <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden animate-in slide-in-from-right-8 duration-500 space-y-8">
               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[80px] rounded-full pointer-events-none" />
 
-              {/* Header */}
+              {/* Bouton retour mobile */}
+              <button
+                onClick={() => { setShowDetail(false); setSelectedClient(null) }}
+                className="lg:hidden flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
+              >
+                <ChevronLeft className="w-4 h-4" /> Retourà la liste
+              </button>}
               <div className="flex justify-between items-start relative z-10">
                 <div>
                   <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary text-xl font-black uppercase mb-4 border border-primary/20">
@@ -268,22 +283,24 @@ export default function ClientsPage() {
                     </div>
                   </div>
 
-                  {/* Documents réels */}
+                {/* Documents réels UX #11 — cliquables */}
                   <div className="space-y-4">
                     <h4 className="font-bold flex items-center gap-2 text-sm"><FileText className="w-4 h-4 text-primary" /> Documents Récents</h4>
                     <div className="space-y-3">
                       {clientDocs.length === 0 ? (
                         <p className="text-xs text-muted-foreground p-3 bg-secondary/20 rounded-xl">Aucun document pour ce client.</p>
                       ) : clientDocs.map(d => (
-                        <div key={d.id} className="p-3 bg-secondary/30 border border-border/50 rounded-xl text-xs flex justify-between items-center group cursor-pointer hover:border-primary/30">
+                        <Link key={d.id} href={`/p/${d.id}`} target="_blank"
+                          className="p-3 bg-secondary/30 border border-border/50 rounded-xl text-xs flex justify-between items-center group cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-all block"
+                        >
                           <div>
                             <p className="font-bold">{d.document_number || (d.type === 'invoice' ? 'Facture' : 'Devis')}</p>
                             <p className={cn("font-medium", d.status === 'paid' ? 'text-emerald-500' : 'text-amber-500')}>
                               {Number(d.amount || 0).toLocaleString()} € ({d.status === 'paid' ? 'Payée' : 'En attente'})
                             </p>
                           </div>
-                          <ChevronRight className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
-                        </div>
+                          <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </Link>
                       ))}
                     </div>
                   </div>
@@ -367,7 +384,8 @@ export default function ClientsPage() {
                 await updateClient(editClient.id, editClient)
                 setIsEditModalOpen(false); await load()
                 setSelectedClient({ ...selectedClient, ...editClient })
-              } catch { alert("Erreur") } finally { setSaving(false) }
+                toast('✅ Client mis à jour', 'success')
+              } catch { toast('Erreur', 'error') } finally { setSaving(false) }
             }} className="space-y-4">
               {[
                 { label: 'Nom Complet / Entreprise', key: 'full_name', type: 'text' },

@@ -6,28 +6,34 @@ import {
   Plus, 
   Search, 
   Filter, 
-  MoreHorizontal, 
   Clock, 
   CheckCircle2, 
   AlertCircle,
   BellRing,
   ArrowUpRight,
-  Download,
   Loader2,
-  FileCheck
+  FileCheck,
+  X
 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { getDocuments, convertQuoteToInvoice } from '@/lib/actions'
+import { getDocuments, convertQuoteToInvoice, updateDocument } from '@/lib/actions'
 import { useTheme } from '@/components/DynamicThemeProvider'
+import { useToast } from '@/components/ToastProvider'
+import { useSearchParams } from 'next/navigation'
 
 export default function InvoicesPage() {
   const { subscriptionPlan } = useTheme()
+  const { toast } = useToast()
+  const searchParams = useSearchParams()
   const [invoices, setInvoices] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [filterType, setFilterType] = useState<'all'|'invoice'|'quote'>('all')
+  const [filterStatus, setFilterStatus] = useState<'all'|'paid'|'pending'|'overdue'|'accepted'>('all')
   const [showFilter, setShowFilter] = useState(false)
   const [followUpModal, setFollowUpModal] = useState<any>(null)
+  const [reminderLoading, setReminderLoading] = useState<string | null>(null)
 
   async function load() {
     const data = await getDocuments()
@@ -37,24 +43,56 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     load()
+    // UX #9 — Afficher toast de succès après création
+    if (searchParams.get('saved') === '1') {
+      toast('✅ Document enregistré avec succès !', 'success')
+    }
   }, [])
 
   const handleConvert = async (id: string, docNumber: string) => {
     try {
       await convertQuoteToInvoice(id, docNumber)
-      alert("Le devis a été converti en facture !")
+      toast('📄 Devis converti en facture !', 'success')
       load()
-    } catch (e) {
-      alert("Erreur lors de la conversion")
+    } catch {
+      toast('Erreur lors de la conversion', 'error')
     }
   }
 
-  const sendReminder = (id: string) => {
-    // Keep local logic for reminder UI for now
-    setInvoices(invoices.map(inv => 
-      inv.id === id ? { ...inv, reminders: (inv.reminders || 0) + 1 } : inv
-    ))
-    alert(`Relance automatique envoyée pour la facture ${id}`)
+  // Bug #2 FIX — Vraie relance via API + sauvegarde en DB
+  const sendReminder = async (inv: any) => {
+    setReminderLoading(inv.id)
+    try {
+      const clientEmail = inv.clients?.email || inv.metadata?.client_info?.email || ''
+      if (!clientEmail) {
+        toast('⚠️ Email client manquant pour la relance', 'warning')
+        setReminderLoading(null)
+        return
+      }
+      const res = await fetch('/api/send-reminder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentId: inv.id,
+          clientEmail,
+          clientName: inv.clients?.full_name || inv.metadata?.client_info?.name || 'Client',
+          amount: inv.amount,
+          documentNumber: inv.document_number,
+          createdAt: inv.created_at,
+        })
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error)
+      // Sauvegarder le compteur en DB
+      const newCount = (inv.reminder_count || 0) + 1
+      await updateDocument(inv.id, { reminder_count: newCount, last_sent_at: new Date().toISOString() })
+      setInvoices(invoices.map(i => i.id === inv.id ? { ...i, reminder_count: newCount } : i))
+      toast(result.method === 'email' ? `📧 Relance envoyée à ${clientEmail}` : '📝 Relance enregistrée (email non configuré)', 'success')
+    } catch (e: any) {
+      toast('Erreur : ' + e.message, 'error')
+    } finally {
+      setReminderLoading(null)
+    }
   }
 
   const totalFacture = invoices.reduce((acc, curr) => acc + (curr.amount || 0), 0)
@@ -63,10 +101,18 @@ export default function InvoicesPage() {
   const totalRetard = invoices.filter(i => i.status === 'overdue').reduce((acc, curr) => acc + (curr.amount || 0), 0)
 
   const pendingOver7Days = invoices.filter(i => {
-    if (i.status !== 'pending') return false
-    const diffTime = Math.abs(new Date().getTime() - new Date(i.created_at).getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    if (i.status !== 'pending' && i.status !== 'overdue') return false
+    const diffDays = Math.ceil(Math.abs(new Date().getTime() - new Date(i.created_at).getTime()) / 86400000)
     return diffDays > 7
+  })
+
+  // UX #10 — Vrai filtre
+  const filteredInvoices = invoices.filter(inv => {
+    const matchSearch = (inv.document_number || inv.id).toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (inv.clients?.full_name || inv.metadata?.client_info?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+    const matchType = filterType === 'all' || inv.type === filterType
+    const matchStatus = filterStatus === 'all' || inv.status === filterStatus
+    return matchSearch && matchType && matchStatus
   })
 
   if (loading) return (
@@ -128,22 +174,48 @@ export default function InvoicesPage() {
       )}
 
       <div className="bg-card border border-border rounded-[2rem] overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-border flex items-center gap-4">
-           <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input 
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Rechercher une facture..." 
-                className="w-full bg-secondary/50 border border-border rounded-xl py-2 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-primary/20" 
-              />
+        <div className="p-6 border-b border-border flex flex-col gap-3">
+           <div className="flex items-center gap-4">
+             <div className="flex-1 relative">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+               <input 
+                 value={searchQuery}
+                 onChange={e => setSearchQuery(e.target.value)}
+                 placeholder="Rechercher..." 
+                 className="w-full bg-secondary/50 border border-border rounded-xl py-2 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-primary/20" 
+               />
+             </div>
+             <button 
+               onClick={() => setShowFilter(!showFilter)}
+               className={cn("p-2.5 rounded-xl border transition-all", showFilter ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-muted-foreground hover:text-foreground border-border")}
+             >
+               <Filter className="w-4 h-4" />
+             </button>
            </div>
-           <button 
-             onClick={() => setShowFilter(!showFilter)}
-             className={cn("p-2.5 rounded-xl border transition-all", showFilter ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-muted-foreground hover:text-foreground border-border")}
-           >
-              <Filter className="w-4 h-4" />
-           </button>
+           {showFilter && (
+             <div className="flex flex-wrap gap-2 pt-1 animate-in slide-in-from-top-2 duration-200">
+               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest self-center">Type :</span>
+               {(['all','invoice','quote'] as const).map(t => (
+                 <button key={t} onClick={() => setFilterType(t)}
+                   className={cn('px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all', filterType === t ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground')}>
+                   {t === 'all' ? 'Tout' : t === 'invoice' ? 'Factures' : 'Devis'}
+                 </button>
+               ))}
+               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest self-center ml-2">Statut :</span>
+               {(['all','paid','pending','overdue','accepted'] as const).map(s => (
+                 <button key={s} onClick={() => setFilterStatus(s)}
+                   className={cn('px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all', filterStatus === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground')}>
+                   {s === 'all' ? 'Tous' : s === 'paid' ? 'Payés' : s === 'pending' ? 'En attente' : s === 'overdue' ? 'Retard' : 'Signés'}
+                 </button>
+               ))}
+               {(filterType !== 'all' || filterStatus !== 'all') && (
+                 <button onClick={() => { setFilterType('all'); setFilterStatus('all') }}
+                   className="flex items-center gap-1 px-3 py-1 rounded-lg text-[10px] font-black text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 transition-all">
+                   <X className="w-3 h-3" /> Effacer
+                 </button>
+               )}
+             </div>
+           )}
         </div>
         
         <div className="overflow-x-auto">
@@ -158,10 +230,7 @@ export default function InvoicesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
-              {invoices.filter(inv => 
-                (inv.document_number || inv.id).toLowerCase().includes(searchQuery.toLowerCase()) || 
-                (inv.clients?.full_name || inv.metadata?.client_info?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
-              ).map((inv) => (
+              {filteredInvoices.map((inv) => (
                 <tr key={inv.id} className="text-sm hover:bg-secondary/20 transition-colors group">
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-3">
@@ -196,10 +265,12 @@ export default function InvoicesPage() {
                        )}
                        {inv.type === 'invoice' && (inv.status === 'overdue' || inv.status === 'pending') && (
                          <button 
-                           onClick={() => sendReminder(inv.id)}
-                           className="flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 text-rose-500 rounded-lg text-[10px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all animate-pulse shadow-sm"
+                           onClick={() => sendReminder(inv)}
+                           disabled={reminderLoading === inv.id}
+                           className="flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 text-rose-500 rounded-lg text-[10px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm disabled:opacity-50"
                          >
-                            <BellRing className="w-3 h-3" /> Relancer {(inv.reminders || 0) > 0 && `(${inv.reminders})`}
+                            {reminderLoading === inv.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <BellRing className="w-3 h-3" />}
+                            Relancer {(inv.reminder_count || 0) > 0 && `(${inv.reminder_count})`}
                          </button>
                        )}
                        <Link href={`/p/${inv.id}`} target="_blank" className="p-2 hover:bg-secondary rounded-lg text-muted-foreground transition-colors hover:text-primary" title="Voir la page publique">
@@ -209,6 +280,9 @@ export default function InvoicesPage() {
                   </td>
                 </tr>
               ))}
+              {filteredInvoices.length === 0 && (
+                <tr><td colSpan={5} className="text-center py-12 text-muted-foreground text-sm">Aucun document trouvé.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -237,9 +311,9 @@ Votre Artisan
               <button 
                 onClick={() => {
                   navigator.clipboard.writeText(`Bonjour ${followUpModal.clients?.full_name?.split(' ')[0] || ''},\n\nAvez-vous pu consulter mon devis (${followUpModal.document_number}) envoyé il y a quelques jours ?\n\nJe reste à votre disposition si vous avez des questions.\n\nCordialement,`);
-                  alert("Message copié dans le presse-papier !");
+                  toast('📋 Message copié !', 'success')
                   setFollowUpModal(null);
-                  sendReminder(followUpModal.id);
+                  sendReminder(followUpModal);
                 }} 
                 className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 transition-opacity shadow-lg shadow-primary/20"
               >

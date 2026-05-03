@@ -17,6 +17,7 @@ import {
   ChevronDown
 } from 'lucide-react'
 import { useTheme } from '@/components/DynamicThemeProvider'
+import { useToast } from '@/components/ToastProvider'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
@@ -24,8 +25,9 @@ import { SignaturePad } from '@/components/SignaturePad'
 
 export default function NewInvoicePage() {
   const router = useRouter()
-  const { primaryColor, companyName, logoUrl } = useTheme()
-  const [items, setItems] = useState([{ description: '', quantity: 1, price: undefined as any, purchasePrice: undefined as any, syncStock: false, mode: 'manual' as 'manual'|'catalog' }])
+  const { primaryColor, companyName, logoUrl, siret, apeCode } = useTheme()
+  const { toast } = useToast()
+  const [items, setItems] = useState([{ description: '', quantity: 1, price: undefined as any, purchasePrice: undefined as any, syncStock: false, mode: 'manual' as 'manual'|'catalog', catalogItemId: '' as string }])
   const [client, setClient] = useState({ id: '', name: '', address: '', email: '' })
   const [clients, setClients] = useState<any[]>([])
   const [catalogItems, setCatalogItems] = useState<any[]>([])
@@ -56,9 +58,15 @@ export default function NewInvoicePage() {
     window.open(`mailto:${clientEmail}?subject=${subject}&body=${body}`, '_blank')
   }
 
+  // Bug #1 FIX — Numérotation unique par timestamp
+  function generateDocNumber(prefix: string) {
+    const ts = Date.now().toString().slice(-6)
+    return `${prefix}-${new Date().getFullYear()}-${ts}`
+  }
+
   const handleSave = async () => {
     if (!client.name) {
-      alert("Veuillez sélectionner ou saisir un client")
+      toast('⚠️ Veuillez sélectionner ou saisir un client', 'warning')
       return
     }
 
@@ -67,11 +75,13 @@ export default function NewInvoicePage() {
       const totalHT = items.reduce((acc, item) => acc + (item.quantity * (item.price || 0)), 0)
       const totalTTC = totalHT * 1.2
       const prefix = docType === 'invoice' ? 'FAC' : 'DEV'
+      // Bug #1 FIX — numéro unique
+      const docNumber = generateDocNumber(prefix)
       const { createDocument, updateStockQuantity, getStock, updateIntervention } = await import('@/lib/actions')
       
       await createDocument({
         type: docType,
-        document_number: `${prefix}-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        document_number: docNumber,
         amount: totalTTC,
         status: signature ? (docType === 'invoice' ? 'paid' : 'accepted') : 'pending',
         client_id: client.id || null,
@@ -91,22 +101,22 @@ export default function NewInvoicePage() {
         await updateIntervention(interventionId, { status: 'archived' })
       }
 
-      // Sync Stock Logic
+      // Bug #3 FIX — Sync stock par catalogItemId au lieu du nom
       for (const item of items) {
-        if (item.syncStock) {
-           const stock = await getStock()
-           const product = stock.find((s: any) => s.name === item.description)
-           if (product) {
-              await updateStockQuantity(product.id, Math.max(0, product.quantity - item.quantity))
-           }
+        if (item.syncStock && item.catalogItemId) {
+          const stock = await getStock()
+          const product = stock.find((s: any) => s.id === item.catalogItemId)
+          if (product) {
+            await updateStockQuantity(product.id, Math.max(0, product.quantity - item.quantity))
+          }
         }
       }
       
       localStorage.removeItem('invoice_draft')
-      router.push('/invoices')
+      router.push('/invoices?saved=1')
     } catch (error) {
       console.error(error)
-      alert("Erreur lors de la sauvegarde")
+      toast('Erreur lors de la sauvegarde', 'error')
     } finally {
       setIsSaving(false)
     }
@@ -135,7 +145,8 @@ export default function NewInvoicePage() {
       price: Number(catalogItem.selling_price || catalogItem.price || 0), 
       purchasePrice: Number(catalogItem.purchase_price || catalogItem.purchasePrice || 0), 
       syncStock: true,
-      mode: 'catalog'
+      mode: 'catalog',
+      catalogItemId: catalogItem.id // Bug #3 FIX — on stocke l'id
     }])
     setShowCatalog(false)
   }
@@ -147,7 +158,7 @@ export default function NewInvoicePage() {
   const tva = totalHT * 0.2
   const totalTTC = totalHT + tva
 
-  const addItem = (mode: 'manual'|'catalog' = 'manual') => setItems([...items, { description: '', quantity: 1, price: 0, purchasePrice: 0, syncStock: false, mode }])
+  const addItem = (mode: 'manual'|'catalog' = 'manual') => setItems([...items, { description: '', quantity: 1, price: 0, purchasePrice: 0, syncStock: false, mode, catalogItemId: '' }])
   const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index))
 
   return (
@@ -462,7 +473,7 @@ export default function NewInvoicePage() {
                 )}
                 <div>
                   <h2 className="text-xl font-black italic uppercase tracking-tighter">{companyName || 'Votre Entreprise'}</h2>
-                  <p className="text-[10px] text-zinc-500 max-w-[200px]">SIRET: 123 456 789 00010<br/>Code APE: 4321A</p>
+                <p className="text-[10px] text-zinc-500 max-w-[200px]">SIRET: {siret || '000 000 000 00000'}<br/>Code APE: {apeCode || '—'}</p>
                 </div>
               </div>
               <div className="text-right">

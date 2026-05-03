@@ -10,6 +10,12 @@ const ThemeContext = createContext({
   setCompanyName: (name: string) => {},
   logoUrl: '',
   setLogoUrl: (url: string) => {},
+  siret: '',
+  setSiret: (siret: string) => {},
+  apeCode: '',
+  setApeCode: (code: string) => {},
+  hourlyRate: 50,
+  setHourlyRate: (rate: number) => {},
   enabledModules: ['clients', 'documents'] as string[],
   setEnabledModules: (modules: string[]) => {},
   subscriptionPlan: 'starter',
@@ -26,6 +32,9 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
   const [primaryColor, setPrimaryColor] = useState('#000000')
   const [companyName, setCompanyName] = useState('')
   const [logoUrl, setLogoUrl] = useState('')
+  const [siret, setSiret] = useState('')
+  const [apeCode, setApeCode] = useState('')
+  const [hourlyRate, setHourlyRate] = useState(50)
   const [enabledModules, setEnabledModules] = useState<string[]>(['clients', 'documents'])
   const [subscriptionPlan, setSubscriptionPlan] = useState('starter')
   const [userRole, setUserRole] = useState('artisan')
@@ -67,6 +76,9 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
     if (workspaceData.enabled_modules) setEnabledModules(workspaceData.enabled_modules)
     if (workspaceData.company_name) setCompanyName(workspaceData.company_name)
     if (workspaceData.logo_url) setLogoUrl(workspaceData.logo_url)
+    if (workspaceData.siret) setSiret(workspaceData.siret)
+    if (workspaceData.ape_code) setApeCode(workspaceData.ape_code)
+    if (workspaceData.hourly_rate) setHourlyRate(workspaceData.hourly_rate)
     
     // Normalisation forcée pour éviter les bugs de casse
     if (workspaceData.subscription_plan) {
@@ -102,6 +114,9 @@ export function DynamicThemeProvider({ children }: { children: React.ReactNode }
       primaryColor, setPrimaryColor, 
       companyName, setCompanyName,
       logoUrl, setLogoUrl,
+      siret, setSiret,
+      apeCode, setApeCode,
+      hourlyRate, setHourlyRate,
       enabledModules, setEnabledModules,
       subscriptionPlan, setSubscriptionPlan,
       userRole, setUserRole,

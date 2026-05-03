@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/components/DynamicThemeProvider'
+import { useToast } from '@/components/ToastProvider'
 
 interface StockItem {
   id: string
@@ -30,13 +31,15 @@ interface StockItem {
 
 export default function StockAlertsPage() {
   const { primaryColor } = useTheme()
+  const { toast } = useToast()
   const [items, setItems] = useState<StockItem[]>([])
   const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editMinQty, setEditMinQty] = useState<number>(0)
   const [saving, setSaving] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
   const [showOrderSheet, setShowOrderSheet] = useState(false)
+  const [restockId, setRestockId] = useState<string | null>(null)
+  const [restockQty, setRestockQty] = useState<number>(0)
 
   async function loadItems() {
     const { getStock } = await import('@/lib/actions')
@@ -47,22 +50,17 @@ export default function StockAlertsPage() {
 
   useEffect(() => { loadItems() }, [])
 
-  function showToast(msg: string) {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3000)
-  }
-
   async function saveMinQty(id: string) {
     setSaving(true)
     try {
       const { createClient } = await import('@/lib/supabase')
       const supabase = createClient()
       await supabase.from('stock').update({ min_quantity: editMinQty }).eq('id', id)
-      showToast('✅ Seuil d\'alerte mis à jour !')
+      toast('✅ Seuil d\'alerte mis à jour !', 'success')
       setEditingId(null)
       loadItems()
     } catch (e) {
-      showToast('Erreur lors de la sauvegarde')
+      toast('Erreur lors de la sauvegarde', 'error')
     } finally {
       setSaving(false)
     }
@@ -86,12 +84,6 @@ export default function StockAlertsPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700 pb-20 max-w-5xl mx-auto">
-      {toast && (
-        <div className="fixed top-6 right-6 z-[200] bg-zinc-900 text-white text-sm font-bold px-6 py-3 rounded-2xl shadow-2xl animate-in slide-in-from-top-4 flex items-center gap-3">
-          {toast}
-          <button onClick={() => setToast(null)}><XIcon className="w-4 h-4 opacity-60" /></button>
-        </div>
-      )}
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -148,16 +140,59 @@ export default function StockAlertsPage() {
           <div className="space-y-2">
             {[...outOfStock, ...lowStock].slice(0, 6).map(item => {
               const cfg = getStatusConfig(item)
+              const isRestocking = restockId === item.id
               return (
-                <div key={item.id} className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <span className={cn('text-[9px] font-black uppercase px-2 py-0.5 rounded-full', cfg.bg, cfg.color)}>{cfg.label}</span>
-                    <span className="font-bold text-sm">{item.name}</span>
+                <div key={item.id} className="bg-card border border-border rounded-xl overflow-hidden">
+                  <div className="flex items-center justify-between p-3">
+                    <div className="flex items-center gap-3">
+                      <span className={cn('text-[9px] font-black uppercase px-2 py-0.5 rounded-full', cfg.bg, cfg.color)}>{cfg.label}</span>
+                      <span className="font-bold text-sm">{item.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-black">{item.quantity} {item.unit || 'unités'}</span>
+                      {item.min_quantity && <span className="text-xs text-muted-foreground">/ min {item.min_quantity}</span>}
+                      <button
+                        onClick={() => { setRestockId(isRestocking ? null : item.id); setRestockQty(Math.max(0, (item.min_quantity || 5) * 2 - item.quantity)) }}
+                        className={cn(
+                          "text-[10px] font-black uppercase px-3 py-1.5 rounded-lg transition-all",
+                          isRestocking ? "bg-primary text-primary-foreground" : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
+                        )}
+                      >
+                        {isRestocking ? 'Annuler' : '+ Réapprovisionner'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-black">{item.quantity} {item.unit || 'unités'}</span>
-                    {item.min_quantity && <span className="text-xs text-muted-foreground">/ min {item.min_quantity}</span>}
-                  </div>
+                  {isRestocking && (
+                    <div className="border-t border-border p-3 bg-secondary/20 flex items-center gap-3 animate-in slide-in-from-top-2 duration-200">
+                      <span className="text-xs font-bold text-muted-foreground">Quantité à ajouter :</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={restockQty}
+                        onChange={e => setRestockQty(Number(e.target.value))}
+                        className="w-20 bg-card border border-primary/40 rounded-lg px-3 py-1.5 text-sm text-center font-black outline-none"
+                        autoFocus
+                      />
+                      <button
+                        disabled={saving}
+                        onClick={async () => {
+                          setSaving(true)
+                          try {
+                            const { createClient } = await import('@/lib/supabase')
+                            const supabase = createClient()
+                            await supabase.from('stock').update({ quantity: item.quantity + restockQty }).eq('id', item.id)
+                            toast(`✅ ${item.name} : +${restockQty} ajoutés !`, 'success')
+                            setRestockId(null)
+                            loadItems()
+                          } catch { toast('Erreur lors de la mise à jour', 'error') }
+                          finally { setSaving(false) }
+                        }}
+                        className="flex items-center gap-2 px-4 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-black hover:bg-emerald-600 transition-colors disabled:opacity-50"
+                      >
+                        {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Plus className="w-3 h-3" /> Confirmer</>}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -278,7 +313,7 @@ export default function StockAlertsPage() {
                   const url = URL.createObjectURL(blob)
                   const a = document.createElement('a')
                   a.href = url; a.download = `bon-commande-${new Date().toISOString().slice(0, 10)}.txt`; a.click()
-                  showToast('📄 Bon de commande exporté !')
+                  toast('📄 Bon de commande exporté !', 'info')
                 }}
                 className="flex-1 py-4 bg-secondary rounded-2xl font-black text-sm hover:bg-secondary/80 transition-colors flex items-center justify-center gap-2"
               >

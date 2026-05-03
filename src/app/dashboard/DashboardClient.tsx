@@ -22,7 +22,9 @@ import {
   Navigation,
   Bell,
   Zap,
-  Euro
+  Euro,
+  Play,
+  ExternalLink
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getDocuments, getClients, getInterventions } from '@/lib/actions';
@@ -42,6 +44,7 @@ export default function Dashboard() {
   const [recentInvoices, setRecentInvoices] = useState<any[]>([])
   const [interventions, setInterventions] = useState<any[]>([])
   const [activities, setActivities] = useState<any[]>([])
+  const [stockItems, setStockItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isClientModalOpen, setIsClientModalOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -62,10 +65,12 @@ export default function Dashboard() {
   };
 
   async function loadData() {
-    const [docs, clients, inters] = await Promise.all([
+    const { getStock } = await import('@/lib/actions');
+    const [docs, clients, inters, stock] = await Promise.all([
       getDocuments(),
       getClients(),
-      getInterventions()
+      getInterventions(),
+      getStock()
     ])
 
     // Calcul des statistiques
@@ -136,6 +141,7 @@ export default function Dashboard() {
     setActivities(sortedEvents);
     setRecentInvoices(docs?.slice(0, 5) || [])
     setInterventions(inters || [])
+    setStockItems(stock || [])
     setLoading(false)
   }
 
@@ -290,7 +296,7 @@ export default function Dashboard() {
                 </p>
              </div>
              {nextIntervention && (
-               <div className="flex flex-col items-end gap-4 min-w-[200px]">
+               <div className="flex flex-col items-end gap-3 min-w-[200px]">
                   <div className="text-right">
                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Horaire prévu</p>
                      <p className="text-xl font-black text-primary">
@@ -298,8 +304,17 @@ export default function Dashboard() {
                      </p>
                   </div>
                   <button 
+                    onClick={() => {
+                      sessionStorage.setItem('planning_open_id', nextIntervention.id)
+                      router.push('/planning')
+                    }}
+                    className="w-full flex items-center justify-center gap-2 font-black text-xs bg-primary text-primary-foreground px-6 py-3 rounded-xl hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                  >
+                     <Play className="w-4 h-4 fill-current" /> Ouvrir la Mission
+                  </button>
+                  <button 
                     onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(nextIntervention.address)}`, '_blank')} 
-                    className="w-full flex items-center justify-center gap-2 font-black text-xs bg-white text-black px-6 py-4 rounded-xl hover:bg-zinc-200 transition-all shadow-xl"
+                    className="w-full flex items-center justify-center gap-2 font-black text-xs bg-white text-black px-6 py-3 rounded-xl hover:bg-zinc-200 transition-all shadow-xl"
                   >
                      <Navigation className="w-4 h-4" /> Y aller
                   </button>
@@ -307,26 +322,50 @@ export default function Dashboard() {
              )}
           </div>
 
-          {/* Smart Alerts - Assistant Personnel */}
-          {userRole !== 'employee' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-amber-500/10 border border-amber-500/20 p-5 rounded-3xl flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-amber-500 font-bold text-xs uppercase tracking-widest">
-                  <AlertCircle className="w-4 h-4" /> Stock Faible Détecté
-                </div>
-                <p className="text-sm font-medium">Vous avez facturé 15 siphons cette semaine. Le stock semble bas.</p>
-                <Link href="/stock" className="text-xs font-black uppercase text-amber-600 hover:text-amber-700 mt-2 flex items-center gap-1">Recommander <ChevronRight className="w-3 h-3" /></Link>
+          {/* Smart Alerts dynamiques UX #12 */}
+          {userRole !== 'employee' && (() => {
+            const lowStockItems = stockItems.filter(i => i.min_quantity && i.quantity <= i.min_quantity)
+            const pendingQuotes = recentInvoices.filter((d: any) => {
+              if (d.type !== 'quote' || d.status !== 'pending') return false
+              const diff = Math.ceil(Math.abs(new Date().getTime() - new Date(d.created_at).getTime()) / 86400000)
+              return diff > 7
+            })
+
+            const hasAlerts = lowStockItems.length > 0 || pendingQuotes.length > 0
+            if (!hasAlerts) return null
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {lowStockItems.length > 0 && (
+                  <div className="bg-amber-500/10 border border-amber-500/20 p-5 rounded-3xl flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-amber-500 font-bold text-xs uppercase tracking-widest">
+                      <AlertCircle className="w-4 h-4" /> Stock Faible Détecté
+                    </div>
+                    <p className="text-sm font-medium">
+                      <span className="font-black text-amber-500">{lowStockItems.length}</span> article{lowStockItems.length > 1 ? 's sont' : ' est'} sous le seuil d'alerte.
+                    </p>
+                    <Link href="/stock/alertes" className="text-xs font-black uppercase text-amber-600 hover:text-amber-700 mt-2 flex items-center gap-1">
+                      Réapprovisionner <ChevronRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                )}
+                
+                {pendingQuotes.length > 0 && (
+                  <div className="bg-blue-500/10 border border-blue-500/20 p-5 rounded-3xl flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-blue-500 font-bold text-xs uppercase tracking-widest">
+                      <Clock className="w-4 h-4" /> Relances à faire
+                    </div>
+                    <p className="text-sm font-medium">
+                      <span className="font-black text-blue-500">{pendingQuotes.length}</span> devis {pendingQuotes.length > 1 ? 'sont' : 'est'} en attente depuis plus de 7 jours.
+                    </p>
+                    <Link href="/invoices" className="text-xs font-black uppercase text-blue-600 hover:text-blue-700 mt-2 flex items-center gap-1">
+                      Lancer le Smart Follow-up <ChevronRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                )}
               </div>
-              
-              <div className="bg-blue-500/10 border border-blue-500/20 p-5 rounded-3xl flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-blue-500 font-bold text-xs uppercase tracking-widest">
-                  <Clock className="w-4 h-4" /> Relances à faire
-                </div>
-                <p className="text-sm font-medium">3 devis sont en attente depuis plus de 7 jours. Un petit SMS ?</p>
-                <Link href="/invoices" className="text-xs font-black uppercase text-blue-600 hover:text-blue-700 mt-2 flex items-center gap-1">Lancer le Smart Follow-up <ChevronRight className="w-3 h-3" /></Link>
-              </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* Recent Invoices Table - HIDDEN FOR EMPLOYEES */}
           {userRole !== 'employee' && (
@@ -448,13 +487,27 @@ export default function Dashboard() {
               </div>
             </button>
 
+            {userRole !== 'employee' && (
+              <Link href="/devis" className="group flex items-center gap-4 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 hover:border-amber-500/40 hover:bg-amber-500/10 transition-all">
+                <div className="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform">
+                  <Zap className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm">Devis Instantané</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">60 secondes terrain</p>
+                </div>
+              </Link>
+            )}
+
             <Link href="/planning" className="group flex items-center gap-4 p-4 rounded-2xl bg-purple-500/5 border border-purple-500/10 hover:border-purple-500/40 hover:bg-purple-500/10 transition-all">
               <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-purple-500/20 group-hover:scale-110 transition-transform">
                 <CalendarDays className="w-6 h-6" />
               </div>
               <div>
                 <p className="font-bold text-sm">Planning</p>
-                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Voir les missions</p>
+                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">
+                  {interventions.filter(i => i.status === 'scheduled' || i.status === 'in_progress').length} mission(s) active(s)
+                </p>
               </div>
             </Link>
           </div>

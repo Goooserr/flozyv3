@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { 
   Calendar as CalendarIcon, 
   Plus, 
@@ -28,9 +29,11 @@ import {
 import { SignaturePad } from '@/components/SignaturePad'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/components/DynamicThemeProvider'
+import { useToast } from '@/components/ToastProvider'
 
 export default function PlanningPage() {
-  const { userRole, primaryColor } = useTheme()
+  const { userRole, primaryColor, hourlyRate } = useTheme()
+  const { toast } = useToast()
   const [interventions, setInterventions] = useState<any[]>([])
   const [clients, setClients] = useState<any[]>([])
   const [catalogItems, setCatalogItems] = useState<any[]>([])
@@ -53,6 +56,14 @@ export default function PlanningPage() {
     setClients(clientData || [])
     setCatalogItems(stockData || [])
     setLoading(false)
+
+    // Auto-open drawer if navigated from Dashboard or Operations
+    const autoOpenId = sessionStorage.getItem('planning_open_id')
+    if (autoOpenId) {
+      sessionStorage.removeItem('planning_open_id')
+      const target = (intData || []).find((i: any) => i.id === autoOpenId)
+      if (target) setSelectedMission(target)
+    }
   }
 
   useEffect(() => { loadData() }, [])
@@ -635,13 +646,17 @@ function InterventionTab({ data, parsedDesc, catalogItems, updateDesc }: any) {
 }
 
 function ClotureTab({ data, parsedDesc, updateDesc, onArchive }: any) {
+  const { hourlyRate } = useTheme()
   const [isSigning, setIsSigning] = useState(false)
-  const hourlyRate = typeof window !== 'undefined' ? Number(localStorage.getItem('flozy_hourly_rate') || 50) : 50
+  const router = useRouter()
+
+  const hours = parsedDesc.hours_worked || 0
+  const lines = parsedDesc.catalog_lines || []
+  const totalMaterial = lines.reduce((a: number, l: any) => a + l.qty * (l.selling_price || 0), 0)
+  const totalLabour = hours * hourlyRate
+  const totalEstimate = totalMaterial + totalLabour
 
   const handleGenerateInvoice = () => {
-    const lines = parsedDesc.catalog_lines || []
-    const hours = parsedDesc.hours_worked || 0
-
     const invoiceItems = lines.map((line: any) => ({
       description: line.name || line.description,
       quantity: line.qty || 1,
@@ -674,7 +689,7 @@ function ClotureTab({ data, parsedDesc, updateDesc, onArchive }: any) {
       client: invoiceClient,
       intervention_id: data.id 
     }))
-    window.location.href = '/invoices/new'
+    router.push('/invoices/new')
   }
 
   return (
@@ -698,13 +713,37 @@ function ClotureTab({ data, parsedDesc, updateDesc, onArchive }: any) {
         )}
       </div>
 
+      {/* RÉCAP DE MISSION */}
+      <div className="bg-secondary/30 border border-border rounded-3xl p-5">
+        <h3 className="font-black text-sm uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4" /> Récap de Mission
+        </h3>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-card rounded-2xl p-3 text-center border border-border">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Temps</p>
+            <p className="text-lg font-black text-primary">{hours > 0 ? `${hours}h` : '—'}</p>
+            <p className="text-[9px] text-muted-foreground">{hours > 0 ? `${totalLabour.toFixed(0)} €` : 'Non saisi'}</p>
+          </div>
+          <div className="bg-card rounded-2xl p-3 text-center border border-border">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Matériaux</p>
+            <p className="text-lg font-black text-amber-500">{lines.length}</p>
+            <p className="text-[9px] text-muted-foreground">{lines.length > 0 ? `${totalMaterial.toFixed(0)} €` : 'Aucun'}</p>
+          </div>
+          <div className="bg-card rounded-2xl p-3 text-center border border-emerald-500/30">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Total</p>
+            <p className="text-lg font-black text-emerald-500">{totalEstimate > 0 ? `${totalEstimate.toFixed(0)} €` : '—'}</p>
+            <p className="text-[9px] text-muted-foreground">Estimation HT</p>
+          </div>
+        </div>
+      </div>
+
       {/* FACTURATION AUTO */}
       <div className="bg-primary/5 rounded-3xl p-6 border border-primary/20 flex flex-col">
         <h3 className="font-black text-lg mb-2 flex items-center gap-2"><FileText className="w-5 h-5 text-primary" /> Facturation Auto</h3>
-        <p className="text-xs text-muted-foreground mb-6">Flozy va générer la facture avec le temps passé ({parsedDesc.hours_worked || 0}h) et le matériel utilisé ({parsedDesc.catalog_lines?.length || 0} articles).</p>
+        <p className="text-xs text-muted-foreground mb-4">Flozy va pré-remplir la facture avec le temps passé et le matériel ci-dessus.</p>
         
         <button onClick={handleGenerateInvoice} className="w-full bg-primary text-primary-foreground font-black py-4 rounded-xl shadow-lg shadow-primary/20 hover:scale-105 transition-all flex justify-center items-center gap-2">
-          Générer la Facture
+          <FileText className="w-5 h-5" /> Générer la Facture →
         </button>
       </div>
 
