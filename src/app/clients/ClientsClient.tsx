@@ -199,8 +199,8 @@ export default function ClientsPage() {
                 onClick={() => { setShowDetail(false); setSelectedClient(null) }}
                 className="lg:hidden flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
               >
-                <ChevronLeft className="w-4 h-4" /> Retourà la liste
-              </button>}
+                <ChevronLeft className="w-4 h-4" /> Retour à la liste
+              </button>
               <div className="flex justify-between items-start relative z-10">
                 <div>
                   <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary text-xl font-black uppercase mb-4 border border-primary/20">
