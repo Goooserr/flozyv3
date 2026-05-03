@@ -23,6 +23,7 @@ import {
 import { cn } from '@/lib/utils'
 import { SignaturePad } from '@/components/SignaturePad'
 import { useTheme } from '@/components/DynamicThemeProvider'
+import { useToast } from '@/components/ToastProvider'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -33,11 +34,13 @@ interface QuoteItem {
   purchasePrice: number
   syncStock: boolean
   mode: 'manual' | 'catalog'
+  catalogItemId?: string
 }
 
 export default function QuoteInstantPage() {
   const router = useRouter()
-  const { primaryColor, companyName, logoUrl } = useTheme()
+  const { primaryColor, companyName, logoUrl, siret, apeCode, hourlyRate } = useTheme()
+  const { toast } = useToast()
   const [step, setStep] = useState<1 | 2 | 3>(1) // 1: Client, 2: Items, 3: Sign & Send
   const [clients, setClients] = useState<any[]>([])
   const [catalogItems, setCatalogItems] = useState<any[]>([])
@@ -51,7 +54,6 @@ export default function QuoteInstantPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [savedDocId, setSavedDocId] = useState<string | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -92,7 +94,8 @@ export default function QuoteInstantPage() {
       price: Number(cat.selling_price || 0),
       purchasePrice: Number(cat.purchase_price || 0),
       syncStock: true,
-      mode: 'catalog'
+      mode: 'catalog',
+      catalogItemId: cat.id
     }])
     setShowCatalogPicker(false)
   }
@@ -122,6 +125,17 @@ export default function QuoteInstantPage() {
       })
       setSavedDocId(doc.id)
 
+      // Bug #3 FIX — Sync stock par catalogItemId
+      for (const item of items) {
+        if (item.syncStock && item.catalogItemId) {
+          const stock = await getStock()
+          const product = stock.find((s: any) => s.id === item.catalogItemId)
+          if (product) {
+            await updateStockQuantity(product.id, Math.max(0, product.quantity - item.quantity))
+          }
+        }
+      }
+
       if (sendEmail && client.email && doc.id) {
         setIsSending(true)
         await fetch('/api/send-document', {
@@ -137,14 +151,14 @@ export default function QuoteInstantPage() {
           })
         })
         setIsSending(false)
-        showToast(`📧 Devis envoyé à ${client.email} !`)
+        toast(`📧 Devis envoyé à ${client.email} !`, 'success')
       } else {
-        showToast('✅ Devis sauvegardé !')
+        toast('✅ Devis sauvegardé !', 'success')
       }
 
       setStep(3)
     } catch (e: any) {
-      showToast('Erreur: ' + e.message)
+      toast('Erreur: ' + e.message, 'error')
     } finally {
       setIsSaving(false)
       setIsSending(false)
@@ -165,12 +179,7 @@ export default function QuoteInstantPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-700 pb-24">
       {/* Toast */}
-      {toast && (
-        <div className="fixed top-6 right-6 z-[200] bg-zinc-900 text-white text-sm font-bold px-6 py-3 rounded-2xl shadow-2xl animate-in slide-in-from-top-4 flex items-center gap-3">
-          {toast}
-          <button onClick={() => setToast(null)}><XIcon className="w-4 h-4 opacity-60" /></button>
-        </div>
-      )}
+      {/* Toasts removed — now global */}
 
       {/* Header */}
       <div className="flex items-center gap-4">
@@ -501,7 +510,7 @@ export default function QuoteInstantPage() {
 
       {showSignature && (
         <SignaturePad
-          onSave={(data) => { setSignature(data); setShowSignature(false); showToast('✍️ Signature enregistrée !') }}
+          onSave={(data) => { setSignature(data); setShowSignature(false); toast('✍️ Signature enregistrée !', 'success') }}
           onCancel={() => setShowSignature(false)}
         />
       )}
