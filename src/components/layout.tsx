@@ -418,20 +418,19 @@ export function BottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
   ];
 
   const rightItems = [
-    { name: 'Stock', icon: Box, href: '/stock', module: 'stock' },
     { name: 'Factures', icon: FileText, href: '/invoices', module: 'documents' },
   ];
 
   const NavItem = ({ item }: { item: typeof leftItems[0] }) => {
     const isEnabled = !item.module || enabledModules.includes(item.module);
     const isActive = (pathname.startsWith(item.href) && item.href !== '/') || pathname === item.href;
-    if (!isEnabled) return <div className="min-w-[56px]" />;
+    if (!isEnabled) return null;
     return (
       <Link
         href={item.href}
         className={cn(
-          "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 min-w-[56px]",
-          isActive ? "text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+          "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 flex-1",
+          isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
         )}
       >
         <item.icon className={cn("w-5 h-5 transition-transform duration-300", isActive && "scale-110")} strokeWidth={isActive ? 2.5 : 2} />
@@ -441,30 +440,42 @@ export function BottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-[100] pb-safe md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-      <div className="flex items-center justify-around px-1 py-1">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-xl border-t border-border z-[100] pb-safe md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+      <div className="flex items-center justify-between px-2 py-1 h-16">
         {/* Left items */}
-        {leftItems.map(item => <NavItem key={item.name} item={item} />)}
+        <div className="flex flex-1 justify-around">
+          {leftItems.map(item => <NavItem key={item.name} item={item} />)}
+        </div>
 
         {/* Central "+" contextual button */}
-        <div className="flex flex-col items-center -mt-5 min-w-[64px]">
+        <div className="flex flex-col items-center relative -top-4 px-2">
           {canCreate ? (
             <Link
               href={plusAction.href || '/invoices/new'}
-              className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex flex-col items-center justify-center shadow-xl shadow-primary/30 hover:scale-110 transition-all duration-200 border-4 border-card"
+              className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex flex-col items-center justify-center shadow-xl shadow-primary/40 active:scale-90 hover:scale-110 transition-all duration-200 border-4 border-card"
             >
-              <Plus className="w-6 h-6" strokeWidth={2.5} />
+              <Plus className="w-7 h-7" strokeWidth={3} />
             </Link>
           ) : (
             <div className="w-14 h-14 rounded-full bg-secondary text-muted-foreground flex flex-col items-center justify-center border-4 border-card opacity-40">
               <Lock className="w-5 h-5" />
             </div>
           )}
-          <span className="text-[10px] font-bold text-primary mt-1">{plusAction.label}</span>
+          <span className="text-[9px] font-black uppercase tracking-tighter text-primary mt-1">{plusAction.label}</span>
         </div>
 
         {/* Right items */}
-        {rightItems.map(item => <NavItem key={item.name} item={item} />)}
+        <div className="flex flex-1 justify-around">
+          {rightItems.map(item => <NavItem key={item.name} item={item} />)}
+          
+          <button
+            onClick={onOpenMenu}
+            className="flex flex-col items-center gap-1 p-2 rounded-xl text-muted-foreground hover:text-foreground flex-1"
+          >
+            <Menu className="w-5 h-5" strokeWidth={2} />
+            <span className="text-[10px] font-semibold">Plus</span>
+          </button>
+        </div>
       </div>
     </nav>
   );
